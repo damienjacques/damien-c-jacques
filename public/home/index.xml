@@ -28,8 +28,10 @@
       <pubDate>Wed, 20 Apr 2016 00:00:00 +0000</pubDate>
       
       <guid>/home/about/</guid>
-      <description>About me Bio-engineer, I am currently a research assistant at ULB (Belgium) while completing his Ph.D. entitled ”Implementing the data revolution in Senegal towards the Sustainable Development Goals” at UCL (Belgium). I have strong skills in remote sensing, geographic information system (GIS) and data science.
-His areas of research are food security, poverty, agricultural economics and academic publishing. He won the Agriculture award at the Data For Development (D4D) challenge organized by Orange, MIT, and UN.</description>
+      <description>About me I am researcher in geomatics, &amp;ldquo;the discipline of gathering, storing, processing, and delivering geographic information or spatially referenced information&amp;rdquo;.
+I am currently a research assistant at ULB (Belgium) while completing a Ph.D. entitled ”xxx” at UCL (Belgium).
+I am using mobile phone metadata (call detail records), Earth Observation (EO) data and other geographic data (vector, raster) for GIS, machine learning and statistics analysis.
+I love R and Rstudio.</description>
     </item>
     
     <item>

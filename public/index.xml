@@ -11,6 +11,548 @@
     <atom:link href="/" rel="self" type="application/rss+xml" />
     
     <item>
+      <title>Air Casting Data Visualisation</title>
+      <link>/post/air-casting-data-visualisation/</link>
+      <pubDate>Thu, 15 Mar 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/post/air-casting-data-visualisation/</guid>
+      <description>&lt;p&gt;This R Notebook describes the steps to download the data from the Air Quality API, convert them to R data and make some basic figures.&lt;/p&gt;
+&lt;p&gt;First, we need to load two packages to deal with the API request (&lt;code&gt;httr&lt;/code&gt;) and format (&lt;code&gt;jsonlite&lt;/code&gt;). You can use &lt;code&gt;install.package(c(&amp;quot;httr&amp;quot;, &amp;quot;jsonlite&amp;quot;))&lt;/code&gt; to install the packages.&lt;/p&gt;
+&lt;!-- This package makes requesting data from just about any API easier by formatting your GET requests with the proper headers and authentications. Next, install jsonlite in your script --&gt;
+&lt;!-- When the data comes back from many APIs, it will be in JSON format. If you&#39;re like most R users, you&#39;ll want to convert the JSON from its native nested form to a flat form like a data frame so it&#39;s easier to work with. The jsonlite package makes this easy. --&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;library(httr)
+library(jsonlite)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;First, we need to get the ID of all sessions of interest (here, located in Brussels and with the tag ‘kid’). To do so, we will use the nomenclature detailled in the &lt;a href=&#34;https://github.com/HabitatMap/AirCasting/blob/master/doc/api.md&#34;&gt;API documentation&lt;/a&gt; to make a request to the API.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;call &amp;lt;- &amp;quot;http://aircasting.org/api/sessions.json?page=0&amp;amp;page_size=1000&amp;amp;q[tags]=kid&amp;amp;q[location]=Brussels&amp;amp;q[distance]=50&amp;quot;  
+get_session_data &amp;lt;- GET(call) # API does not work very well, sometimes you should repeat this command until it works
+
+# Save the data to use them offline
+save(get_session_data, file=&amp;quot;/home/ubuntu/Dropbox/Entreprenership/Projects/AirCasting/Data/get_session_data.Rda&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Then, we convert json output to readable data in R.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;load(&amp;quot;/home/ubuntu/Dropbox/Entreprenership/Projects/AirCasting/Data/get_session_data.Rda&amp;quot;)
+session_data.text &amp;lt;- content(get_session_data, &amp;quot;text&amp;quot;)
+session_data.json &amp;lt;- fromJSON(session_data.text, flatten = TRUE)
+colnames(session_data.json)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;##   [1] &amp;quot;end_time_local&amp;quot;                                 
+##   [2] &amp;quot;id&amp;quot;                                             
+##   [3] &amp;quot;start_time_local&amp;quot;                               
+##   [4] &amp;quot;title&amp;quot;                                          
+##   [5] &amp;quot;username&amp;quot;                                       
+##   [6] &amp;quot;type&amp;quot;                                           
+##   [7] &amp;quot;streams.AirBeam-PM.average_value&amp;quot;               
+##   [8] &amp;quot;streams.AirBeam-PM.id&amp;quot;                          
+##   [9] &amp;quot;streams.AirBeam-PM.max_latitude&amp;quot;                
+##  [10] &amp;quot;streams.AirBeam-PM.max_longitude&amp;quot;               
+##  [11] &amp;quot;streams.AirBeam-PM.measurement_short_type&amp;quot;      
+##  [12] &amp;quot;streams.AirBeam-PM.measurement_type&amp;quot;            
+##  [13] &amp;quot;streams.AirBeam-PM.measurements_count&amp;quot;          
+##  [14] &amp;quot;streams.AirBeam-PM.min_latitude&amp;quot;                
+##  [15] &amp;quot;streams.AirBeam-PM.min_longitude&amp;quot;               
+##  [16] &amp;quot;streams.AirBeam-PM.sensor_name&amp;quot;                 
+##  [17] &amp;quot;streams.AirBeam-PM.sensor_package_name&amp;quot;         
+##  [18] &amp;quot;streams.AirBeam-PM.session_id&amp;quot;                  
+##  [19] &amp;quot;streams.AirBeam-PM.threshold_high&amp;quot;              
+##  [20] &amp;quot;streams.AirBeam-PM.threshold_low&amp;quot;               
+##  [21] &amp;quot;streams.AirBeam-PM.threshold_medium&amp;quot;            
+##  [22] &amp;quot;streams.AirBeam-PM.threshold_very_high&amp;quot;         
+##  [23] &amp;quot;streams.AirBeam-PM.threshold_very_low&amp;quot;          
+##  [24] &amp;quot;streams.AirBeam-PM.unit_name&amp;quot;                   
+##  [25] &amp;quot;streams.AirBeam-PM.unit_symbol&amp;quot;                 
+##  [26] &amp;quot;streams.AirBeam-PM.size&amp;quot;                        
+##  [27] &amp;quot;streams.AirBeam-C.average_value&amp;quot;                
+##  [28] &amp;quot;streams.AirBeam-C.id&amp;quot;                           
+##  [29] &amp;quot;streams.AirBeam-C.max_latitude&amp;quot;                 
+##  [30] &amp;quot;streams.AirBeam-C.max_longitude&amp;quot;                
+##  [31] &amp;quot;streams.AirBeam-C.measurement_short_type&amp;quot;       
+##  [32] &amp;quot;streams.AirBeam-C.measurement_type&amp;quot;             
+##  [33] &amp;quot;streams.AirBeam-C.measurements_count&amp;quot;           
+##  [34] &amp;quot;streams.AirBeam-C.min_latitude&amp;quot;                 
+##  [35] &amp;quot;streams.AirBeam-C.min_longitude&amp;quot;                
+##  [36] &amp;quot;streams.AirBeam-C.sensor_name&amp;quot;                  
+##  [37] &amp;quot;streams.AirBeam-C.sensor_package_name&amp;quot;          
+##  [38] &amp;quot;streams.AirBeam-C.session_id&amp;quot;                   
+##  [39] &amp;quot;streams.AirBeam-C.threshold_high&amp;quot;               
+##  [40] &amp;quot;streams.AirBeam-C.threshold_low&amp;quot;                
+##  [41] &amp;quot;streams.AirBeam-C.threshold_medium&amp;quot;             
+##  [42] &amp;quot;streams.AirBeam-C.threshold_very_high&amp;quot;          
+##  [43] &amp;quot;streams.AirBeam-C.threshold_very_low&amp;quot;           
+##  [44] &amp;quot;streams.AirBeam-C.unit_name&amp;quot;                    
+##  [45] &amp;quot;streams.AirBeam-C.unit_symbol&amp;quot;                  
+##  [46] &amp;quot;streams.AirBeam-C.size&amp;quot;                         
+##  [47] &amp;quot;streams.Phone Microphone.average_value&amp;quot;         
+##  [48] &amp;quot;streams.Phone Microphone.id&amp;quot;                    
+##  [49] &amp;quot;streams.Phone Microphone.max_latitude&amp;quot;          
+##  [50] &amp;quot;streams.Phone Microphone.max_longitude&amp;quot;         
+##  [51] &amp;quot;streams.Phone Microphone.measurement_short_type&amp;quot;
+##  [52] &amp;quot;streams.Phone Microphone.measurement_type&amp;quot;      
+##  [53] &amp;quot;streams.Phone Microphone.measurements_count&amp;quot;    
+##  [54] &amp;quot;streams.Phone Microphone.min_latitude&amp;quot;          
+##  [55] &amp;quot;streams.Phone Microphone.min_longitude&amp;quot;         
+##  [56] &amp;quot;streams.Phone Microphone.sensor_name&amp;quot;           
+##  [57] &amp;quot;streams.Phone Microphone.sensor_package_name&amp;quot;   
+##  [58] &amp;quot;streams.Phone Microphone.session_id&amp;quot;            
+##  [59] &amp;quot;streams.Phone Microphone.threshold_high&amp;quot;        
+##  [60] &amp;quot;streams.Phone Microphone.threshold_low&amp;quot;         
+##  [61] &amp;quot;streams.Phone Microphone.threshold_medium&amp;quot;      
+##  [62] &amp;quot;streams.Phone Microphone.threshold_very_high&amp;quot;   
+##  [63] &amp;quot;streams.Phone Microphone.threshold_very_low&amp;quot;    
+##  [64] &amp;quot;streams.Phone Microphone.unit_name&amp;quot;             
+##  [65] &amp;quot;streams.Phone Microphone.unit_symbol&amp;quot;           
+##  [66] &amp;quot;streams.Phone Microphone.size&amp;quot;                  
+##  [67] &amp;quot;streams.AirBeam-RH.average_value&amp;quot;               
+##  [68] &amp;quot;streams.AirBeam-RH.id&amp;quot;                          
+##  [69] &amp;quot;streams.AirBeam-RH.max_latitude&amp;quot;                
+##  [70] &amp;quot;streams.AirBeam-RH.max_longitude&amp;quot;               
+##  [71] &amp;quot;streams.AirBeam-RH.measurement_short_type&amp;quot;      
+##  [72] &amp;quot;streams.AirBeam-RH.measurement_type&amp;quot;            
+##  [73] &amp;quot;streams.AirBeam-RH.measurements_count&amp;quot;          
+##  [74] &amp;quot;streams.AirBeam-RH.min_latitude&amp;quot;                
+##  [75] &amp;quot;streams.AirBeam-RH.min_longitude&amp;quot;               
+##  [76] &amp;quot;streams.AirBeam-RH.sensor_name&amp;quot;                 
+##  [77] &amp;quot;streams.AirBeam-RH.sensor_package_name&amp;quot;         
+##  [78] &amp;quot;streams.AirBeam-RH.session_id&amp;quot;                  
+##  [79] &amp;quot;streams.AirBeam-RH.threshold_high&amp;quot;              
+##  [80] &amp;quot;streams.AirBeam-RH.threshold_low&amp;quot;               
+##  [81] &amp;quot;streams.AirBeam-RH.threshold_medium&amp;quot;            
+##  [82] &amp;quot;streams.AirBeam-RH.threshold_very_high&amp;quot;         
+##  [83] &amp;quot;streams.AirBeam-RH.threshold_very_low&amp;quot;          
+##  [84] &amp;quot;streams.AirBeam-RH.unit_name&amp;quot;                   
+##  [85] &amp;quot;streams.AirBeam-RH.unit_symbol&amp;quot;                 
+##  [86] &amp;quot;streams.AirBeam-RH.size&amp;quot;                        
+##  [87] &amp;quot;streams.AirBeam-F.average_value&amp;quot;                
+##  [88] &amp;quot;streams.AirBeam-F.id&amp;quot;                           
+##  [89] &amp;quot;streams.AirBeam-F.max_latitude&amp;quot;                 
+##  [90] &amp;quot;streams.AirBeam-F.max_longitude&amp;quot;                
+##  [91] &amp;quot;streams.AirBeam-F.measurement_short_type&amp;quot;       
+##  [92] &amp;quot;streams.AirBeam-F.measurement_type&amp;quot;             
+##  [93] &amp;quot;streams.AirBeam-F.measurements_count&amp;quot;           
+##  [94] &amp;quot;streams.AirBeam-F.min_latitude&amp;quot;                 
+##  [95] &amp;quot;streams.AirBeam-F.min_longitude&amp;quot;                
+##  [96] &amp;quot;streams.AirBeam-F.sensor_name&amp;quot;                  
+##  [97] &amp;quot;streams.AirBeam-F.sensor_package_name&amp;quot;          
+##  [98] &amp;quot;streams.AirBeam-F.session_id&amp;quot;                   
+##  [99] &amp;quot;streams.AirBeam-F.threshold_high&amp;quot;               
+## [100] &amp;quot;streams.AirBeam-F.threshold_low&amp;quot;                
+## [101] &amp;quot;streams.AirBeam-F.threshold_medium&amp;quot;             
+## [102] &amp;quot;streams.AirBeam-F.threshold_very_high&amp;quot;          
+## [103] &amp;quot;streams.AirBeam-F.threshold_very_low&amp;quot;           
+## [104] &amp;quot;streams.AirBeam-F.unit_name&amp;quot;                    
+## [105] &amp;quot;streams.AirBeam-F.unit_symbol&amp;quot;                  
+## [106] &amp;quot;streams.AirBeam-F.size&amp;quot;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;You now have the ID (+ username) of all sessions of interest.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;session.id &amp;lt;- unique(session_data.json$id)
+session.id&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;##   [1] 48843 47506 47267 47217 47216 47142 47085 46911 46854 46853 46778
+##  [12] 46683 46682 46681 46680 46679 46678 46644 46643 46637 46629 46490
+##  [23] 46488 46487 46486 46477 46476 46409 46408 46406 46405 46404 46403
+##  [34] 46402 46393 46307 46287 46285 46284 46269 46259 46257 46250 46233
+##  [45] 46232 46224 46222 46175 46155 46153 46149 46141 46101 46097 46095
+##  [56] 46089 46039 46038 46036 46035 46011 46007 46004 45998 45844 45842
+##  [67] 45775 45762 45688 45622 45519 45490 45481 45255 44718 44612 44477
+##  [78] 44378 44276 44271 44226 44193 44085 43973 43968 43831 43788 43197
+##  [89] 43196 43180 43178 41237 41032 40895 40778 40772 40160 40156 40035
+## [100] 40025 40021 40019 38818 38656 38655 38548 38533 38531 38498 38496
+## [111] 38495 38494 38465 37774 37773 37566 37565 37499 37498 37497 37336
+## [122] 37327 37326 37325 37323 35071 35010&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;unique(session_data.json$username)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;##  [1] &amp;quot;TAkidnav02&amp;quot;             &amp;quot;schoolanderlecht1&amp;quot;     
+##  [3] &amp;quot;kakelbontschool.laken1&amp;quot; &amp;quot;ecolesud6&amp;quot;             
+##  [5] &amp;quot;sila4&amp;quot;                  &amp;quot;kakelbontschool.laken2&amp;quot;
+##  [7] &amp;quot;tim_bral&amp;quot;               &amp;quot;JDB&amp;quot;                   
+##  [9] &amp;quot;Scholen-zuid-05&amp;quot;        &amp;quot;bralairbeamdemo2&amp;quot;      
+## [11] &amp;quot;nic&amp;quot;                    &amp;quot;bralcentrum4&amp;quot;          
+## [13] &amp;quot;JMSimon&amp;quot;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Now, we can iterate in all sessions, download the data (using similar approach than above) and aggregate the streaming data for AirBeam-PM measurements.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;for (i in 1:length(session.id)){
+  print(i)
+  call &amp;lt;- paste0(&amp;quot;http://aircasting.org/api/sessions/&amp;quot;, session.id[i],&amp;quot;.json&amp;quot;)
+  get_session_content_data &amp;lt;- GET(call)
+  get_session_content_data
+  session_content_data.text &amp;lt;- content(get_session_content_data, &amp;quot;text&amp;quot;)
+  session_content_data.json &amp;lt;- fromJSON(session_content_data.text, flatten = TRUE)
+  session_content_data.df &amp;lt;- as.data.frame(session_content_data.json$streams$`AirBeam-PM`$measurements)
+  session_content_data.df$session.id &amp;lt;- session.id[i]
+  if (i == 1){
+    session_content_data.df.all &amp;lt;- session_content_data.df
+  }else{
+    session_content_data.df.all &amp;lt;- rbind.data.frame(session_content_data.df.all, session_content_data.df)
+  }
+}
+
+# Save the data to use them offline
+save(session_content_data.df.all, file=&amp;quot;/home/ubuntu/Dropbox/Entreprenership/Projects/AirCasting/Data/session_content_data.df.all&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Next we will filter the data that are outside Brussels by using the extent of Brussels region.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;load(&amp;quot;/home/ubuntu/Dropbox/Entreprenership/Projects/AirCasting/Data/session_content_data.df.all&amp;quot;)
+
+###################
+library(raster)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Loading required package: sp&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;belgium &amp;lt;- getData(&amp;#39;GADM&amp;#39;, country=&amp;#39;BE&amp;#39;, level=2)
+brussels &amp;lt;- belgium[belgium$NAME_1==&amp;quot;Bruxelles&amp;quot;,]
+ext.bru &amp;lt;- extent(brussels)
+plot(brussels)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2018-03-15-air-casting-data-visualisation_files/figure-html/unnamed-chunk-6-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;session_content_data.df.all &amp;lt;- session_content_data.df.all[-which(session_content_data.df.all$longitude &amp;lt; ext.bru[1] | session_content_data.df.all$longitude &amp;gt; ext.bru[2] | session_content_data.df.all$latitude &amp;lt; ext.bru[3] | session_content_data.df.all$latitude &amp;gt; ext.bru[4]),]&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;We now convert the data frame into a &lt;code&gt;SpatialPointsDataFrame&lt;/code&gt; using the &lt;strong&gt;longitude&lt;/strong&gt; and &lt;strong&gt;latitude&lt;/strong&gt; column (pay attention to the order of the column). We also add a color legend that varies depending on PM values (similar to the one used by Air Casting).&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;session_content_data.shp &amp;lt;- SpatialPointsDataFrame(session_content_data.df.all[,2:1],
+                                                   session_content_data.df.all)   
+
+session_content_data.shp$color &amp;lt;- &amp;quot;#26c98b&amp;quot; #green
+session_content_data.shp$color[session_content_data.shp$value&amp;gt;10] &amp;lt;- &amp;quot;#ffe968&amp;quot; #yellow
+session_content_data.shp$color[session_content_data.shp$value&amp;gt;35] &amp;lt;- &amp;quot;#ffae65&amp;quot; #orange
+session_content_data.shp$color[session_content_data.shp$value&amp;gt;60] &amp;lt;- &amp;quot;#ff5a63&amp;quot; #red&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;We can make a simple plot of these data.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;par(mar=c(0,0,0,0))
+plot(session_content_data.shp, pch=20, col=scales::alpha(session_content_data.shp$color, 0.7))
+plot(brussels, add=T)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2018-03-15-air-casting-data-visualisation_files/figure-html/unnamed-chunk-8-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;Or something more elegant using &lt;code&gt;leaflet&lt;/code&gt; package.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# Simple Leaflet
+library(leaflet)
+leaflet(session_content_data.shp) %&amp;gt;% addProviderTiles(providers$Stamen.Toner) %&amp;gt;%
+  addCircles(lng = ~longitude, lat = ~latitude, weight = 2, popup = ~value, color = ~color)&lt;/code&gt;&lt;/pre&gt;
+&lt;div class=&#34;figure&#34;&gt;
+&lt;img src=&#34;/img/leaflet.png&#34; /&gt;
+
+&lt;/div&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Nighttime lights calibration</title>
+      <link>/post/nighttime-lights-calibration/</link>
+      <pubDate>Thu, 15 Mar 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/post/nighttime-lights-calibration/</guid>
+      <description>&lt;div id=&#34;plot-nighttime-lights-time-series-for-senegal&#34; class=&#34;section level2&#34;&gt;
+&lt;h2&gt;Plot Nighttime Lights Time Series for Senegal&lt;/h2&gt;
+&lt;p&gt;First, we load the Version 4 DMSP-OLS Nighttime Lights Time Series (downloaded from &lt;a href=&#34;https://ngdc.noaa.gov/eog/dmsp/downloadV4composites.html&#34;&gt;here&lt;/a&gt;).&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;library(data.table)
+library(raster)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Loading required package: sp&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## 
+## Attaching package: &amp;#39;raster&amp;#39;&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## The following object is masked from &amp;#39;package:data.table&amp;#39;:
+## 
+##     shift&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;library(rgdal)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## rgdal: version: 1.2-16, (SVN revision 701)
+##  Geospatial Data Abstraction Library extensions to R successfully loaded
+##  Loaded GDAL runtime: GDAL 2.1.3, released 2017/20/01
+##  Path to GDAL shared files: /usr/share/gdal/2.1
+##  GDAL binary built with GEOS: TRUE 
+##  Loaded PROJ.4 runtime: Rel. 4.9.2, 08 September 2015, [PJ_VERSION: 492]
+##  Path to PROJ.4 shared files: (autodetected)
+##  Linking to sp version: 1.2-4&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;library(usdm)
+
+filenames &amp;lt;- list.files(&amp;quot;/media/ubuntu/DATA/Data/Nightlight/&amp;quot;, 
+                        pattern = &amp;quot;.tif$&amp;quot;, 
+                        recursive = TRUE, 
+                        full.names = T)[c(1,2,4:9,17:24,29:34)] # Only  select one raster for each year
+filenames&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;##  [1] &amp;quot;/media/ubuntu/DATA/Data/Nightlight//F101992.v4/F101992.v4b_web.stable_lights.avg_vis.tif&amp;quot;
+##  [2] &amp;quot;/media/ubuntu/DATA/Data/Nightlight//F101993.v4/F101993.v4b_web.stable_lights.avg_vis.tif&amp;quot;
+##  [3] &amp;quot;/media/ubuntu/DATA/Data/Nightlight//F121994.v4/F121994.v4b_web.stable_lights.avg_vis.tif&amp;quot;
+##  [4] &amp;quot;/media/ubuntu/DATA/Data/Nightlight//F121995.v4/F121995.v4b_web.stable_lights.avg_vis.tif&amp;quot;
+##  [5] &amp;quot;/media/ubuntu/DATA/Data/Nightlight//F121996.v4/F121996.v4b_web.stable_lights.avg_vis.tif&amp;quot;
+##  [6] &amp;quot;/media/ubuntu/DATA/Data/Nightlight//F121997.v4/F121997.v4b_web.stable_lights.avg_vis.tif&amp;quot;
+##  [7] &amp;quot;/media/ubuntu/DATA/Data/Nightlight//F121998.v4/F121998.v4b_web.stable_lights.avg_vis.tif&amp;quot;
+##  [8] &amp;quot;/media/ubuntu/DATA/Data/Nightlight//F121999.v4/F121999.v4b_web.stable_lights.avg_vis.tif&amp;quot;
+##  [9] &amp;quot;/media/ubuntu/DATA/Data/Nightlight//F152000.v4/F152000.v4b_web.stable_lights.avg_vis.tif&amp;quot;
+## [10] &amp;quot;/media/ubuntu/DATA/Data/Nightlight//F152001.v4/F152001.v4b_web.stable_lights.avg_vis.tif&amp;quot;
+## [11] &amp;quot;/media/ubuntu/DATA/Data/Nightlight//F152002.v4/F152002.v4b_web.stable_lights.avg_vis.tif&amp;quot;
+## [12] &amp;quot;/media/ubuntu/DATA/Data/Nightlight//F152003.v4/F152003.v4b_web.stable_lights.avg_vis.tif&amp;quot;
+## [13] &amp;quot;/media/ubuntu/DATA/Data/Nightlight//F152004.v4/F152004.v4b_web.stable_lights.avg_vis.tif&amp;quot;
+## [14] &amp;quot;/media/ubuntu/DATA/Data/Nightlight//F152005.v4/F152005.v4b_web.stable_lights.avg_vis.tif&amp;quot;
+## [15] &amp;quot;/media/ubuntu/DATA/Data/Nightlight//F152006.v4/F152006.v4b_web.stable_lights.avg_vis.tif&amp;quot;
+## [16] &amp;quot;/media/ubuntu/DATA/Data/Nightlight//F152007.v4/F152007.v4b_web.stable_lights.avg_vis.tif&amp;quot;
+## [17] &amp;quot;/media/ubuntu/DATA/Data/Nightlight//F162008.v4/F162008.v4b_web.stable_lights.avg_vis.tif&amp;quot;
+## [18] &amp;quot;/media/ubuntu/DATA/Data/Nightlight//F162009.v4/F162009.v4b_web.stable_lights.avg_vis.tif&amp;quot;
+## [19] &amp;quot;/media/ubuntu/DATA/Data/Nightlight//F182010.v4/F182010.v4d_web.stable_lights.avg_vis.tif&amp;quot;
+## [20] &amp;quot;/media/ubuntu/DATA/Data/Nightlight//F182011.v4/F182011.v4c_web.stable_lights.avg_vis.tif&amp;quot;
+## [21] &amp;quot;/media/ubuntu/DATA/Data/Nightlight//F182012.v4/F182012.v4c_web.stable_lights.avg_vis.tif&amp;quot;
+## [22] &amp;quot;/media/ubuntu/DATA/Data/Nightlight//F182013.v4/F182013.v4c_web.stable_lights.avg_vis.tif&amp;quot;&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;r &amp;lt;- stack(filenames)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;We plot the first layer to visualize the data.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;plot(r$F101992.v4b_web.stable_lights.avg_vis)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2018-03-15-nighttime-lights-calibration_files/figure-html/unnamed-chunk-2-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;We load a shapefile of Senegal to set the zone of interest.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;Senegal &amp;lt;- readOGR(&amp;quot;/home/ubuntu/Dropbox/Research/Projects/Till_Poverty/Shapes_after_2008/LIMITE_CA_CR_2014_arr_ID.shp&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## OGR data source with driver: ESRI Shapefile 
+## Source: &amp;quot;/home/ubuntu/Dropbox/Research/Projects/Till_Poverty/Shapes_after_2008/LIMITE_CA_CR_2014_arr_ID.shp&amp;quot;, layer: &amp;quot;LIMITE_CA_CR_2014_arr_ID&amp;quot;
+## with 128 features
+## It has 2 fields&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;plot(Senegal)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2018-03-15-nighttime-lights-calibration_files/figure-html/unnamed-chunk-4-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;We will use the shapefile extent to crop the nighttime lights raster to the region of interest (to save computer memory). The first step is to set the &lt;code&gt;crs&lt;/code&gt; of the different datasets to the same coordinate system.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;crs(r)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## CRS arguments:
+##  +proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;crs(Senegal)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## CRS arguments:
+##  +proj=utm +zone=28 +datum=WGS84 +units=m +no_defs +ellps=WGS84
+## +towgs84=0,0,0&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;We use the crs of the raster stack (easier to change crs of small shapefile than large raster).&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;Senegal &amp;lt;- spTransform(Senegal, crs(r))&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Then, we crop the raster with the extent of the shapefile.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;r.zone &amp;lt;- crop(r, extent(Senegal))  
+
+Senegal.r &amp;lt;- rasterize(Senegal, 
+                       r.zone, 
+                       field=&amp;quot;ID&amp;quot;, 
+                       dataType = &amp;quot;INT1U&amp;quot;) # Change dataType if nrow(shp) &amp;gt; 255 to INT2U or INT4U
+r.zone[is.na(Senegal.r)] &amp;lt;- NA&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;plot(r.zone[[1]])
+plot(Senegal, add=T, lwd=0.5, lty=2)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2018-03-15-nighttime-lights-calibration_files/figure-html/unnamed-chunk-8-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;We discard DN equal to 63 (due to saturation) and lower to 5 (to avoid blooming effect) (see for instance &lt;a href=&#34;https://link.springer.com/article/10.1007/s40010-017-0444-8&#34;&gt;Mukherjee et al. 2017&lt;/a&gt;).&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;r.zone[r.zone==63] &amp;lt;- NA
+r.zone[r.zone &amp;lt; 5] &amp;lt;- NA&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;We plot the Sum Of Lights (SOL). We can see that the time series is not really smooth. This is partly due to a lack of onboard calibration.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;r.zone.sum &amp;lt;- cellStats(r.zone, sum)
+plot(as.numeric(substr(names(r.zone), 4,7)), 
+     r.zone.sum, 
+     type=&amp;quot;o&amp;quot;, 
+     xlab=&amp;quot;Year&amp;quot;, 
+     ylab=&amp;quot;Sum of Light (expressed in Digital Number)&amp;quot;, tck = 0.02)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2018-03-15-nighttime-lights-calibration_files/figure-html/unnamed-chunk-10-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;We will use GDP data of Senegal as validation/comparison data (&lt;a href=&#34;https://data.worldbank.org/indicator/NY.GDP.MKTP.CD?locations=SN&#34;&gt;World Bank&lt;/a&gt;):&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;GDP &amp;lt;- fread(&amp;quot;/home/ubuntu/Dropbox/Research/Projects/Till_Poverty/GDP/API_NY.GDP.MKTP.CD_DS2_en_csv_v2/API_NY.GDP.MKTP.CD_DS2_en_csv_v2.csv&amp;quot;)
+GDP.Senegal &amp;lt;- GDP[GDP$`Country Name`==&amp;quot;Senegal&amp;quot;]
+GDP.Senegal &amp;lt;- data.frame(year=as.numeric(colnames(GDP.Senegal[,5:62])),
+                          GDP=as.numeric(GDP.Senegal[1,5:62]))
+plot(GDP.Senegal$year, 
+     GDP.Senegal$GDP, 
+     type=&amp;quot;o&amp;quot;, xlab=&amp;quot;year&amp;quot;, ylab=&amp;quot;GDP&amp;quot;, tck = 0.02)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2018-03-15-nighttime-lights-calibration_files/figure-html/unnamed-chunk-11-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;We can plot both time series on the same figure (scaling each variable) to compare the data.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;plot(as.numeric(substr(names(r.zone), 4,7)), 
+     scale(r.zone.sum), 
+     type=&amp;quot;o&amp;quot;, xlab=&amp;quot;Year&amp;quot;, 
+     ylab=&amp;quot;Sum of Light (expressed in Digital Number)&amp;quot;, tck = 0.02)
+lines(GDP.Senegal$year[GDP.Senegal$year%in%1992:2013], 
+      scale(GDP.Senegal$GDP[GDP.Senegal$year%in%1992:2013]), 
+      type=&amp;quot;o&amp;quot;, col=&amp;quot;red&amp;quot;)
+legend(&amp;quot;topleft&amp;quot;, col=c(&amp;quot;black&amp;quot;, &amp;quot;red&amp;quot;), 
+       lty=1, c(&amp;quot;SOL&amp;quot;, &amp;quot;GDP&amp;quot;), bty=&amp;quot;n&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2018-03-15-nighttime-lights-calibration_files/figure-html/unnamed-chunk-12-1.png&#34; width=&#34;672&#34; /&gt; Correlation is already high but, as we will se, it will be improved after calibration.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;cor(r.zone.sum, GDP.Senegal$GDP[GDP.Senegal$year%in%1992:2013])&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## [1] 0.7664247&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;div id=&#34;inter-calibration-between-years&#34; class=&#34;section level2&#34;&gt;
+&lt;h2&gt;Inter-calibration between years&lt;/h2&gt;
+&lt;p&gt;Pseudo-invariant features (PIFs) i.e., stable night-light features over time, are often used as references for calibrating the temporal images. Puerto Rico, Mauritius and Okinawa are used for calibration purpose. These regions have been selected by &lt;a href=&#34;https://www.tandfonline.com/doi/abs/10.1080/01431161.2013.820365&#34;&gt;Wu et al. 2013&lt;/a&gt; as invariant regions “based on the following considerations: first, these three regions are located in different geographic areas around the world and have worldwide representation; second, each region has a wide spread of digital number values from very low to very high, which would improve the accuracy of the intercalibration model; third, because all are far away from the mainland and are relatively isolated, they are rarely affected by night-time light from other regions.”&lt;/p&gt;
+&lt;p&gt;Let us first collect the data and crop the nighttime lights raster for each region of interest.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;PuertoRico &amp;lt;- readOGR(&amp;quot;/home/ubuntu/Dropbox/Research/Projects/Till_Poverty/Nighlight/Shape_PFI/PFI/PuertoRico.shp&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## OGR data source with driver: ESRI Shapefile 
+## Source: &amp;quot;/home/ubuntu/Dropbox/Research/Projects/Till_Poverty/Nighlight/Shape_PFI/PFI/PuertoRico.shp&amp;quot;, layer: &amp;quot;PuertoRico&amp;quot;
+## with 1 features
+## It has 70 fields
+## Integer64 fields read as strings:  ID_0 OBJECTID_1&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;Mauritius &amp;lt;- readOGR(&amp;quot;/home/ubuntu/Dropbox/Research/Projects/Till_Poverty/Nighlight/Shape_PFI/PFI/MUS.shp&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## OGR data source with driver: ESRI Shapefile 
+## Source: &amp;quot;/home/ubuntu/Dropbox/Research/Projects/Till_Poverty/Nighlight/Shape_PFI/PFI/MUS.shp&amp;quot;, layer: &amp;quot;MUS&amp;quot;
+## with 9 features
+## It has 15 fields
+## Integer64 fields read as strings:  ID_0 ID_1 CCN_1&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;Okinawa &amp;lt;- readOGR(&amp;quot;/home/ubuntu/Dropbox/Research/Projects/Till_Poverty/Nighlight/Shape_PFI/PFI/Okinawa.shp&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## OGR data source with driver: ESRI Shapefile 
+## Source: &amp;quot;/home/ubuntu/Dropbox/Research/Projects/Till_Poverty/Nighlight/Shape_PFI/PFI/Okinawa.shp&amp;quot;, layer: &amp;quot;Okinawa&amp;quot;
+## with 1 features
+## It has 9 fields
+## Integer64 fields read as strings:  ID_0 ID_1&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;par(mfrow=c(1,3))
+plot(PuertoRico)
+plot(Mauritius)
+plot(Okinawa)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2018-03-15-nighttime-lights-calibration_files/figure-html/unnamed-chunk-14-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;PuertoRico &amp;lt;- spTransform(PuertoRico, crs(r))
+Mauritius &amp;lt;- spTransform(Mauritius, crs(r))
+Okinawa &amp;lt;- spTransform(Okinawa, crs(r))
+
+r.PuertoRico &amp;lt;- crop(r, extent(PuertoRico)) 
+r.Mauritius &amp;lt;- crop(r, extent(Mauritius))   
+r.Okinawa &amp;lt;- crop(r, extent(Okinawa))   &lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;We discard DN equal to 63 (due to saturation) and lower to 5 (to avoid blooming effect) (see for instance &lt;a href=&#34;https://link.springer.com/article/10.1007/s40010-017-0444-8&#34;&gt;Mukherjee et al. 2017&lt;/a&gt;).&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;r.PuertoRico[r.PuertoRico==63] &amp;lt;- NA
+r.PuertoRico[r.PuertoRico &amp;lt; 5] &amp;lt;- NA
+
+r.Mauritius[r.Mauritius==63] &amp;lt;- NA
+r.Mauritius[r.Mauritius &amp;lt; 5] &amp;lt;- NA
+
+r.Okinawa[r.Okinawa==63] &amp;lt;- NA
+r.Okinawa[r.Okinawa &amp;lt; 5] &amp;lt;- NA
+
+
+par(mfrow=c(1,3))
+plot(r.PuertoRico[[1]])
+plot(r.Mauritius[[1]])
+plot(r.Okinawa[[1]])&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2018-03-15-nighttime-lights-calibration_files/figure-html/unnamed-chunk-15-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;Then we compute then standard deviation to select only the pixel with low temporal varability (NOT USED).&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# r.Mauritius.sd &amp;lt;- calc(r.Mauritius, sd)
+# r.PuertoRico.sd &amp;lt;- calc(r.PuertoRico, sd)
+# r.Okinawa.sd &amp;lt;- calc(r.Okinawa, sd)
+# 
+# par(mfrow=c(1,3))
+# plot(r.Mauritius.sd)
+# plot(r.PuertoRico.sd)
+# plot(r.Okinawa.sd)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;We use an arbitray threshold of a standard deviation equal to 10 (NOT USED).&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# r.PuertoRico.sub &amp;lt;- r.PuertoRico[r.PuertoRico.sd[,]&amp;lt;=10]
+# r.Mauritius.sub &amp;lt;- r.Mauritius[r.Mauritius.sd[,]&amp;lt;=10]
+# r.Okinawa.sub &amp;lt;- r.Okinawa[r.Okinawa.sd[,]&amp;lt;=10]&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;We then aggreggate the selected pixel time series into a matrix for further computation.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;r.select &amp;lt;- rbind(r.PuertoRico[,], r.Mauritius[,])
+r.select &amp;lt;- rbind(r.select, r.Okinawa[,])
+# r.select &amp;lt;- rbind(r.PuertoRico.sub, r.Mauritius.sub)
+# r.select &amp;lt;- rbind(r.select, r.Okinawa.sub)
+r.select &amp;lt;- r.select[complete.cases(r.select), ]
+nrow(r.select)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## [1] 14317&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Optimization procedure to find the best year of reference. We use a polynomial regression of degree 2 (quadratic model) to correct the time series.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;output &amp;lt;- data.frame(year=1992:2013, cor=1:22)
+# 
+# r3[r3==63] &amp;lt;- NA
+# r3[r3 &amp;lt; 5] &amp;lt;- NA
+
+for (i in 1:ncol(r.select)){
+  print(i)
+  r3 &amp;lt;- r.zone
+  for (ii in 1:ncol(r.select)){
+    # print(i)
+    df &amp;lt;- data.frame(x=r.select[,ii], y=r.select[,i])
+    model &amp;lt;- lm(y ~ x + I(x^2), data=df)
+    # print(summary(model)$r.squared)
+    # plot(df$x, df$y)
+    # lines(df$x[order(df$x)],predict(model, df)[order(df$x)])
+    name_layer &amp;lt;- names(r3[[ii]]) 
+    names(r3[[ii]]) &amp;lt;- &amp;quot;x&amp;quot;
+    r3[[ii]] &amp;lt;- raster::predict(r3[[ii]], model)
+    names(r3[[ii]]) &amp;lt;- name_layer
+  }
+  r3[r3&amp;gt;63] &amp;lt;- 63
+  r3[r3&amp;lt;0] &amp;lt;- 0
+  r3.sum &amp;lt;- cellStats(r3, sum)
+  output$cor[i] &amp;lt;- cor(r3.sum, 
+                       GDP.Senegal$GDP[GDP.Senegal$year%in%as.numeric(substr(names(r.zone), 4,7))])
+}&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## [1] 1
+## [1] 2
+## [1] 3
+## [1] 4
+## [1] 5
+## [1] 6
+## [1] 7
+## [1] 8
+## [1] 9
+## [1] 10
+## [1] 11
+## [1] 12
+## [1] 13
+## [1] 14
+## [1] 15
+## [1] 16
+## [1] 17
+## [1] 18
+## [1] 19
+## [1] 20
+## [1] 21
+## [1] 22&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;The year that maximize the correlation between GDP and SOL is used as reference:&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;plot(output$year, output$cor, 
+     ylab=&amp;quot;Pearson Correlation&amp;quot;, xlab=&amp;quot;Year&amp;quot;, tck=0.02, type=&amp;quot;o&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2018-03-15-nighttime-lights-calibration_files/figure-html/unnamed-chunk-20-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;r.calibrated &amp;lt;- r.zone
+for (ii in 1:ncol(r.select)){
+  print(ii)
+  df &amp;lt;- data.frame(x=r.select[,ii], y=r.select[,which.max(output$cor)])
+  model &amp;lt;- lm(y ~ x + I(x^2), data=df)
+  print(summary(model)$r.squared)
+  # plot(df$x, df$y)
+  # lines(df$x[order(df$x)],predict(model, df)[order(df$x)])
+  name_layer &amp;lt;- names(r3[[ii]]) 
+  names(r.calibrated[[ii]]) &amp;lt;- &amp;quot;x&amp;quot;
+  r.calibrated[[ii]] &amp;lt;- raster::predict(r.calibrated[[ii]], model)
+  names(r.calibrated[[ii]]) &amp;lt;- name_layer
+}&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## [1] 1
+## [1] 0.8496144
+## [1] 2
+## [1] 0.8983605
+## [1] 3
+## [1] 0.9332089
+## [1] 4
+## [1] 0.9735411
+## [1] 5
+## [1] 0.9787942
+## [1] 6
+## [1] 1
+## [1] 7
+## [1] 0.966953
+## [1] 8
+## [1] 0.8991369
+## [1] 9
+## [1] 0.9336954
+## [1] 10
+## [1] 0.8942844
+## [1] 11
+## [1] 0.9084561
+## [1] 12
+## [1] 0.9213927
+## [1] 13
+## [1] 0.9208469
+## [1] 14
+## [1] 0.860613
+## [1] 15
+## [1] 0.8936669
+## [1] 16
+## [1] 0.844396
+## [1] 17
+## [1] 0.8369324
+## [1] 18
+## [1] 0.8761767
+## [1] 19
+## [1] 0.8717108
+## [1] 20
+## [1] 0.8621317
+## [1] 21
+## [1] 0.7875778
+## [1] 22
+## [1] 0.8521038&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;r.calibrated[r.calibrated&amp;gt;63] &amp;lt;- 63&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;r.calibrated.sum &amp;lt;- cellStats(r.calibrated, sum)
+plot(as.numeric(substr(names(r.zone), 4,7)), 
+     r.zone.sum, 
+     type=&amp;quot;o&amp;quot;, xlab=&amp;quot;Year&amp;quot;, 
+     ylab=&amp;quot;Sum of Light (expressed in Digital Number)&amp;quot;, 
+     tck = 0.02, ylim=c(20000,90000))
+lines(as.numeric(substr(names(r.zone), 4,7)), 
+      r.calibrated.sum, 
+      type=&amp;quot;o&amp;quot;, xlab=&amp;quot;Year&amp;quot;, 
+      ylab=&amp;quot;Sum of Light (expressed in Digital Number)&amp;quot;,  
+      ylim=c(20000,90000), lty=2)
+legend(&amp;quot;topleft&amp;quot;, lty=1:2, c(&amp;quot;Uncalibrated&amp;quot;, &amp;quot;Calibrated&amp;quot;), bty=&amp;quot;n&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2018-03-15-nighttime-lights-calibration_files/figure-html/unnamed-chunk-22-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;plot(as.numeric(substr(names(r.zone), 4,7)), 
+     scale(r.calibrated.sum), 
+     type=&amp;quot;o&amp;quot;, xlab=&amp;quot;Year&amp;quot;, ylab=&amp;quot;SOL &amp;amp; GDP&amp;quot;, tck = 0.02, lty=2)
+lines(GDP.Senegal$year[GDP.Senegal$year%in%1992:2013], 
+      scale(GDP.Senegal$GDP[GDP.Senegal$year%in%1992:2013]), type=&amp;quot;o&amp;quot;, col=&amp;quot;red&amp;quot;)
+legend(&amp;quot;topleft&amp;quot;, col=c(&amp;quot;black&amp;quot;, &amp;quot;red&amp;quot;), 
+       lty=2:1, c(&amp;quot;SOL calibrated&amp;quot;, &amp;quot;GDP&amp;quot;), bty=&amp;quot;n&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2018-03-15-nighttime-lights-calibration_files/figure-html/unnamed-chunk-23-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;cor(r.calibrated.sum, GDP.Senegal$GDP[GDP.Senegal$year%in%1992:2013])&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## [1] 0.8819384&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Export new calibrated raster:&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;writeRaster(r.calibrated, 
+            &amp;quot;/home/ubuntu/Dropbox/Research/Projects/Till_Poverty/Nighlight/Calibrated/NighttimeLights_calibratedV2.tif&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+</description>
+    </item>
+    
+    <item>
       <title>Social capital and transaction costs in millet markets</title>
       <link>/publication/jacques-2018-social-capital/</link>
       <pubDate>Fri, 12 Jan 2018 00:00:00 +0000</pubDate>
@@ -137,194 +679,6 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis posuere tellus ac 
     </item>
     
     <item>
-      <title>Academic: the website designer for Hugo</title>
-      <link>/post/getting-started/</link>
-      <pubDate>Wed, 20 Apr 2016 00:00:00 +0200</pubDate>
-      
-      <guid>/post/getting-started/</guid>
-      <description>
-
-&lt;p&gt;&lt;strong&gt;Academic&lt;/strong&gt; is a framework to help you create a beautiful website quickly. Perfect for personal sites, blogs, or business/project sites. &lt;a href=&#34;https://themes.gohugo.io/theme/academic/&#34; target=&#34;_blank&#34;&gt;Check out the latest demo&lt;/a&gt; of what you&amp;rsquo;ll get in less than 10 minutes. Then head on over to the &lt;a href=&#34;https://sourcethemes.com/academic/docs/&#34; target=&#34;_blank&#34;&gt;Quick Start guide&lt;/a&gt; or take a look at the &lt;a href=&#34;https://sourcethemes.com/academic/updates/&#34; target=&#34;_blank&#34;&gt;Release Notes&lt;/a&gt;.&lt;/p&gt;
-
-&lt;p&gt;&lt;a href=&#34;https://github.com/gcushen/hugo-academic/&#34; target=&#34;_blank&#34;&gt;&lt;img src=&#34;https://raw.githubusercontent.com/gcushen/hugo-academic/master/academic.png&#34; alt=&#34;Screenshot&#34; /&gt;&lt;/a&gt;&lt;/p&gt;
-
-&lt;p&gt;Key features:&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Easily manage various content including homepage, blog posts, publications, talks, and projects&lt;/li&gt;
-&lt;li&gt;Extensible via &lt;strong&gt;color themes&lt;/strong&gt; and &lt;strong&gt;widgets/plugins&lt;/strong&gt;&lt;/li&gt;
-&lt;li&gt;Write in &lt;a href=&#34;https://sourcethemes.com/academic/docs/writing-markdown-latex/&#34; target=&#34;_blank&#34;&gt;Markdown&lt;/a&gt; for easy formatting and code highlighting, with &lt;a href=&#34;https://en.wikibooks.org/wiki/LaTeX/Mathematics&#34; target=&#34;_blank&#34;&gt;LaTeX&lt;/a&gt; for mathematical expressions&lt;/li&gt;
-&lt;li&gt;Social/academic network linking, &lt;a href=&#34;https://analytics.google.com&#34; target=&#34;_blank&#34;&gt;Google Analytics&lt;/a&gt;, and &lt;a href=&#34;https://disqus.com&#34; target=&#34;_blank&#34;&gt;Disqus&lt;/a&gt; comments&lt;/li&gt;
-&lt;li&gt;Responsive and mobile friendly&lt;/li&gt;
-&lt;li&gt;Simple and refreshing one page design&lt;/li&gt;
-&lt;li&gt;Multilingual and easy to customize&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h2 id=&#34;color-themes&#34;&gt;Color Themes&lt;/h2&gt;
-
-&lt;p&gt;Academic is available in different color themes and font themes.&lt;/p&gt;
-
-
-
-&lt;div class=&#34;gallery&#34;&gt;
-  
-  
-  
-  
-    
-  
-  &lt;a data-fancybox=&#34;gallery-1&#34; data-caption=&#34;Default&#34; href=&#34;https://raw.githubusercontent.com/gcushen/hugo-academic/master/images/theme-default.png&#34;&gt;
-    &lt;img alt=&#34;&#34; src=&#34;https://raw.githubusercontent.com/gcushen/hugo-academic/master/images/theme-default.png&#34;&gt;
-  &lt;/a&gt;
-  
-  
-  
-  
-    
-  
-  &lt;a data-fancybox=&#34;gallery-1&#34; data-caption=&#34;Ocean&#34; href=&#34;https://raw.githubusercontent.com/gcushen/hugo-academic/master/images/theme-ocean.png&#34;&gt;
-    &lt;img alt=&#34;&#34; src=&#34;https://raw.githubusercontent.com/gcushen/hugo-academic/master/images/theme-ocean.png&#34;&gt;
-  &lt;/a&gt;
-  
-  
-  
-  
-    
-  
-  &lt;a data-fancybox=&#34;gallery-1&#34; data-caption=&#34;Dark&#34; href=&#34;https://raw.githubusercontent.com/gcushen/hugo-academic/master/images/theme-dark.png&#34;&gt;
-    &lt;img alt=&#34;&#34; src=&#34;https://raw.githubusercontent.com/gcushen/hugo-academic/master/images/theme-dark.png&#34;&gt;
-  &lt;/a&gt;
-  
-  
-  
-  
-    
-  
-  &lt;a data-fancybox=&#34;gallery-1&#34; data-caption=&#34;Default&#34; href=&#34;https://raw.githubusercontent.com/gcushen/hugo-academic/master/images/theme-forest.png&#34;&gt;
-    &lt;img alt=&#34;&#34; src=&#34;https://raw.githubusercontent.com/gcushen/hugo-academic/master/images/theme-forest.png&#34;&gt;
-  &lt;/a&gt;
-  
-  
-  
-  
-    
-  
-  &lt;a data-fancybox=&#34;gallery-1&#34; data-caption=&#34;Coffee theme with Playfair font&#34; href=&#34;https://raw.githubusercontent.com/gcushen/hugo-academic/master/images/theme-coffee-playfair.png&#34;&gt;
-    &lt;img alt=&#34;&#34; src=&#34;https://raw.githubusercontent.com/gcushen/hugo-academic/master/images/theme-coffee-playfair.png&#34;&gt;
-  &lt;/a&gt;
-  
-  
-  
-  
-    
-  
-  &lt;a data-fancybox=&#34;gallery-1&#34; data-caption=&#34;1950s&#34; href=&#34;https://raw.githubusercontent.com/gcushen/hugo-academic/master/images/theme-1950s.png&#34;&gt;
-    &lt;img alt=&#34;&#34; src=&#34;https://raw.githubusercontent.com/gcushen/hugo-academic/master/images/theme-1950s.png&#34;&gt;
-  &lt;/a&gt;
-  
-&lt;/div&gt;
-
-&lt;h2 id=&#34;install&#34;&gt;Install&lt;/h2&gt;
-
-&lt;p&gt;You can choose from one of the following four methods to install:&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;one-click install using your web browser (recommended)&lt;/li&gt;
-&lt;li&gt;install on your computer using Git with the Command Prompt/Terminal app&lt;/li&gt;
-&lt;li&gt;install on your computer by downloading the ZIP files&lt;/li&gt;
-&lt;li&gt;install on your computer with RStudio&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3 id=&#34;quick-install-using-your-web-browser&#34;&gt;Quick install using your web browser&lt;/h3&gt;
-
-&lt;ol&gt;
-&lt;li&gt;&lt;a href=&#34;https://app.netlify.com/start/deploy?repository=https://github.com/sourcethemes/academic-kickstart&#34; target=&#34;_blank&#34;&gt;Install Academic with Netlify&lt;/a&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Netlify will provide you with a customizable URL to access your new site&lt;/li&gt;
-&lt;/ul&gt;&lt;/li&gt;
-&lt;li&gt;On GitHub, go to your newly created &lt;code&gt;academic-kickstart&lt;/code&gt; repository and edit &lt;code&gt;config.toml&lt;/code&gt; to personalize your site. Shortly after saving the file, your site will automatically update&lt;/li&gt;
-&lt;li&gt;Read the &lt;a href=&#34;https://sourcethemes.com/academic/docs/&#34; target=&#34;_blank&#34;&gt;Quick Start Guide&lt;/a&gt; to learn how to add Markdown content. For inspiration, refer to the &lt;a href=&#34;https://github.com/gcushen/hugo-academic/tree/master/exampleSite&#34; target=&#34;_blank&#34;&gt;Markdown content&lt;/a&gt; which powers the &lt;a href=&#34;https://themes.gohugo.io/theme/academic/&#34; target=&#34;_blank&#34;&gt;Demo&lt;/a&gt;&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;h3 id=&#34;install-with-git&#34;&gt;Install with Git&lt;/h3&gt;
-
-&lt;p&gt;Prerequisites:&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;&lt;a href=&#34;https://git-scm.com/downloads&#34; target=&#34;_blank&#34;&gt;Download and install Git&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://gohugo.io/getting-started/installing/#quick-install&#34; target=&#34;_blank&#34;&gt;Download and install Hugo&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;ol&gt;
-&lt;li&gt;&lt;p&gt;&lt;a href=&#34;https://github.com/sourcethemes/academic-kickstart#fork-destination-box&#34; target=&#34;_blank&#34;&gt;Fork&lt;/a&gt; the &lt;em&gt;Academic Kickstart&lt;/em&gt; repository and clone your fork with Git:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;git clone https://github.com/sourcethemes/academic-kickstart.git My_Website
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;&lt;em&gt;Note that if you forked Academic Kickstart, the above command should be edited to clone your fork, i.e. replace &lt;code&gt;sourcethemes&lt;/code&gt; with your GitHub username.&lt;/em&gt;&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;Initialize the theme:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;cd My_Website
-git submodule update --init --recursive
-&lt;/code&gt;&lt;/pre&gt;&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;h3 id=&#34;install-with-zip&#34;&gt;Install with ZIP&lt;/h3&gt;
-
-&lt;ol&gt;
-&lt;li&gt;&lt;a href=&#34;https://github.com/sourcethemes/academic-kickstart/archive/master.zip&#34; target=&#34;_blank&#34;&gt;Download&lt;/a&gt; and extract &lt;em&gt;Academic Kickstart&lt;/em&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://github.com/gcushen/hugo-academic/archive/master.zip&#34; target=&#34;_blank&#34;&gt;Download&lt;/a&gt; and extract the &lt;em&gt;Academic theme&lt;/em&gt; to the &lt;code&gt;themes/academic/&lt;/code&gt; folder from the above step&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;h3 id=&#34;install-with-rstudio&#34;&gt;Install with RStudio&lt;/h3&gt;
-
-&lt;p&gt;&lt;a href=&#34;https://sourcethemes.com/academic/docs/install/#install-with-rstudio&#34; target=&#34;_blank&#34;&gt;View the guide to installing Academic with RStudio&lt;/a&gt;&lt;/p&gt;
-
-&lt;h2 id=&#34;quick-start&#34;&gt;Quick start&lt;/h2&gt;
-
-&lt;ol&gt;
-&lt;li&gt;&lt;p&gt;If you installed on your computer, view your new website by running the following command:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;hugo server
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Now visit &lt;a href=&#34;http://localhost:1313&#34; target=&#34;_blank&#34;&gt;localhost:1313&lt;/a&gt; and your new Academic powered website will appear. Otherwise, if using Netlify, they will provide you with your URL.&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;Read the &lt;a href=&#34;https://sourcethemes.com/academic/docs/&#34; target=&#34;_blank&#34;&gt;Quick Start Guide&lt;/a&gt; to learn how to add Markdown content, customize your site, and deploy it. For inspiration, refer to the &lt;a href=&#34;https://github.com/gcushen/hugo-academic/tree/master/exampleSite&#34; target=&#34;_blank&#34;&gt;Markdown content&lt;/a&gt; which powers the &lt;a href=&#34;https://themes.gohugo.io/theme/academic/&#34; target=&#34;_blank&#34;&gt;Demo&lt;/a&gt;&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;Build your site by running the &lt;code&gt;hugo&lt;/code&gt; command. Then &lt;a href=&#34;https://georgecushen.com/create-your-website-with-hugo/&#34; target=&#34;_blank&#34;&gt;host it for free using Github Pages&lt;/a&gt; or Netlify (refer to the first installation method). Alternatively, copy the generated &lt;code&gt;public/&lt;/code&gt; directory (by FTP, Rsync, etc.) to your production web server (such as a university&amp;rsquo;s hosting service).&lt;/p&gt;&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;h2 id=&#34;updating&#34;&gt;Updating&lt;/h2&gt;
-
-&lt;p&gt;Feel free to &lt;em&gt;star&lt;/em&gt; the project on &lt;a href=&#34;https://github.com/gcushen/hugo-academic/&#34; target=&#34;_blank&#34;&gt;Github&lt;/a&gt; to help keep track of updates and check out the &lt;a href=&#34;https://sourcethemes.com/academic/updates&#34; target=&#34;_blank&#34;&gt;release notes&lt;/a&gt; prior to updating your site.&lt;/p&gt;
-
-&lt;p&gt;Before updating the framework, it is recommended to make a backup of your entire website directory (or at least your &lt;code&gt;themes/academic&lt;/code&gt; directory) and record your current version number.&lt;/p&gt;
-
-&lt;p&gt;By default, Academic is installed as a Git submodule which can be updated by running the following command:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;git submodule update --remote --merge
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;&lt;a href=&#34;https://sourcethemes.com/academic/docs/update/&#34; target=&#34;_blank&#34;&gt;Check out the update guide&lt;/a&gt; for full instructions and alternative methods.&lt;/p&gt;
-
-&lt;h2 id=&#34;feedback-contributing&#34;&gt;Feedback &amp;amp; Contributing&lt;/h2&gt;
-
-&lt;p&gt;Please use the &lt;a href=&#34;https://github.com/gcushen/hugo-academic/issues&#34; target=&#34;_blank&#34;&gt;issue tracker&lt;/a&gt; to let me know about any bugs or feature requests, or alternatively make a pull request.&lt;/p&gt;
-
-&lt;p&gt;For support, head over to the &lt;a href=&#34;http://discuss.gohugo.io&#34; target=&#34;_blank&#34;&gt;Hugo discussion forum&lt;/a&gt;.&lt;/p&gt;
-
-&lt;h2 id=&#34;license&#34;&gt;License&lt;/h2&gt;
-
-&lt;p&gt;Copyright 2016-present &lt;a href=&#34;https://georgecushen.com&#34; target=&#34;_blank&#34;&gt;George Cushen&lt;/a&gt;.&lt;/p&gt;
-
-&lt;p&gt;Released under the &lt;a href=&#34;https://github.com/gcushen/hugo-academic/blob/master/LICENSE.md&#34; target=&#34;_blank&#34;&gt;MIT&lt;/a&gt; license.&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
       <title>The academic, economic and societal impacts of Open Access: an evidence-based review</title>
       <link>/publication/tennant-2016-academic/</link>
       <pubDate>Mon, 11 Apr 2016 00:00:00 +0000</pubDate>
@@ -340,54 +694,6 @@ git submodule update --init --recursive
       
       <guid>/publication/waldner-2017-training-proportion/</guid>
       <description></description>
-    </item>
-    
-    <item>
-      <title>Hello R Markdown</title>
-      <link>/post/2015-07-23-r-rmarkdown/</link>
-      <pubDate>Thu, 23 Jul 2015 21:13:14 -0500</pubDate>
-      
-      <guid>/post/2015-07-23-r-rmarkdown/</guid>
-      <description>&lt;div id=&#34;r-markdown&#34; class=&#34;section level1&#34;&gt;
-&lt;h1&gt;R Markdown&lt;/h1&gt;
-&lt;p&gt;This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see &lt;a href=&#34;http://rmarkdown.rstudio.com&#34; class=&#34;uri&#34;&gt;http://rmarkdown.rstudio.com&lt;/a&gt;.&lt;/p&gt;
-&lt;p&gt;You can embed an R code chunk like this:&lt;/p&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;summary(cars)
-##      speed           dist       
-##  Min.   : 4.0   Min.   :  2.00  
-##  1st Qu.:12.0   1st Qu.: 26.00  
-##  Median :15.0   Median : 36.00  
-##  Mean   :15.4   Mean   : 42.98  
-##  3rd Qu.:19.0   3rd Qu.: 56.00  
-##  Max.   :25.0   Max.   :120.00
-fit &amp;lt;- lm(dist ~ speed, data = cars)
-fit
-## 
-## Call:
-## lm(formula = dist ~ speed, data = cars)
-## 
-## Coefficients:
-## (Intercept)        speed  
-##     -17.579        3.932&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-&lt;div id=&#34;including-plots&#34; class=&#34;section level1&#34;&gt;
-&lt;h1&gt;Including Plots&lt;/h1&gt;
-&lt;p&gt;You can also embed plots. See Figure &lt;a href=&#34;#fig:pie&#34;&gt;1&lt;/a&gt; for example:&lt;/p&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;par(mar = c(0, 1, 0, 1))
-pie(
-  c(280, 60, 20),
-  c(&amp;#39;Sky&amp;#39;, &amp;#39;Sunny side of pyramid&amp;#39;, &amp;#39;Shady side of pyramid&amp;#39;),
-  col = c(&amp;#39;#0292D8&amp;#39;, &amp;#39;#F7EA39&amp;#39;, &amp;#39;#C4B632&amp;#39;),
-  init.angle = -50, border = NA
-)&lt;/code&gt;&lt;/pre&gt;
-&lt;div class=&#34;figure&#34;&gt;&lt;span id=&#34;fig:pie&#34;&gt;&lt;/span&gt;
-&lt;img src=&#34;/post/2015-07-23-r-rmarkdown_files/figure-html/pie-1.png&#34; alt=&#34;A fancy pie chart.&#34; width=&#34;672&#34; /&gt;
-&lt;p class=&#34;caption&#34;&gt;
-Figure 1: A fancy pie chart.
-&lt;/p&gt;
-&lt;/div&gt;
-&lt;/div&gt;
-</description>
     </item>
     
     <item>

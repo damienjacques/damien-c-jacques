@@ -256,8 +256,8 @@
 
         
         <h3 itemprop="worksFor" itemscope itemtype="http://schema.org/Organization">
-          <a href="http://www2.semel.ucla.edu/biomedical-modeling" target="_blank" itemprop="url" rel="noopener">
-          <span itemprop="name">University of California, Los Angeles</span>
+          <a href="https://uclouvain.be/fr/index.html" target="_blank" itemprop="url" rel="noopener">
+          <span itemprop="name">Université catholique de Louvain</span>
           </a>
         </h3>
         
@@ -354,9 +354,17 @@
 
 <h1 id="about-me">About me</h1>
 
-<p>Bio-engineer, I am currently a research assistant at ULB (Belgium) while completing his Ph.D. entitled ”Implementing the data revolution in Senegal towards the Sustainable Development Goals” at UCL (Belgium). I have strong skills in remote sensing, geographic information system (GIS) and data science.</p>
+<p>I am researcher in geomatics, &ldquo;<a href="https://en.wikipedia.org/wiki/Geomatics" target="_blank">the discipline of gathering, storing, processing, and delivering geographic information or spatially referenced information</a>&rdquo;.</p>
 
-<p>His areas of research are food security, poverty, agricultural economics and academic publishing. He won the Agriculture award at the Data For Development (D4D) challenge organized by Orange, MIT, and UN. He was an active member of Focus Research and Eurodoc as well as one of the founders of PhD Hub, the Belgian network for early career researchers. Besides, he is an active promoter of Open Science and Open Access. Finally, he is one of the founders of STEMGARDEN, an online platform that promotes urban garden solutions.</p>
+<p>I am currently a research assistant at ULB (Belgium) while completing a Ph.D. entitled ”xxx” at UCL (Belgium).</p>
+
+<p>I am using mobile phone metadata (call detail records), Earth Observation (EO) data and other geographic data (vector, raster) for GIS, machine learning and statistics analysis.</p>
+
+<p>I love R and Rstudio.</p>
+
+<p>I have a <a href="www.guru-gis.net" target="_blank">blog</a> with two colleagues where we share some code about geospatial analysis.</p>
+
+<p>I am also one of the founders of <a href="www.stemgarden.co" target="_blank">STEMGARDEN</a>, an online platform that promotes urban garden solutions.</p>
 
 
     <div class="row">
@@ -734,81 +742,6 @@
         
           
       
-
-      
-      
-        
-        
-
-<div class="card-simple" itemscope itemprop="blogPost" itemtype="http://schema.org/BlogPosting">
-  
-
-<div class="article-metadata">
-
-  <span class="article-date">
-    
-        Last updated on
-    
-    <time datetime="2016-04-20 00:00:00 &#43;0200 CEST" itemprop="datePublished dateModified">
-      Jan 13, 2018
-    </time>
-  </span>
-  <span itemscope itemprop="author publisher" itemtype="http://schema.org/Person">
-    <meta itemprop="name" content="Damien C. Jacques">
-  </span>
-
-  
-  <span class="middot-divider"></span>
-  <span class="article-reading-time">
-    3 min read
-  </span>
-  
-
-  
-  
-
-  
-
-  
-
-</div>
-
-
-  
-  
-  <a href="/post/getting-started/">
-    
-    
-      <img src="/img/headers/getting-started.png" class="article-banner" itemprop="image">
-    
-  </a>
-  
-  <h3 class="article-title" itemprop="headline">
-    <a href="/post/getting-started/" itemprop="url">Academic: the website designer for Hugo</a>
-  </h3>
-  <div class="article-style" itemprop="articleBody">
-    
-    <p>Create a beautifully simple website or blog in under 10 minutes.</p>
-    
-  </div>
-  <p class="read-more" itemprop="mainEntityOfPage">
-    <a href="/post/getting-started/" class="btn btn-primary btn-outline">
-      CONTINUE READING
-    </a>
-  </p>
-</div>
-
-      
-
-      
-
-        
-
-        
-        
-
-        
-        
           
       
           
@@ -828,8 +761,8 @@
 
   <span class="article-date">
     
-    <time datetime="2015-07-23 21:13:14 -0500 -0500" itemprop="datePublished dateModified">
-      Jul 23, 2015
+    <time datetime="2018-03-15 00:00:00 &#43;0000 UTC" itemprop="datePublished dateModified">
+      Mar 15, 2018
     </time>
   </span>
   <span itemscope itemprop="author publisher" itemtype="http://schema.org/Person">
@@ -839,7 +772,7 @@
   
   <span class="middot-divider"></span>
   <span class="article-reading-time">
-    1 min read
+    5 min read
   </span>
   
 
@@ -868,17 +801,100 @@
   
   
   <h3 class="article-title" itemprop="headline">
-    <a href="/post/2015-07-23-r-rmarkdown/" itemprop="url">Hello R Markdown</a>
+    <a href="/post/air-casting-data-visualisation/" itemprop="url">Air Casting Data Visualisation</a>
   </h3>
   <div class="article-style" itemprop="articleBody">
     
-    R Markdown This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see http://rmarkdown.rstudio.com.
-You can embed an R code chunk like this:
-summary(cars) ## speed dist ## Min. : 4.0 Min. : 2.00 ## 1st Qu.:12.0 1st Qu.: 26.00 ## Median :15.0 Median : 36.00 ## Mean :15.4 Mean : 42.98 ## 3rd Qu.
+    This R Notebook describes the steps to download the data from the Air Quality API, convert them to R data and make some basic figures.
+First, we need to load two packages to deal with the API request (httr) and format (jsonlite). You can use install.package(c(&quot;httr&quot;, &quot;jsonlite&quot;)) to install the packages.
+library(httr) library(jsonlite) First, we need to get the ID of all sessions of interest (here, located in Brussels and with the tag ‘kid’).
     
   </div>
   <p class="read-more" itemprop="mainEntityOfPage">
-    <a href="/post/2015-07-23-r-rmarkdown/" class="btn btn-primary btn-outline">
+    <a href="/post/air-casting-data-visualisation/" class="btn btn-primary btn-outline">
+      CONTINUE READING
+    </a>
+  </p>
+</div>
+
+      
+
+      
+
+        
+
+        
+        
+
+        
+        
+          
+      
+          
+      
+
+      
+      
+        
+        
+
+<div class="card-simple" itemscope itemprop="blogPost" itemtype="http://schema.org/BlogPosting">
+  
+
+<div class="article-metadata">
+
+  <span class="article-date">
+    
+    <time datetime="2018-03-15 00:00:00 &#43;0000 UTC" itemprop="datePublished dateModified">
+      Mar 15, 2018
+    </time>
+  </span>
+  <span itemscope itemprop="author publisher" itemtype="http://schema.org/Person">
+    <meta itemprop="name" content="Damien C. Jacques">
+  </span>
+
+  
+  <span class="middot-divider"></span>
+  <span class="article-reading-time">
+    7 min read
+  </span>
+  
+
+  
+  
+
+  
+  
+  
+  <span class="middot-divider"></span>
+  <span class="article-categories">
+    <i class="fa fa-folder"></i>
+    
+    <a href="/categories/r">R</a
+    >
+    
+  </span>
+  
+  
+
+  
+
+</div>
+
+
+  
+  
+  <h3 class="article-title" itemprop="headline">
+    <a href="/post/nighttime-lights-calibration/" itemprop="url">Nighttime lights calibration</a>
+  </h3>
+  <div class="article-style" itemprop="articleBody">
+    
+    Plot Nighttime Lights Time Series for Senegal First, we load the Version 4 DMSP-OLS Nighttime Lights Time Series (downloaded from here).
+library(data.table) library(raster) ## Loading required package: sp ## ## Attaching package: &#39;raster&#39; ## The following object is masked from &#39;package:data.table&#39;: ## ## shift library(rgdal) ## rgdal: version: 1.2-16, (SVN revision 701) ## Geospatial Data Abstraction Library extensions to R successfully loaded ## Loaded GDAL runtime: GDAL 2.1.3, released 2017/20/01 ## Path to GDAL shared files: /usr/share/gdal/2.
+    
+  </div>
+  <p class="read-more" itemprop="mainEntityOfPage">
+    <a href="/post/nighttime-lights-calibration/" class="btn btn-primary btn-outline">
       CONTINUE READING
     </a>
   </p>
@@ -1018,88 +1034,6 @@ summary(cars) ## speed dist ## Min. : 4.0 Min. : 2.00 ## 1st Qu.:12.0 1st Qu.: 2
   </section>
   
 
-  
-  
-  
-  <section id="contact" class="home-section">
-    <div class="container">
-      
-
-
-
-
-<div class="row">
-  <div class="col-xs-12 col-md-4 section-heading">
-    <h1>Contact</h1>
-    
-  </div>
-  <div class="col-xs-12 col-md-8">
-    
-
-    <ul class="fa-ul" itemscope>
-
-      
-      <li>
-        <i class="fa-li fa fa-envelope fa-2x" aria-hidden="true"></i>
-        <span id="person-email" itemprop="email"><a href="mailto:damienjacquesUCL@gamil.com">damienjacquesUCL@gamil.com</a></span>
-      </li>
-      
-
-      
-
-      
-
-      
-      <li>
-        <i class="fa-li fa fa-phone fa-2x" aria-hidden="true"></i>
-        <span id="person-telephone" itemprop="telephone"><a href="tel:888%20888%2088%2088">888 888 88 88</a></span>
-      </li>
-      
-
-      
-      <li>
-        <i class="fa-li fa fa-skype fa-2x" aria-hidden="true"></i>
-        <span><a href="skype:damienjacques1989?call">damienjacques1989</a></span>
-      </li>
-      
-
-      
-
-      
-      <li>
-        <i class="fa-li fa fa-map-marker fa-2x" aria-hidden="true"></i>
-        <span id="person-address" itemprop="address">Building 1 Room 1, Stanford University, California, 90210, USA</span>
-      </li>
-      
-
-      
-      <li>
-        <i class="fa-li fa fa-clock-o fa-2x" aria-hidden="true"></i>
-        <span>Monday 10:00 to 13:00 or email for appointment</span>
-      </li>
-      
-
-    </ul>
-
-    
-    <div class="hidden">
-      <input id="map-provider" value="2">
-      <input id="map-lat" value="37.4275">
-      <input id="map-lng" value="-122.1697">
-      <input id="map-dir" value="Building 1 Room 1, Stanford University, California, 90210, USA">
-      <input id="map-zoom" value="15">
-      <input id="map-api-key" value="">
-    </div>
-    <div id="map"></div>
-    
-
-  </div>
-</div>
-
-    </div>
-  </section>
-  
-
 
 
 <footer class="site-footer">
@@ -1175,6 +1109,8 @@ summary(cars) ## speed dist ## Min. : 4.0 Min. : 2.00 ## 1st Qu.:12.0 1st Qu.: 2
       <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js" integrity="sha256-/BfiIkHlHoVihZdc6TFuj7MmJ0TWcWsMXkeDFwhi0zw=" crossorigin="anonymous"></script>
       
 
+      
+      <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/r.min.js"></script>
       
 
       

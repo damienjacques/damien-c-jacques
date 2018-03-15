@@ -1,0 +1,296 @@
+---
+title: Nighttime lights calibration
+author: Damien C. Jacques
+date: '2018-03-15'
+slug: nighttime-lights-calibration
+categories:
+  - R
+tags:
+  - nighttime lights
+  - remote sensing
+---
+
+## Plot Nighttime Lights Time Series for Senegal
+
+First, we load the Version 4 DMSP-OLS Nighttime Lights Time Series (downloaded from [here](https://ngdc.noaa.gov/eog/dmsp/downloadV4composites.html)). 
+
+```{r}
+library(data.table)
+library(raster)
+library(rgdal)
+library(usdm)
+
+filenames <- list.files("/media/ubuntu/DATA/Data/Nightlight/", 
+                        pattern = ".tif$", 
+                        recursive = TRUE, 
+                        full.names = T)[c(1,2,4:9,17:24,29:34)] # Only  select one raster for each year
+filenames
+r <- stack(filenames)
+```
+
+We plot the first layer to visualize the data.
+
+```{r}
+plot(r$F101992.v4b_web.stable_lights.avg_vis)
+```
+
+We load a shapefile of Senegal to set the zone of interest. 
+
+```{r}
+Senegal <- readOGR("/home/ubuntu/Dropbox/Research/Projects/Till_Poverty/Shapes_after_2008/LIMITE_CA_CR_2014_arr_ID.shp")
+```
+
+```{r}
+plot(Senegal)
+```
+
+We will use the shapefile extent to crop the nighttime lights raster to the region of interest (to save computer memory). The first step is to set the `crs` of the different datasets to the same coordinate system. 
+
+```{r}
+crs(r)
+crs(Senegal)
+```
+
+We use the crs of the raster stack (easier to change crs of small shapefile than large raster).
+
+```{r}
+Senegal <- spTransform(Senegal, crs(r))
+```
+
+Then, we crop the raster with the extent of the shapefile.
+
+```{r}
+r.zone <- crop(r, extent(Senegal))	
+
+Senegal.r <- rasterize(Senegal, 
+                       r.zone, 
+                       field="ID", 
+                       dataType = "INT1U") # Change dataType if nrow(shp) > 255 to INT2U or INT4U
+r.zone[is.na(Senegal.r)] <- NA
+```
+
+```{r}
+plot(r.zone[[1]])
+plot(Senegal, add=T, lwd=0.5, lty=2)
+```
+
+We discard DN equal to 63 (due to saturation) and lower to 5 (to avoid blooming effect) (see for instance [Mukherjee et al. 2017](https://link.springer.com/article/10.1007/s40010-017-0444-8)).  
+
+```{r}
+r.zone[r.zone==63] <- NA
+r.zone[r.zone < 5] <- NA
+```
+
+We plot the Sum Of Lights (SOL). We can see that the time series is not really smooth. This is partly due to a lack of onboard calibration.
+
+```{r}
+r.zone.sum <- cellStats(r.zone, sum)
+plot(as.numeric(substr(names(r.zone), 4,7)), 
+     r.zone.sum, 
+     type="o", 
+     xlab="Year", 
+     ylab="Sum of Light (expressed in Digital Number)", tck = 0.02)
+```
+
+
+We will use GDP data of Senegal as validation/comparison data ([World Bank](https://data.worldbank.org/indicator/NY.GDP.MKTP.CD?locations=SN)):
+
+```{r}
+GDP <- fread("/home/ubuntu/Dropbox/Research/Projects/Till_Poverty/GDP/API_NY.GDP.MKTP.CD_DS2_en_csv_v2/API_NY.GDP.MKTP.CD_DS2_en_csv_v2.csv")
+GDP.Senegal <- GDP[GDP$`Country Name`=="Senegal"]
+GDP.Senegal <- data.frame(year=as.numeric(colnames(GDP.Senegal[,5:62])),
+                          GDP=as.numeric(GDP.Senegal[1,5:62]))
+plot(GDP.Senegal$year, 
+     GDP.Senegal$GDP, 
+     type="o", xlab="year", ylab="GDP", tck = 0.02)
+```
+
+We can plot both time series on the same figure (scaling each variable) to compare the data.
+
+```{r}
+plot(as.numeric(substr(names(r.zone), 4,7)), 
+     scale(r.zone.sum), 
+     type="o", xlab="Year", 
+     ylab="Sum of Light (expressed in Digital Number)", tck = 0.02)
+lines(GDP.Senegal$year[GDP.Senegal$year%in%1992:2013], 
+      scale(GDP.Senegal$GDP[GDP.Senegal$year%in%1992:2013]), 
+      type="o", col="red")
+legend("topleft", col=c("black", "red"), 
+       lty=1, c("SOL", "GDP"), bty="n")
+```
+Correlation is already high but, as we will se, it will be improved after calibration. 
+
+```{r}
+cor(r.zone.sum, GDP.Senegal$GDP[GDP.Senegal$year%in%1992:2013])
+```
+
+## Inter-calibration between years
+
+Pseudo-invariant features (PIFs) i.e., stable night-light features over time, are often used as references for calibrating the temporal images. Puerto Rico, Mauritius and Okinawa are used for calibration purpose. These regions have been selected by [Wu et al. 2013](https://www.tandfonline.com/doi/abs/10.1080/01431161.2013.820365) as invariant regions "based on the following considerations: first, these three regions are located in different geographic areas around the world and have worldwide representation; second, each region has a wide spread of digital number values from very low to very high, which would improve the accuracy of the intercalibration model; third, because all are far away from the mainland and are relatively isolated, they are rarely affected by night-time
+light from other regions."
+
+
+Let us first collect the data and crop the nighttime lights raster for each region of interest.
+
+```{r}
+PuertoRico <- readOGR("/home/ubuntu/Dropbox/Research/Projects/Till_Poverty/Nighlight/Shape_PFI/PFI/PuertoRico.shp")
+Mauritius <- readOGR("/home/ubuntu/Dropbox/Research/Projects/Till_Poverty/Nighlight/Shape_PFI/PFI/MUS.shp")
+Okinawa <- readOGR("/home/ubuntu/Dropbox/Research/Projects/Till_Poverty/Nighlight/Shape_PFI/PFI/Okinawa.shp")
+par(mfrow=c(1,3))
+plot(PuertoRico)
+plot(Mauritius)
+plot(Okinawa)
+
+PuertoRico <- spTransform(PuertoRico, crs(r))
+Mauritius <- spTransform(Mauritius, crs(r))
+Okinawa <- spTransform(Okinawa, crs(r))
+
+r.PuertoRico <- crop(r, extent(PuertoRico))	
+r.Mauritius <- crop(r, extent(Mauritius))	
+r.Okinawa <- crop(r, extent(Okinawa))	
+```
+
+We discard DN equal to 63 (due to saturation) and lower to 5 (to avoid blooming effect) (see for instance [Mukherjee et al. 2017](https://link.springer.com/article/10.1007/s40010-017-0444-8)).  
+
+```{r}
+r.PuertoRico[r.PuertoRico==63] <- NA
+r.PuertoRico[r.PuertoRico < 5] <- NA
+
+r.Mauritius[r.Mauritius==63] <- NA
+r.Mauritius[r.Mauritius < 5] <- NA
+
+r.Okinawa[r.Okinawa==63] <- NA
+r.Okinawa[r.Okinawa < 5] <- NA
+
+
+par(mfrow=c(1,3))
+plot(r.PuertoRico[[1]])
+plot(r.Mauritius[[1]])
+plot(r.Okinawa[[1]])
+```
+
+Then we compute then standard deviation to select only the pixel with low temporal varability (NOT USED).
+
+```{r}
+# r.Mauritius.sd <- calc(r.Mauritius, sd)
+# r.PuertoRico.sd <- calc(r.PuertoRico, sd)
+# r.Okinawa.sd <- calc(r.Okinawa, sd)
+# 
+# par(mfrow=c(1,3))
+# plot(r.Mauritius.sd)
+# plot(r.PuertoRico.sd)
+# plot(r.Okinawa.sd)
+```
+
+We use an arbitray threshold of a standard deviation equal to 10 (NOT USED).
+
+```{r}
+# r.PuertoRico.sub <- r.PuertoRico[r.PuertoRico.sd[,]<=10]
+# r.Mauritius.sub <- r.Mauritius[r.Mauritius.sd[,]<=10]
+# r.Okinawa.sub <- r.Okinawa[r.Okinawa.sd[,]<=10]
+```
+
+We then aggreggate the selected pixel time series into a matrix for further computation.
+
+```{r}
+r.select <- rbind(r.PuertoRico[,], r.Mauritius[,])
+r.select <- rbind(r.select, r.Okinawa[,])
+# r.select <- rbind(r.PuertoRico.sub, r.Mauritius.sub)
+# r.select <- rbind(r.select, r.Okinawa.sub)
+r.select <- r.select[complete.cases(r.select), ]
+nrow(r.select)
+```
+
+
+Optimization procedure to find the best year of reference. We use a polynomial regression of degree 2 (quadratic model) to correct the time series.
+
+```{r}
+output <- data.frame(year=1992:2013, cor=1:22)
+# 
+# r3[r3==63] <- NA
+# r3[r3 < 5] <- NA
+
+for (i in 1:ncol(r.select)){
+  print(i)
+  r3 <- r.zone
+  for (ii in 1:ncol(r.select)){
+    # print(i)
+    df <- data.frame(x=r.select[,ii], y=r.select[,i])
+    model <- lm(y ~ x + I(x^2), data=df)
+    # print(summary(model)$r.squared)
+    # plot(df$x, df$y)
+    # lines(df$x[order(df$x)],predict(model, df)[order(df$x)])
+    name_layer <- names(r3[[ii]]) 
+    names(r3[[ii]]) <- "x"
+    r3[[ii]] <- raster::predict(r3[[ii]], model)
+    names(r3[[ii]]) <- name_layer
+  }
+  r3[r3>63] <- 63
+  r3[r3<0] <- 0
+  r3.sum <- cellStats(r3, sum)
+  output$cor[i] <- cor(r3.sum, 
+                       GDP.Senegal$GDP[GDP.Senegal$year%in%as.numeric(substr(names(r.zone), 4,7))])
+}
+```
+
+The year that maximize the correlation between GDP and SOL is used as reference:
+
+```{r}
+plot(output$year, output$cor, 
+     ylab="Pearson Correlation", xlab="Year", tck=0.02, type="o")
+```
+```{r}
+r.calibrated <- r.zone
+for (ii in 1:ncol(r.select)){
+  print(ii)
+  df <- data.frame(x=r.select[,ii], y=r.select[,which.max(output$cor)])
+  model <- lm(y ~ x + I(x^2), data=df)
+  print(summary(model)$r.squared)
+  # plot(df$x, df$y)
+  # lines(df$x[order(df$x)],predict(model, df)[order(df$x)])
+  name_layer <- names(r3[[ii]]) 
+  names(r.calibrated[[ii]]) <- "x"
+  r.calibrated[[ii]] <- raster::predict(r.calibrated[[ii]], model)
+  names(r.calibrated[[ii]]) <- name_layer
+}
+r.calibrated[r.calibrated>63] <- 63
+```
+
+```{r}
+r.calibrated.sum <- cellStats(r.calibrated, sum)
+plot(as.numeric(substr(names(r.zone), 4,7)), 
+     r.zone.sum, 
+     type="o", xlab="Year", 
+     ylab="Sum of Light (expressed in Digital Number)", 
+     tck = 0.02, ylim=c(20000,90000))
+lines(as.numeric(substr(names(r.zone), 4,7)), 
+      r.calibrated.sum, 
+      type="o", xlab="Year", 
+      ylab="Sum of Light (expressed in Digital Number)",  
+      ylim=c(20000,90000), lty=2)
+legend("topleft", lty=1:2, c("Uncalibrated", "Calibrated"), bty="n")
+```
+```{r}
+plot(as.numeric(substr(names(r.zone), 4,7)), 
+     scale(r.calibrated.sum), 
+     type="o", xlab="Year", ylab="SOL & GDP", tck = 0.02, lty=2)
+lines(GDP.Senegal$year[GDP.Senegal$year%in%1992:2013], 
+      scale(GDP.Senegal$GDP[GDP.Senegal$year%in%1992:2013]), type="o", col="red")
+legend("topleft", col=c("black", "red"), 
+       lty=2:1, c("SOL calibrated", "GDP"), bty="n")
+```
+
+```{r}
+cor(r.calibrated.sum, GDP.Senegal$GDP[GDP.Senegal$year%in%1992:2013])
+```
+
+Export new calibrated raster:
+
+```{r, eval = FALSE}
+writeRaster(r.calibrated, 
+            "/home/ubuntu/Dropbox/Research/Projects/Till_Poverty/Nighlight/Calibrated/NighttimeLights_calibratedV2.tif")
+```
+
+
+
+

@@ -36,6 +36,14 @@ weight = 5
 
 # About me
 
-Bio-engineer, I am currently a research assistant at ULB (Belgium) while completing his Ph.D. entitled ”Implementing the data revolution in Senegal towards the Sustainable Development Goals” at UCL (Belgium). I have strong skills in remote sensing, geographic information system (GIS) and data science. 
+I am researcher in geomatics, "[the discipline of gathering, storing, processing, and delivering geographic information or spatially referenced information](https://en.wikipedia.org/wiki/Geomatics)".
 
-His areas of research are food security, poverty, agricultural economics and academic publishing. He won the Agriculture award at the Data For Development (D4D) challenge organized by Orange, MIT, and UN. He was an active member of Focus Research and Eurodoc as well as one of the founders of PhD Hub, the Belgian network for early career researchers. Besides, he is an active promoter of Open Science and Open Access. Finally, he is one of the founders of STEMGARDEN, an online platform that promotes urban garden solutions.
+I am currently a research assistant at ULB (Belgium) while completing a Ph.D. entitled ”xxx” at UCL (Belgium).  
+
+I am using mobile phone metadata (call detail records), Earth Observation (EO) data and other geographic data (vector, raster) for GIS, machine learning and statistics analysis. 
+
+I love R and Rstudio. 
+
+I have a [blog](www.guru-gis.net) with two colleagues where we share some code about geospatial analysis.
+
+I am also one of the founders of [STEMGARDEN](www.stemgarden.co), an online platform that promotes urban garden solutions.

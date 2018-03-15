@@ -1,0 +1,339 @@
+---
+title: Nighttime lights calibration
+author: Damien C. Jacques
+date: '2018-03-15'
+slug: nighttime-lights-calibration
+categories:
+  - R
+tags:
+  - nighttime lights
+  - remote sensing
+---
+
+
+
+<div id="plot-nighttime-lights-time-series-for-senegal" class="section level2">
+<h2>Plot Nighttime Lights Time Series for Senegal</h2>
+<p>First, we load the Version 4 DMSP-OLS Nighttime Lights Time Series (downloaded from <a href="https://ngdc.noaa.gov/eog/dmsp/downloadV4composites.html">here</a>).</p>
+<pre class="r"><code>library(data.table)
+library(raster)</code></pre>
+<pre><code>## Loading required package: sp</code></pre>
+<pre><code>## 
+## Attaching package: &#39;raster&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:data.table&#39;:
+## 
+##     shift</code></pre>
+<pre class="r"><code>library(rgdal)</code></pre>
+<pre><code>## rgdal: version: 1.2-16, (SVN revision 701)
+##  Geospatial Data Abstraction Library extensions to R successfully loaded
+##  Loaded GDAL runtime: GDAL 2.1.3, released 2017/20/01
+##  Path to GDAL shared files: /usr/share/gdal/2.1
+##  GDAL binary built with GEOS: TRUE 
+##  Loaded PROJ.4 runtime: Rel. 4.9.2, 08 September 2015, [PJ_VERSION: 492]
+##  Path to PROJ.4 shared files: (autodetected)
+##  Linking to sp version: 1.2-4</code></pre>
+<pre class="r"><code>library(usdm)
+
+filenames &lt;- list.files(&quot;/media/ubuntu/DATA/Data/Nightlight/&quot;, 
+                        pattern = &quot;.tif$&quot;, 
+                        recursive = TRUE, 
+                        full.names = T)[c(1,2,4:9,17:24,29:34)] # Only  select one raster for each year
+filenames</code></pre>
+<pre><code>##  [1] &quot;/media/ubuntu/DATA/Data/Nightlight//F101992.v4/F101992.v4b_web.stable_lights.avg_vis.tif&quot;
+##  [2] &quot;/media/ubuntu/DATA/Data/Nightlight//F101993.v4/F101993.v4b_web.stable_lights.avg_vis.tif&quot;
+##  [3] &quot;/media/ubuntu/DATA/Data/Nightlight//F121994.v4/F121994.v4b_web.stable_lights.avg_vis.tif&quot;
+##  [4] &quot;/media/ubuntu/DATA/Data/Nightlight//F121995.v4/F121995.v4b_web.stable_lights.avg_vis.tif&quot;
+##  [5] &quot;/media/ubuntu/DATA/Data/Nightlight//F121996.v4/F121996.v4b_web.stable_lights.avg_vis.tif&quot;
+##  [6] &quot;/media/ubuntu/DATA/Data/Nightlight//F121997.v4/F121997.v4b_web.stable_lights.avg_vis.tif&quot;
+##  [7] &quot;/media/ubuntu/DATA/Data/Nightlight//F121998.v4/F121998.v4b_web.stable_lights.avg_vis.tif&quot;
+##  [8] &quot;/media/ubuntu/DATA/Data/Nightlight//F121999.v4/F121999.v4b_web.stable_lights.avg_vis.tif&quot;
+##  [9] &quot;/media/ubuntu/DATA/Data/Nightlight//F152000.v4/F152000.v4b_web.stable_lights.avg_vis.tif&quot;
+## [10] &quot;/media/ubuntu/DATA/Data/Nightlight//F152001.v4/F152001.v4b_web.stable_lights.avg_vis.tif&quot;
+## [11] &quot;/media/ubuntu/DATA/Data/Nightlight//F152002.v4/F152002.v4b_web.stable_lights.avg_vis.tif&quot;
+## [12] &quot;/media/ubuntu/DATA/Data/Nightlight//F152003.v4/F152003.v4b_web.stable_lights.avg_vis.tif&quot;
+## [13] &quot;/media/ubuntu/DATA/Data/Nightlight//F152004.v4/F152004.v4b_web.stable_lights.avg_vis.tif&quot;
+## [14] &quot;/media/ubuntu/DATA/Data/Nightlight//F152005.v4/F152005.v4b_web.stable_lights.avg_vis.tif&quot;
+## [15] &quot;/media/ubuntu/DATA/Data/Nightlight//F152006.v4/F152006.v4b_web.stable_lights.avg_vis.tif&quot;
+## [16] &quot;/media/ubuntu/DATA/Data/Nightlight//F152007.v4/F152007.v4b_web.stable_lights.avg_vis.tif&quot;
+## [17] &quot;/media/ubuntu/DATA/Data/Nightlight//F162008.v4/F162008.v4b_web.stable_lights.avg_vis.tif&quot;
+## [18] &quot;/media/ubuntu/DATA/Data/Nightlight//F162009.v4/F162009.v4b_web.stable_lights.avg_vis.tif&quot;
+## [19] &quot;/media/ubuntu/DATA/Data/Nightlight//F182010.v4/F182010.v4d_web.stable_lights.avg_vis.tif&quot;
+## [20] &quot;/media/ubuntu/DATA/Data/Nightlight//F182011.v4/F182011.v4c_web.stable_lights.avg_vis.tif&quot;
+## [21] &quot;/media/ubuntu/DATA/Data/Nightlight//F182012.v4/F182012.v4c_web.stable_lights.avg_vis.tif&quot;
+## [22] &quot;/media/ubuntu/DATA/Data/Nightlight//F182013.v4/F182013.v4c_web.stable_lights.avg_vis.tif&quot;</code></pre>
+<pre class="r"><code>r &lt;- stack(filenames)</code></pre>
+<p>We plot the first layer to visualize the data.</p>
+<pre class="r"><code>plot(r$F101992.v4b_web.stable_lights.avg_vis)</code></pre>
+<p><img src="/post/2018-03-15-nighttime-lights-calibration_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
+<p>We load a shapefile of Senegal to set the zone of interest.</p>
+<pre class="r"><code>Senegal &lt;- readOGR(&quot;/home/ubuntu/Dropbox/Research/Projects/Till_Poverty/Shapes_after_2008/LIMITE_CA_CR_2014_arr_ID.shp&quot;)</code></pre>
+<pre><code>## OGR data source with driver: ESRI Shapefile 
+## Source: &quot;/home/ubuntu/Dropbox/Research/Projects/Till_Poverty/Shapes_after_2008/LIMITE_CA_CR_2014_arr_ID.shp&quot;, layer: &quot;LIMITE_CA_CR_2014_arr_ID&quot;
+## with 128 features
+## It has 2 fields</code></pre>
+<pre class="r"><code>plot(Senegal)</code></pre>
+<p><img src="/post/2018-03-15-nighttime-lights-calibration_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<p>We will use the shapefile extent to crop the nighttime lights raster to the region of interest (to save computer memory). The first step is to set the <code>crs</code> of the different datasets to the same coordinate system.</p>
+<pre class="r"><code>crs(r)</code></pre>
+<pre><code>## CRS arguments:
+##  +proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0</code></pre>
+<pre class="r"><code>crs(Senegal)</code></pre>
+<pre><code>## CRS arguments:
+##  +proj=utm +zone=28 +datum=WGS84 +units=m +no_defs +ellps=WGS84
+## +towgs84=0,0,0</code></pre>
+<p>We use the crs of the raster stack (easier to change crs of small shapefile than large raster).</p>
+<pre class="r"><code>Senegal &lt;- spTransform(Senegal, crs(r))</code></pre>
+<p>Then, we crop the raster with the extent of the shapefile.</p>
+<pre class="r"><code>r.zone &lt;- crop(r, extent(Senegal))  
+
+Senegal.r &lt;- rasterize(Senegal, 
+                       r.zone, 
+                       field=&quot;ID&quot;, 
+                       dataType = &quot;INT1U&quot;) # Change dataType if nrow(shp) &gt; 255 to INT2U or INT4U
+r.zone[is.na(Senegal.r)] &lt;- NA</code></pre>
+<pre class="r"><code>plot(r.zone[[1]])
+plot(Senegal, add=T, lwd=0.5, lty=2)</code></pre>
+<p><img src="/post/2018-03-15-nighttime-lights-calibration_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+<p>We discard DN equal to 63 (due to saturation) and lower to 5 (to avoid blooming effect) (see for instance <a href="https://link.springer.com/article/10.1007/s40010-017-0444-8">Mukherjee et al. 2017</a>).</p>
+<pre class="r"><code>r.zone[r.zone==63] &lt;- NA
+r.zone[r.zone &lt; 5] &lt;- NA</code></pre>
+<p>We plot the Sum Of Lights (SOL). We can see that the time series is not really smooth. This is partly due to a lack of onboard calibration.</p>
+<pre class="r"><code>r.zone.sum &lt;- cellStats(r.zone, sum)
+plot(as.numeric(substr(names(r.zone), 4,7)), 
+     r.zone.sum, 
+     type=&quot;o&quot;, 
+     xlab=&quot;Year&quot;, 
+     ylab=&quot;Sum of Light (expressed in Digital Number)&quot;, tck = 0.02)</code></pre>
+<p><img src="/post/2018-03-15-nighttime-lights-calibration_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
+<p>We will use GDP data of Senegal as validation/comparison data (<a href="https://data.worldbank.org/indicator/NY.GDP.MKTP.CD?locations=SN">World Bank</a>):</p>
+<pre class="r"><code>GDP &lt;- fread(&quot;/home/ubuntu/Dropbox/Research/Projects/Till_Poverty/GDP/API_NY.GDP.MKTP.CD_DS2_en_csv_v2/API_NY.GDP.MKTP.CD_DS2_en_csv_v2.csv&quot;)
+GDP.Senegal &lt;- GDP[GDP$`Country Name`==&quot;Senegal&quot;]
+GDP.Senegal &lt;- data.frame(year=as.numeric(colnames(GDP.Senegal[,5:62])),
+                          GDP=as.numeric(GDP.Senegal[1,5:62]))
+plot(GDP.Senegal$year, 
+     GDP.Senegal$GDP, 
+     type=&quot;o&quot;, xlab=&quot;year&quot;, ylab=&quot;GDP&quot;, tck = 0.02)</code></pre>
+<p><img src="/post/2018-03-15-nighttime-lights-calibration_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
+<p>We can plot both time series on the same figure (scaling each variable) to compare the data.</p>
+<pre class="r"><code>plot(as.numeric(substr(names(r.zone), 4,7)), 
+     scale(r.zone.sum), 
+     type=&quot;o&quot;, xlab=&quot;Year&quot;, 
+     ylab=&quot;Sum of Light (expressed in Digital Number)&quot;, tck = 0.02)
+lines(GDP.Senegal$year[GDP.Senegal$year%in%1992:2013], 
+      scale(GDP.Senegal$GDP[GDP.Senegal$year%in%1992:2013]), 
+      type=&quot;o&quot;, col=&quot;red&quot;)
+legend(&quot;topleft&quot;, col=c(&quot;black&quot;, &quot;red&quot;), 
+       lty=1, c(&quot;SOL&quot;, &quot;GDP&quot;), bty=&quot;n&quot;)</code></pre>
+<p><img src="/post/2018-03-15-nighttime-lights-calibration_files/figure-html/unnamed-chunk-12-1.png" width="672" /> Correlation is already high but, as we will se, it will be improved after calibration.</p>
+<pre class="r"><code>cor(r.zone.sum, GDP.Senegal$GDP[GDP.Senegal$year%in%1992:2013])</code></pre>
+<pre><code>## [1] 0.7664247</code></pre>
+</div>
+<div id="inter-calibration-between-years" class="section level2">
+<h2>Inter-calibration between years</h2>
+<p>Pseudo-invariant features (PIFs) i.e., stable night-light features over time, are often used as references for calibrating the temporal images. Puerto Rico, Mauritius and Okinawa are used for calibration purpose. These regions have been selected by <a href="https://www.tandfonline.com/doi/abs/10.1080/01431161.2013.820365">Wu et al. 2013</a> as invariant regions “based on the following considerations: first, these three regions are located in different geographic areas around the world and have worldwide representation; second, each region has a wide spread of digital number values from very low to very high, which would improve the accuracy of the intercalibration model; third, because all are far away from the mainland and are relatively isolated, they are rarely affected by night-time light from other regions.”</p>
+<p>Let us first collect the data and crop the nighttime lights raster for each region of interest.</p>
+<pre class="r"><code>PuertoRico &lt;- readOGR(&quot;/home/ubuntu/Dropbox/Research/Projects/Till_Poverty/Nighlight/Shape_PFI/PFI/PuertoRico.shp&quot;)</code></pre>
+<pre><code>## OGR data source with driver: ESRI Shapefile 
+## Source: &quot;/home/ubuntu/Dropbox/Research/Projects/Till_Poverty/Nighlight/Shape_PFI/PFI/PuertoRico.shp&quot;, layer: &quot;PuertoRico&quot;
+## with 1 features
+## It has 70 fields
+## Integer64 fields read as strings:  ID_0 OBJECTID_1</code></pre>
+<pre class="r"><code>Mauritius &lt;- readOGR(&quot;/home/ubuntu/Dropbox/Research/Projects/Till_Poverty/Nighlight/Shape_PFI/PFI/MUS.shp&quot;)</code></pre>
+<pre><code>## OGR data source with driver: ESRI Shapefile 
+## Source: &quot;/home/ubuntu/Dropbox/Research/Projects/Till_Poverty/Nighlight/Shape_PFI/PFI/MUS.shp&quot;, layer: &quot;MUS&quot;
+## with 9 features
+## It has 15 fields
+## Integer64 fields read as strings:  ID_0 ID_1 CCN_1</code></pre>
+<pre class="r"><code>Okinawa &lt;- readOGR(&quot;/home/ubuntu/Dropbox/Research/Projects/Till_Poverty/Nighlight/Shape_PFI/PFI/Okinawa.shp&quot;)</code></pre>
+<pre><code>## OGR data source with driver: ESRI Shapefile 
+## Source: &quot;/home/ubuntu/Dropbox/Research/Projects/Till_Poverty/Nighlight/Shape_PFI/PFI/Okinawa.shp&quot;, layer: &quot;Okinawa&quot;
+## with 1 features
+## It has 9 fields
+## Integer64 fields read as strings:  ID_0 ID_1</code></pre>
+<pre class="r"><code>par(mfrow=c(1,3))
+plot(PuertoRico)
+plot(Mauritius)
+plot(Okinawa)</code></pre>
+<p><img src="/post/2018-03-15-nighttime-lights-calibration_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
+<pre class="r"><code>PuertoRico &lt;- spTransform(PuertoRico, crs(r))
+Mauritius &lt;- spTransform(Mauritius, crs(r))
+Okinawa &lt;- spTransform(Okinawa, crs(r))
+
+r.PuertoRico &lt;- crop(r, extent(PuertoRico)) 
+r.Mauritius &lt;- crop(r, extent(Mauritius))   
+r.Okinawa &lt;- crop(r, extent(Okinawa))   </code></pre>
+<p>We discard DN equal to 63 (due to saturation) and lower to 5 (to avoid blooming effect) (see for instance <a href="https://link.springer.com/article/10.1007/s40010-017-0444-8">Mukherjee et al. 2017</a>).</p>
+<pre class="r"><code>r.PuertoRico[r.PuertoRico==63] &lt;- NA
+r.PuertoRico[r.PuertoRico &lt; 5] &lt;- NA
+
+r.Mauritius[r.Mauritius==63] &lt;- NA
+r.Mauritius[r.Mauritius &lt; 5] &lt;- NA
+
+r.Okinawa[r.Okinawa==63] &lt;- NA
+r.Okinawa[r.Okinawa &lt; 5] &lt;- NA
+
+
+par(mfrow=c(1,3))
+plot(r.PuertoRico[[1]])
+plot(r.Mauritius[[1]])
+plot(r.Okinawa[[1]])</code></pre>
+<p><img src="/post/2018-03-15-nighttime-lights-calibration_files/figure-html/unnamed-chunk-15-1.png" width="672" /></p>
+<p>Then we compute then standard deviation to select only the pixel with low temporal varability (NOT USED).</p>
+<pre class="r"><code># r.Mauritius.sd &lt;- calc(r.Mauritius, sd)
+# r.PuertoRico.sd &lt;- calc(r.PuertoRico, sd)
+# r.Okinawa.sd &lt;- calc(r.Okinawa, sd)
+# 
+# par(mfrow=c(1,3))
+# plot(r.Mauritius.sd)
+# plot(r.PuertoRico.sd)
+# plot(r.Okinawa.sd)</code></pre>
+<p>We use an arbitray threshold of a standard deviation equal to 10 (NOT USED).</p>
+<pre class="r"><code># r.PuertoRico.sub &lt;- r.PuertoRico[r.PuertoRico.sd[,]&lt;=10]
+# r.Mauritius.sub &lt;- r.Mauritius[r.Mauritius.sd[,]&lt;=10]
+# r.Okinawa.sub &lt;- r.Okinawa[r.Okinawa.sd[,]&lt;=10]</code></pre>
+<p>We then aggreggate the selected pixel time series into a matrix for further computation.</p>
+<pre class="r"><code>r.select &lt;- rbind(r.PuertoRico[,], r.Mauritius[,])
+r.select &lt;- rbind(r.select, r.Okinawa[,])
+# r.select &lt;- rbind(r.PuertoRico.sub, r.Mauritius.sub)
+# r.select &lt;- rbind(r.select, r.Okinawa.sub)
+r.select &lt;- r.select[complete.cases(r.select), ]
+nrow(r.select)</code></pre>
+<pre><code>## [1] 14317</code></pre>
+<p>Optimization procedure to find the best year of reference. We use a polynomial regression of degree 2 (quadratic model) to correct the time series.</p>
+<pre class="r"><code>output &lt;- data.frame(year=1992:2013, cor=1:22)
+# 
+# r3[r3==63] &lt;- NA
+# r3[r3 &lt; 5] &lt;- NA
+
+for (i in 1:ncol(r.select)){
+  print(i)
+  r3 &lt;- r.zone
+  for (ii in 1:ncol(r.select)){
+    # print(i)
+    df &lt;- data.frame(x=r.select[,ii], y=r.select[,i])
+    model &lt;- lm(y ~ x + I(x^2), data=df)
+    # print(summary(model)$r.squared)
+    # plot(df$x, df$y)
+    # lines(df$x[order(df$x)],predict(model, df)[order(df$x)])
+    name_layer &lt;- names(r3[[ii]]) 
+    names(r3[[ii]]) &lt;- &quot;x&quot;
+    r3[[ii]] &lt;- raster::predict(r3[[ii]], model)
+    names(r3[[ii]]) &lt;- name_layer
+  }
+  r3[r3&gt;63] &lt;- 63
+  r3[r3&lt;0] &lt;- 0
+  r3.sum &lt;- cellStats(r3, sum)
+  output$cor[i] &lt;- cor(r3.sum, 
+                       GDP.Senegal$GDP[GDP.Senegal$year%in%as.numeric(substr(names(r.zone), 4,7))])
+}</code></pre>
+<pre><code>## [1] 1
+## [1] 2
+## [1] 3
+## [1] 4
+## [1] 5
+## [1] 6
+## [1] 7
+## [1] 8
+## [1] 9
+## [1] 10
+## [1] 11
+## [1] 12
+## [1] 13
+## [1] 14
+## [1] 15
+## [1] 16
+## [1] 17
+## [1] 18
+## [1] 19
+## [1] 20
+## [1] 21
+## [1] 22</code></pre>
+<p>The year that maximize the correlation between GDP and SOL is used as reference:</p>
+<pre class="r"><code>plot(output$year, output$cor, 
+     ylab=&quot;Pearson Correlation&quot;, xlab=&quot;Year&quot;, tck=0.02, type=&quot;o&quot;)</code></pre>
+<p><img src="/post/2018-03-15-nighttime-lights-calibration_files/figure-html/unnamed-chunk-20-1.png" width="672" /></p>
+<pre class="r"><code>r.calibrated &lt;- r.zone
+for (ii in 1:ncol(r.select)){
+  print(ii)
+  df &lt;- data.frame(x=r.select[,ii], y=r.select[,which.max(output$cor)])
+  model &lt;- lm(y ~ x + I(x^2), data=df)
+  print(summary(model)$r.squared)
+  # plot(df$x, df$y)
+  # lines(df$x[order(df$x)],predict(model, df)[order(df$x)])
+  name_layer &lt;- names(r3[[ii]]) 
+  names(r.calibrated[[ii]]) &lt;- &quot;x&quot;
+  r.calibrated[[ii]] &lt;- raster::predict(r.calibrated[[ii]], model)
+  names(r.calibrated[[ii]]) &lt;- name_layer
+}</code></pre>
+<pre><code>## [1] 1
+## [1] 0.8496144
+## [1] 2
+## [1] 0.8983605
+## [1] 3
+## [1] 0.9332089
+## [1] 4
+## [1] 0.9735411
+## [1] 5
+## [1] 0.9787942
+## [1] 6
+## [1] 1
+## [1] 7
+## [1] 0.966953
+## [1] 8
+## [1] 0.8991369
+## [1] 9
+## [1] 0.9336954
+## [1] 10
+## [1] 0.8942844
+## [1] 11
+## [1] 0.9084561
+## [1] 12
+## [1] 0.9213927
+## [1] 13
+## [1] 0.9208469
+## [1] 14
+## [1] 0.860613
+## [1] 15
+## [1] 0.8936669
+## [1] 16
+## [1] 0.844396
+## [1] 17
+## [1] 0.8369324
+## [1] 18
+## [1] 0.8761767
+## [1] 19
+## [1] 0.8717108
+## [1] 20
+## [1] 0.8621317
+## [1] 21
+## [1] 0.7875778
+## [1] 22
+## [1] 0.8521038</code></pre>
+<pre class="r"><code>r.calibrated[r.calibrated&gt;63] &lt;- 63</code></pre>
+<pre class="r"><code>r.calibrated.sum &lt;- cellStats(r.calibrated, sum)
+plot(as.numeric(substr(names(r.zone), 4,7)), 
+     r.zone.sum, 
+     type=&quot;o&quot;, xlab=&quot;Year&quot;, 
+     ylab=&quot;Sum of Light (expressed in Digital Number)&quot;, 
+     tck = 0.02, ylim=c(20000,90000))
+lines(as.numeric(substr(names(r.zone), 4,7)), 
+      r.calibrated.sum, 
+      type=&quot;o&quot;, xlab=&quot;Year&quot;, 
+      ylab=&quot;Sum of Light (expressed in Digital Number)&quot;,  
+      ylim=c(20000,90000), lty=2)
+legend(&quot;topleft&quot;, lty=1:2, c(&quot;Uncalibrated&quot;, &quot;Calibrated&quot;), bty=&quot;n&quot;)</code></pre>
+<p><img src="/post/2018-03-15-nighttime-lights-calibration_files/figure-html/unnamed-chunk-22-1.png" width="672" /></p>
+<pre class="r"><code>plot(as.numeric(substr(names(r.zone), 4,7)), 
+     scale(r.calibrated.sum), 
+     type=&quot;o&quot;, xlab=&quot;Year&quot;, ylab=&quot;SOL &amp; GDP&quot;, tck = 0.02, lty=2)
+lines(GDP.Senegal$year[GDP.Senegal$year%in%1992:2013], 
+      scale(GDP.Senegal$GDP[GDP.Senegal$year%in%1992:2013]), type=&quot;o&quot;, col=&quot;red&quot;)
+legend(&quot;topleft&quot;, col=c(&quot;black&quot;, &quot;red&quot;), 
+       lty=2:1, c(&quot;SOL calibrated&quot;, &quot;GDP&quot;), bty=&quot;n&quot;)</code></pre>
+<p><img src="/post/2018-03-15-nighttime-lights-calibration_files/figure-html/unnamed-chunk-23-1.png" width="672" /></p>
+<pre class="r"><code>cor(r.calibrated.sum, GDP.Senegal$GDP[GDP.Senegal$year%in%1992:2013])</code></pre>
+<pre><code>## [1] 0.8819384</code></pre>
+<p>Export new calibrated raster:</p>
+<pre class="r"><code>writeRaster(r.calibrated, 
+            &quot;/home/ubuntu/Dropbox/Research/Projects/Till_Poverty/Nighlight/Calibrated/NighttimeLights_calibratedV2.tif&quot;)</code></pre>
+</div>

@@ -1,0 +1,215 @@
+---
+title: Air Casting Data Visualisation
+author: Damien C. Jacques
+date: '2018-03-15'
+slug: air-casting-data-visualisation
+categories:
+  - R
+tags:
+  - R
+  - Air Casting
+  - Leaflet
+  - API
+---
+
+
+
+<p>This R Notebook describes the steps to download the data from the Air Quality API, convert them to R data and make some basic figures.</p>
+<p>First, we need to load two packages to deal with the API request (<code>httr</code>) and format (<code>jsonlite</code>). You can use <code>install.package(c(&quot;httr&quot;, &quot;jsonlite&quot;))</code> to install the packages.</p>
+<!-- This package makes requesting data from just about any API easier by formatting your GET requests with the proper headers and authentications. Next, install jsonlite in your script -->
+<!-- When the data comes back from many APIs, it will be in JSON format. If you're like most R users, you'll want to convert the JSON from its native nested form to a flat form like a data frame so it's easier to work with. The jsonlite package makes this easy. -->
+<pre class="r"><code>library(httr)
+library(jsonlite)</code></pre>
+<p>First, we need to get the ID of all sessions of interest (here, located in Brussels and with the tag ‘kid’). To do so, we will use the nomenclature detailled in the <a href="https://github.com/HabitatMap/AirCasting/blob/master/doc/api.md">API documentation</a> to make a request to the API.</p>
+<pre class="r"><code>call &lt;- &quot;http://aircasting.org/api/sessions.json?page=0&amp;page_size=1000&amp;q[tags]=kid&amp;q[location]=Brussels&amp;q[distance]=50&quot;  
+get_session_data &lt;- GET(call) # API does not work very well, sometimes you should repeat this command until it works
+
+# Save the data to use them offline
+save(get_session_data, file=&quot;/home/ubuntu/Dropbox/Entreprenership/Projects/AirCasting/Data/get_session_data.Rda&quot;)</code></pre>
+<p>Then, we convert json output to readable data in R.</p>
+<pre class="r"><code>load(&quot;/home/ubuntu/Dropbox/Entreprenership/Projects/AirCasting/Data/get_session_data.Rda&quot;)
+session_data.text &lt;- content(get_session_data, &quot;text&quot;)
+session_data.json &lt;- fromJSON(session_data.text, flatten = TRUE)
+colnames(session_data.json)</code></pre>
+<pre><code>##   [1] &quot;end_time_local&quot;                                 
+##   [2] &quot;id&quot;                                             
+##   [3] &quot;start_time_local&quot;                               
+##   [4] &quot;title&quot;                                          
+##   [5] &quot;username&quot;                                       
+##   [6] &quot;type&quot;                                           
+##   [7] &quot;streams.AirBeam-PM.average_value&quot;               
+##   [8] &quot;streams.AirBeam-PM.id&quot;                          
+##   [9] &quot;streams.AirBeam-PM.max_latitude&quot;                
+##  [10] &quot;streams.AirBeam-PM.max_longitude&quot;               
+##  [11] &quot;streams.AirBeam-PM.measurement_short_type&quot;      
+##  [12] &quot;streams.AirBeam-PM.measurement_type&quot;            
+##  [13] &quot;streams.AirBeam-PM.measurements_count&quot;          
+##  [14] &quot;streams.AirBeam-PM.min_latitude&quot;                
+##  [15] &quot;streams.AirBeam-PM.min_longitude&quot;               
+##  [16] &quot;streams.AirBeam-PM.sensor_name&quot;                 
+##  [17] &quot;streams.AirBeam-PM.sensor_package_name&quot;         
+##  [18] &quot;streams.AirBeam-PM.session_id&quot;                  
+##  [19] &quot;streams.AirBeam-PM.threshold_high&quot;              
+##  [20] &quot;streams.AirBeam-PM.threshold_low&quot;               
+##  [21] &quot;streams.AirBeam-PM.threshold_medium&quot;            
+##  [22] &quot;streams.AirBeam-PM.threshold_very_high&quot;         
+##  [23] &quot;streams.AirBeam-PM.threshold_very_low&quot;          
+##  [24] &quot;streams.AirBeam-PM.unit_name&quot;                   
+##  [25] &quot;streams.AirBeam-PM.unit_symbol&quot;                 
+##  [26] &quot;streams.AirBeam-PM.size&quot;                        
+##  [27] &quot;streams.AirBeam-C.average_value&quot;                
+##  [28] &quot;streams.AirBeam-C.id&quot;                           
+##  [29] &quot;streams.AirBeam-C.max_latitude&quot;                 
+##  [30] &quot;streams.AirBeam-C.max_longitude&quot;                
+##  [31] &quot;streams.AirBeam-C.measurement_short_type&quot;       
+##  [32] &quot;streams.AirBeam-C.measurement_type&quot;             
+##  [33] &quot;streams.AirBeam-C.measurements_count&quot;           
+##  [34] &quot;streams.AirBeam-C.min_latitude&quot;                 
+##  [35] &quot;streams.AirBeam-C.min_longitude&quot;                
+##  [36] &quot;streams.AirBeam-C.sensor_name&quot;                  
+##  [37] &quot;streams.AirBeam-C.sensor_package_name&quot;          
+##  [38] &quot;streams.AirBeam-C.session_id&quot;                   
+##  [39] &quot;streams.AirBeam-C.threshold_high&quot;               
+##  [40] &quot;streams.AirBeam-C.threshold_low&quot;                
+##  [41] &quot;streams.AirBeam-C.threshold_medium&quot;             
+##  [42] &quot;streams.AirBeam-C.threshold_very_high&quot;          
+##  [43] &quot;streams.AirBeam-C.threshold_very_low&quot;           
+##  [44] &quot;streams.AirBeam-C.unit_name&quot;                    
+##  [45] &quot;streams.AirBeam-C.unit_symbol&quot;                  
+##  [46] &quot;streams.AirBeam-C.size&quot;                         
+##  [47] &quot;streams.Phone Microphone.average_value&quot;         
+##  [48] &quot;streams.Phone Microphone.id&quot;                    
+##  [49] &quot;streams.Phone Microphone.max_latitude&quot;          
+##  [50] &quot;streams.Phone Microphone.max_longitude&quot;         
+##  [51] &quot;streams.Phone Microphone.measurement_short_type&quot;
+##  [52] &quot;streams.Phone Microphone.measurement_type&quot;      
+##  [53] &quot;streams.Phone Microphone.measurements_count&quot;    
+##  [54] &quot;streams.Phone Microphone.min_latitude&quot;          
+##  [55] &quot;streams.Phone Microphone.min_longitude&quot;         
+##  [56] &quot;streams.Phone Microphone.sensor_name&quot;           
+##  [57] &quot;streams.Phone Microphone.sensor_package_name&quot;   
+##  [58] &quot;streams.Phone Microphone.session_id&quot;            
+##  [59] &quot;streams.Phone Microphone.threshold_high&quot;        
+##  [60] &quot;streams.Phone Microphone.threshold_low&quot;         
+##  [61] &quot;streams.Phone Microphone.threshold_medium&quot;      
+##  [62] &quot;streams.Phone Microphone.threshold_very_high&quot;   
+##  [63] &quot;streams.Phone Microphone.threshold_very_low&quot;    
+##  [64] &quot;streams.Phone Microphone.unit_name&quot;             
+##  [65] &quot;streams.Phone Microphone.unit_symbol&quot;           
+##  [66] &quot;streams.Phone Microphone.size&quot;                  
+##  [67] &quot;streams.AirBeam-RH.average_value&quot;               
+##  [68] &quot;streams.AirBeam-RH.id&quot;                          
+##  [69] &quot;streams.AirBeam-RH.max_latitude&quot;                
+##  [70] &quot;streams.AirBeam-RH.max_longitude&quot;               
+##  [71] &quot;streams.AirBeam-RH.measurement_short_type&quot;      
+##  [72] &quot;streams.AirBeam-RH.measurement_type&quot;            
+##  [73] &quot;streams.AirBeam-RH.measurements_count&quot;          
+##  [74] &quot;streams.AirBeam-RH.min_latitude&quot;                
+##  [75] &quot;streams.AirBeam-RH.min_longitude&quot;               
+##  [76] &quot;streams.AirBeam-RH.sensor_name&quot;                 
+##  [77] &quot;streams.AirBeam-RH.sensor_package_name&quot;         
+##  [78] &quot;streams.AirBeam-RH.session_id&quot;                  
+##  [79] &quot;streams.AirBeam-RH.threshold_high&quot;              
+##  [80] &quot;streams.AirBeam-RH.threshold_low&quot;               
+##  [81] &quot;streams.AirBeam-RH.threshold_medium&quot;            
+##  [82] &quot;streams.AirBeam-RH.threshold_very_high&quot;         
+##  [83] &quot;streams.AirBeam-RH.threshold_very_low&quot;          
+##  [84] &quot;streams.AirBeam-RH.unit_name&quot;                   
+##  [85] &quot;streams.AirBeam-RH.unit_symbol&quot;                 
+##  [86] &quot;streams.AirBeam-RH.size&quot;                        
+##  [87] &quot;streams.AirBeam-F.average_value&quot;                
+##  [88] &quot;streams.AirBeam-F.id&quot;                           
+##  [89] &quot;streams.AirBeam-F.max_latitude&quot;                 
+##  [90] &quot;streams.AirBeam-F.max_longitude&quot;                
+##  [91] &quot;streams.AirBeam-F.measurement_short_type&quot;       
+##  [92] &quot;streams.AirBeam-F.measurement_type&quot;             
+##  [93] &quot;streams.AirBeam-F.measurements_count&quot;           
+##  [94] &quot;streams.AirBeam-F.min_latitude&quot;                 
+##  [95] &quot;streams.AirBeam-F.min_longitude&quot;                
+##  [96] &quot;streams.AirBeam-F.sensor_name&quot;                  
+##  [97] &quot;streams.AirBeam-F.sensor_package_name&quot;          
+##  [98] &quot;streams.AirBeam-F.session_id&quot;                   
+##  [99] &quot;streams.AirBeam-F.threshold_high&quot;               
+## [100] &quot;streams.AirBeam-F.threshold_low&quot;                
+## [101] &quot;streams.AirBeam-F.threshold_medium&quot;             
+## [102] &quot;streams.AirBeam-F.threshold_very_high&quot;          
+## [103] &quot;streams.AirBeam-F.threshold_very_low&quot;           
+## [104] &quot;streams.AirBeam-F.unit_name&quot;                    
+## [105] &quot;streams.AirBeam-F.unit_symbol&quot;                  
+## [106] &quot;streams.AirBeam-F.size&quot;</code></pre>
+<p>You now have the ID (+ username) of all sessions of interest.</p>
+<pre class="r"><code>session.id &lt;- unique(session_data.json$id)
+session.id</code></pre>
+<pre><code>##   [1] 48843 47506 47267 47217 47216 47142 47085 46911 46854 46853 46778
+##  [12] 46683 46682 46681 46680 46679 46678 46644 46643 46637 46629 46490
+##  [23] 46488 46487 46486 46477 46476 46409 46408 46406 46405 46404 46403
+##  [34] 46402 46393 46307 46287 46285 46284 46269 46259 46257 46250 46233
+##  [45] 46232 46224 46222 46175 46155 46153 46149 46141 46101 46097 46095
+##  [56] 46089 46039 46038 46036 46035 46011 46007 46004 45998 45844 45842
+##  [67] 45775 45762 45688 45622 45519 45490 45481 45255 44718 44612 44477
+##  [78] 44378 44276 44271 44226 44193 44085 43973 43968 43831 43788 43197
+##  [89] 43196 43180 43178 41237 41032 40895 40778 40772 40160 40156 40035
+## [100] 40025 40021 40019 38818 38656 38655 38548 38533 38531 38498 38496
+## [111] 38495 38494 38465 37774 37773 37566 37565 37499 37498 37497 37336
+## [122] 37327 37326 37325 37323 35071 35010</code></pre>
+<pre class="r"><code>unique(session_data.json$username)</code></pre>
+<pre><code>##  [1] &quot;TAkidnav02&quot;             &quot;schoolanderlecht1&quot;     
+##  [3] &quot;kakelbontschool.laken1&quot; &quot;ecolesud6&quot;             
+##  [5] &quot;sila4&quot;                  &quot;kakelbontschool.laken2&quot;
+##  [7] &quot;tim_bral&quot;               &quot;JDB&quot;                   
+##  [9] &quot;Scholen-zuid-05&quot;        &quot;bralairbeamdemo2&quot;      
+## [11] &quot;nic&quot;                    &quot;bralcentrum4&quot;          
+## [13] &quot;JMSimon&quot;</code></pre>
+<p>Now, we can iterate in all sessions, download the data (using similar approach than above) and aggregate the streaming data for AirBeam-PM measurements.</p>
+<pre class="r"><code>for (i in 1:length(session.id)){
+  print(i)
+  call &lt;- paste0(&quot;http://aircasting.org/api/sessions/&quot;, session.id[i],&quot;.json&quot;)
+  get_session_content_data &lt;- GET(call)
+  get_session_content_data
+  session_content_data.text &lt;- content(get_session_content_data, &quot;text&quot;)
+  session_content_data.json &lt;- fromJSON(session_content_data.text, flatten = TRUE)
+  session_content_data.df &lt;- as.data.frame(session_content_data.json$streams$`AirBeam-PM`$measurements)
+  session_content_data.df$session.id &lt;- session.id[i]
+  if (i == 1){
+    session_content_data.df.all &lt;- session_content_data.df
+  }else{
+    session_content_data.df.all &lt;- rbind.data.frame(session_content_data.df.all, session_content_data.df)
+  }
+}
+
+# Save the data to use them offline
+save(session_content_data.df.all, file=&quot;/home/ubuntu/Dropbox/Entreprenership/Projects/AirCasting/Data/session_content_data.df.all&quot;)</code></pre>
+<p>Next we will filter the data that are outside Brussels by using the extent of Brussels region.</p>
+<pre class="r"><code>load(&quot;/home/ubuntu/Dropbox/Entreprenership/Projects/AirCasting/Data/session_content_data.df.all&quot;)
+
+###################
+library(raster)</code></pre>
+<pre><code>## Loading required package: sp</code></pre>
+<pre class="r"><code>belgium &lt;- getData(&#39;GADM&#39;, country=&#39;BE&#39;, level=2)
+brussels &lt;- belgium[belgium$NAME_1==&quot;Bruxelles&quot;,]
+ext.bru &lt;- extent(brussels)
+plot(brussels)</code></pre>
+<p><img src="/post/2018-03-15-air-casting-data-visualisation_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<pre class="r"><code>session_content_data.df.all &lt;- session_content_data.df.all[-which(session_content_data.df.all$longitude &lt; ext.bru[1] | session_content_data.df.all$longitude &gt; ext.bru[2] | session_content_data.df.all$latitude &lt; ext.bru[3] | session_content_data.df.all$latitude &gt; ext.bru[4]),]</code></pre>
+<p>We now convert the data frame into a <code>SpatialPointsDataFrame</code> using the <strong>longitude</strong> and <strong>latitude</strong> column (pay attention to the order of the column). We also add a color legend that varies depending on PM values (similar to the one used by Air Casting).</p>
+<pre class="r"><code>session_content_data.shp &lt;- SpatialPointsDataFrame(session_content_data.df.all[,2:1],
+                                                   session_content_data.df.all)   
+
+session_content_data.shp$color &lt;- &quot;#26c98b&quot; #green
+session_content_data.shp$color[session_content_data.shp$value&gt;10] &lt;- &quot;#ffe968&quot; #yellow
+session_content_data.shp$color[session_content_data.shp$value&gt;35] &lt;- &quot;#ffae65&quot; #orange
+session_content_data.shp$color[session_content_data.shp$value&gt;60] &lt;- &quot;#ff5a63&quot; #red</code></pre>
+<p>We can make a simple plot of these data.</p>
+<pre class="r"><code>par(mar=c(0,0,0,0))
+plot(session_content_data.shp, pch=20, col=scales::alpha(session_content_data.shp$color, 0.7))
+plot(brussels, add=T)</code></pre>
+<p><img src="/post/2018-03-15-air-casting-data-visualisation_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+<p>Or something more elegant using <code>leaflet</code> package.</p>
+<pre class="r"><code># Simple Leaflet
+library(leaflet)
+leaflet(session_content_data.shp) %&gt;% addProviderTiles(providers$Stamen.Toner) %&gt;%
+  addCircles(lng = ~longitude, lat = ~latitude, weight = 2, popup = ~value, color = ~color)</code></pre>
+<div class="figure">
+<img src="/img/leaflet.png" />
+
+</div>

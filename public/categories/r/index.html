@@ -82,7 +82,7 @@
   <meta property="og:description" content="Ph.D. in Bioengineering">
   <meta property="og:locale" content="en-us">
   
-  <meta property="og:updated_time" content="2015-07-23T21:13:14-05:00">
+  <meta property="og:updated_time" content="2018-03-15T00:00:00&#43;00:00">
   
 
   
@@ -233,12 +233,22 @@
   
   
   <div>
-    <h2><a href="/post/2015-07-23-r-rmarkdown/">Hello R Markdown</a></h2>
+    <h2><a href="/post/air-casting-data-visualisation/">Air Casting Data Visualisation</a></h2>
     <div class="article-style">
       
-      R Markdown This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <a href="http://rmarkdown.rstudio.com" target="_blank">http://rmarkdown.rstudio.com</a>.
-You can embed an R code chunk like this:
-summary(cars) ## speed dist ## Min. : 4.0 Min. : 2.00 ## 1st Qu.:12.0 1st Qu.: 26.00 ## Median :15.0 Median : 36.00 ## Mean :15.4 Mean : 42.98 ## 3rd Qu.
+      This R Notebook describes the steps to download the data from the Air Quality API, convert them to R data and make some basic figures.
+First, we need to load two packages to deal with the API request (httr) and format (jsonlite). You can use install.package(c(&quot;httr&quot;, &quot;jsonlite&quot;)) to install the packages.
+library(httr) library(jsonlite) First, we need to get the ID of all sessions of interest (here, located in Brussels and with the tag ‘kid’).
+      
+    </div>
+  </div>
+  
+  <div>
+    <h2><a href="/post/nighttime-lights-calibration/">Nighttime lights calibration</a></h2>
+    <div class="article-style">
+      
+      Plot Nighttime Lights Time Series for Senegal First, we load the Version 4 DMSP-OLS Nighttime Lights Time Series (downloaded from here).
+library(data.table) library(raster) ## Loading required package: sp ## ## Attaching package: &#39;raster&#39; ## The following object is masked from &#39;package:data.table&#39;: ## ## shift library(rgdal) ## rgdal: version: 1.2-16, (SVN revision 701) ## Geospatial Data Abstraction Library extensions to R successfully loaded ## Loaded GDAL runtime: GDAL 2.1.3, released 2017/20/01 ## Path to GDAL shared files: /usr/share/gdal/2.
       
     </div>
   </div>
@@ -321,6 +331,8 @@ summary(cars) ## speed dist ## Min. : 4.0 Min. : 2.00 ## 1st Qu.:12.0 1st Qu.: 2
       <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js" integrity="sha256-/BfiIkHlHoVihZdc6TFuj7MmJ0TWcWsMXkeDFwhi0zw=" crossorigin="anonymous"></script>
       
 
+      
+      <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/r.min.js"></script>
       
 
       

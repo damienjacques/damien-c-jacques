@@ -1,0 +1,128 @@
+---
+title: Air Casting Data Visualisation
+author: Damien C. Jacques
+date: '2018-03-15'
+slug: air-casting-data-visualisation
+categories:
+  - R
+tags:
+  - R
+  - Air Casting
+  - Leaflet
+  - API
+---
+
+
+This R Notebook describes the steps to download the data from the Air Quality API, convert them to R data and make some basic figures.
+
+First, we need to load two packages to deal with the API request (`httr`) and format (`jsonlite`). You can use `install.package(c("httr", "jsonlite"))` to install the packages.
+
+<!-- This package makes requesting data from just about any API easier by formatting your GET requests with the proper headers and authentications. Next, install jsonlite in your script -->
+
+<!-- When the data comes back from many APIs, it will be in JSON format. If you're like most R users, you'll want to convert the JSON from its native nested form to a flat form like a data frame so it's easier to work with. The jsonlite package makes this easy. -->
+
+
+```{r}
+library(httr)
+library(jsonlite)
+```
+
+First, we need to get the ID of all sessions of interest (here, located in Brussels and with the tag 'kid').
+To do so, we will use the nomenclature detailled in the [API documentation](https://github.com/HabitatMap/AirCasting/blob/master/doc/api.md) to make a request to the API.
+
+```{r, eval = FALSE}
+call <- "http://aircasting.org/api/sessions.json?page=0&page_size=1000&q[tags]=kid&q[location]=Brussels&q[distance]=50"  
+get_session_data <- GET(call) # API does not work very well, sometimes you should repeat this command until it works
+
+# Save the data to use them offline
+save(get_session_data, file="/home/ubuntu/Dropbox/Entreprenership/Projects/AirCasting/Data/get_session_data.Rda")
+```
+
+Then, we convert json output to readable data in R.
+
+```{r}
+load("/home/ubuntu/Dropbox/Entreprenership/Projects/AirCasting/Data/get_session_data.Rda")
+session_data.text <- content(get_session_data, "text")
+session_data.json <- fromJSON(session_data.text, flatten = TRUE)
+colnames(session_data.json)
+```
+
+You now have the ID  (+ username) of all sessions of interest.
+
+```{r}
+session.id <- unique(session_data.json$id)
+session.id
+unique(session_data.json$username)
+```
+
+Now, we can iterate in all sessions, download the data (using similar approach than above) and aggregate the streaming data for AirBeam-PM measurements. 
+
+```{r, eval = FALSE}
+for (i in 1:length(session.id)){
+  print(i)
+  call <- paste0("http://aircasting.org/api/sessions/", session.id[i],".json")
+  get_session_content_data <- GET(call)
+  get_session_content_data
+  session_content_data.text <- content(get_session_content_data, "text")
+  session_content_data.json <- fromJSON(session_content_data.text, flatten = TRUE)
+  session_content_data.df <- as.data.frame(session_content_data.json$streams$`AirBeam-PM`$measurements)
+  session_content_data.df$session.id <- session.id[i]
+  if (i == 1){
+    session_content_data.df.all <- session_content_data.df
+  }else{
+    session_content_data.df.all <- rbind.data.frame(session_content_data.df.all, session_content_data.df)
+  }
+}
+
+# Save the data to use them offline
+save(session_content_data.df.all, file="/home/ubuntu/Dropbox/Entreprenership/Projects/AirCasting/Data/session_content_data.df.all")
+```
+
+Next we will filter the data that are outside Brussels by using the extent of Brussels region.
+
+```{r}
+load("/home/ubuntu/Dropbox/Entreprenership/Projects/AirCasting/Data/session_content_data.df.all")
+
+###################
+library(raster)
+belgium <- getData('GADM', country='BE', level=2)
+brussels <- belgium[belgium$NAME_1=="Bruxelles",]
+ext.bru <- extent(brussels)
+plot(brussels)
+
+session_content_data.df.all <- session_content_data.df.all[-which(session_content_data.df.all$longitude < ext.bru[1] | session_content_data.df.all$longitude > ext.bru[2] | session_content_data.df.all$latitude < ext.bru[3] | session_content_data.df.all$latitude > ext.bru[4]),]
+```
+
+We now convert the data frame into a `SpatialPointsDataFrame` using the **longitude** and **latitude** column (pay attention to the order of the column).
+We also add a color legend that varies depending on PM values (similar to the one used by Air Casting). 
+
+```{r}
+session_content_data.shp <- SpatialPointsDataFrame(session_content_data.df.all[,2:1],
+                                                   session_content_data.df.all)   
+
+session_content_data.shp$color <- "#26c98b" #green
+session_content_data.shp$color[session_content_data.shp$value>10] <- "#ffe968" #yellow
+session_content_data.shp$color[session_content_data.shp$value>35] <- "#ffae65" #orange
+session_content_data.shp$color[session_content_data.shp$value>60] <- "#ff5a63" #red
+```
+
+We can make a simple plot of these data.
+
+```{r}
+par(mar=c(0,0,0,0))
+plot(session_content_data.shp, pch=20, col=scales::alpha(session_content_data.shp$color, 0.7))
+plot(brussels, add=T)
+```
+
+Or something more elegant using `leaflet` package.
+
+```{r, eval=FALSE}
+# Simple Leaflet
+library(leaflet)
+leaflet(session_content_data.shp) %>% addProviderTiles(providers$Stamen.Toner) %>%
+  addCircles(lng = ~longitude, lat = ~latitude, weight = 2, popup = ~value, color = ~color)
+```
+
+
+![](/img/leaflet.png)
+
