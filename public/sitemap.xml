@@ -59,6 +59,15 @@
     
     <url>
     
+      <loc>/talk/example-talk/</loc>
+      <lastmod>2017-01-01T00:00:00+01:00</lastmod>
+    </url>
+    
+  
+    
+    
+    <url>
+    
       <loc>/post/</loc>
       <lastmod>2017-01-01T00:00:00+01:00</lastmod>
     </url>
@@ -160,15 +169,6 @@
     
       <loc>/publication/jacques-2015-millet-prices-netmob-d4d/</loc>
       <lastmod>2015-04-11T00:00:00+00:00</lastmod>
-    </url>
-    
-  
-    
-    
-    <url>
-    
-      <loc>/talk/example-talk/</loc>
-      <lastmod>2015-04-07T00:00:00+02:00</lastmod>
     </url>
     
   

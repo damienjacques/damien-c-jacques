@@ -343,16 +343,6 @@ git submodule update --init --recursive
     </item>
     
     <item>
-      <title>A Person Re-Identification System For Mobile Devices</title>
-      <link>/publication/person-re-identification/</link>
-      <pubDate>Tue, 01 Sep 2015 00:00:00 +0000</pubDate>
-      
-      <guid>/publication/person-re-identification/</guid>
-      <description>&lt;p&gt;More detail can easily be written here using &lt;em&gt;Markdown&lt;/em&gt; and $\rm \LaTeX$ math code.&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
       <title>Hello R Markdown</title>
       <link>/post/2015-07-23-r-rmarkdown/</link>
       <pubDate>Thu, 23 Jul 2015 21:13:14 -0500</pubDate>
@@ -415,6 +405,15 @@ Figure 1: A fancy pie chart.
       <pubDate>Thu, 16 Apr 2015 00:00:00 +0000</pubDate>
       
       <guid>/publication/ardekani-2016-gpr/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Genesis of millet prices in Senegal: the role of production, markets and their failures</title>
+      <link>/publication/jacques-2015-millet-prices-netmob-d4d/</link>
+      <pubDate>Sat, 11 Apr 2015 00:00:00 +0000</pubDate>
+      
+      <guid>/publication/jacques-2015-millet-prices-netmob-d4d/</guid>
       <description></description>
     </item>
     
