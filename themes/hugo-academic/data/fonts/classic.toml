@@ -1,0 +1,15 @@
+# Font style metadata
+name = "Classic"
+
+# Optional Google font URL
+google_fonts = "Lato:400,700|Merriweather|Roboto+Mono|Montserrat|Raleway|Ubuntu|Muli"
+
+# Font families
+heading_font = "Muli"
+body_font = "Ubuntu"
+nav_font = "Ubuntu"
+mono_font = "Roboto Mono"
+
+# Font size
+font_size = "16"
+font_size_small = "14"

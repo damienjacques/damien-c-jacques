@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Publications on Damien C. Jacques</title>
+    <link>/publication/</link>
+    <description>Recent content in Publications on Damien C. Jacques</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <copyright>&amp;copy; 2018</copyright>
+    <lastBuildDate>Sun, 01 Jan 2017 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="/publication/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Social capital and transaction costs in millet markets</title>
+      <link>/publication/jacques-2018-social-capital/</link>
+      <pubDate>Fri, 12 Jan 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/publication/jacques-2018-social-capital/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Combining disparate data sources for improved poverty prediction and mapping</title>
+      <link>/publication/pokhriyal-2017-poverty/</link>
+      <pubDate>Tue, 26 Sep 2017 00:00:00 +0000</pubDate>
+      
+      <guid>/publication/pokhriyal-2017-poverty/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>A multi-disciplinary perspective on emergent and future innovations in peer review</title>
+      <link>/publication/tennant-2017-peer-review/</link>
+      <pubDate>Thu, 20 Jul 2017 00:00:00 +0000</pubDate>
+      
+      <guid>/publication/tennant-2017-peer-review/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Sentinel-2’s Potential for Sub-Pixel Landscape Feature Detection</title>
+      <link>/publication/radoux-2016-sentinel2/</link>
+      <pubDate>Thu, 09 Jun 2016 00:00:00 +0000</pubDate>
+      
+      <guid>/publication/radoux-2016-sentinel2/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>The academic, economic and societal impacts of Open Access: an evidence-based review</title>
+      <link>/publication/tennant-2016-academic/</link>
+      <pubDate>Mon, 11 Apr 2016 00:00:00 +0000</pubDate>
+      
+      <guid>/publication/tennant-2016-academic/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>The impact of training class proportions on binary cropland classification</title>
+      <link>/publication/waldner-2017-training-proportion/</link>
+      <pubDate>Mon, 11 Apr 2016 00:00:00 +0000</pubDate>
+      
+      <guid>/publication/waldner-2017-training-proportion/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>A Person Re-Identification System For Mobile Devices</title>
+      <link>/publication/person-re-identification/</link>
+      <pubDate>Tue, 01 Sep 2015 00:00:00 +0000</pubDate>
+      
+      <guid>/publication/person-re-identification/</guid>
+      <description>More detail can easily be written here using Markdown and $\rm \LaTeX$ math code.</description>
+    </item>
+    
+    <item>
+      <title>A Dynamic Vegetation Senescence Indicator for Near-Real-Time Desert Locust Habitat Monitoring with MODIS</title>
+      <link>/publication/renier-2015-desert-locust/</link>
+      <pubDate>Mon, 15 Jun 2015 00:00:00 +0000</pubDate>
+      
+      <guid>/publication/renier-2015-desert-locust/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>A Layered Vegetation Model for GPR Full-Wave Inversion</title>
+      <link>/publication/ardekani-2016-gpr/</link>
+      <pubDate>Thu, 16 Apr 2015 00:00:00 +0000</pubDate>
+      
+      <guid>/publication/ardekani-2016-gpr/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Genesis of millet prices in Senegal: the role of production, markets and their failures</title>
+      <link>/publication/jacques-2015-millet-prices-netmob-d4d/</link>
+      <pubDate>Sat, 11 Apr 2015 00:00:00 +0000</pubDate>
+      
+      <guid>/publication/jacques-2015-millet-prices-netmob-d4d/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Monitoring dry vegetation masses in semi-arid areas with MODIS SWIR bands</title>
+      <link>/publication/jacques-2014-modis-dry-vegetation/</link>
+      <pubDate>Sun, 17 Aug 2014 00:00:00 +0000</pubDate>
+      
+      <guid>/publication/jacques-2014-modis-dry-vegetation/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>GPR data inversion for vegetation layer</title>
+      <link>/publication/ardekani-2014-gpr/</link>
+      <pubDate>Fri, 11 Apr 2014 00:00:00 +0000</pubDate>
+      
+      <guid>/publication/ardekani-2014-gpr/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Mobile visual clothing search</title>
+      <link>/publication/clothing-search/</link>
+      <pubDate>Mon, 01 Jul 2013 00:00:00 +0000</pubDate>
+      
+      <guid>/publication/clothing-search/</guid>
+      <description>More detail can easily be written here using Markdown and $\rm \LaTeX$ math code.</description>
+    </item>
+    
+  </channel>
+</rss>
