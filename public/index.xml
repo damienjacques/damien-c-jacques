@@ -219,7 +219,7 @@ leaflet(session_content_data.shp) %&amp;gt;% addProviderTiles(providers$Stamen.T
     </item>
     
     <item>
-      <title>Nighttime lights calibration</title>
+      <title>Nighttime Lights Calibration</title>
       <link>/post/nighttime-lights-calibration/</link>
       <pubDate>Thu, 15 Mar 2018 00:00:00 +0000</pubDate>
       

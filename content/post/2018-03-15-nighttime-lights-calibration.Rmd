@@ -1,5 +1,5 @@
 ---
-title: Nighttime lights calibration
+title: Nighttime Lights Calibration
 author: Damien C. Jacques
 date: '2018-03-15'
 slug: nighttime-lights-calibration

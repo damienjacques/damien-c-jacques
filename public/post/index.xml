@@ -24,7 +24,7 @@ library(httr) library(jsonlite) First, we need to get the ID of all sessions of 
     </item>
     
     <item>
-      <title>Nighttime lights calibration</title>
+      <title>Nighttime Lights Calibration</title>
       <link>/post/nighttime-lights-calibration/</link>
       <pubDate>Thu, 15 Mar 2018 00:00:00 +0000</pubDate>
       
