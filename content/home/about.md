@@ -44,6 +44,6 @@ I am using mobile phone metadata (call detail records), Earth Observation (EO) d
 
 I love R and Rstudio. 
 
-I have a [blog](www.guru-gis.net) with two colleagues where we share some code about geospatial analysis.
+I have a [blog](www.guru-gis.net) with some colleagues where we share some code about geospatial analysis.
 
 I am also one of the founders of [STEMGARDEN](www.stemgarden.co), an online platform that promotes urban garden solutions.
