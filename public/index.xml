@@ -618,15 +618,6 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis posuere tellus ac 
     </item>
     
     <item>
-      <title>External Project</title>
-      <link>/project/example-external-project/</link>
-      <pubDate>Wed, 27 Apr 2016 00:00:00 +0000</pubDate>
-      
-      <guid>/project/example-external-project/</guid>
-      <description></description>
-    </item>
-    
-    <item>
       <title>Mapps Attack</title>
       <link>/project/mapps-attack/</link>
       <pubDate>Wed, 27 Apr 2016 00:00:00 +0000</pubDate>
@@ -720,6 +711,15 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis posuere tellus ac 
       <pubDate>Sat, 11 Apr 2015 00:00:00 +0000</pubDate>
       
       <guid>/publication/jacques-2015-millet-prices-netmob-d4d/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Monitoring dry vegetation masses in semi-arid areas with MODIS SWIR bands</title>
+      <link>/publication/jacques-2014-modis-dry-vegetation/</link>
+      <pubDate>Sun, 17 Aug 2014 00:00:00 +0000</pubDate>
+      
+      <guid>/publication/jacques-2014-modis-dry-vegetation/</guid>
       <description></description>
     </item>
     
