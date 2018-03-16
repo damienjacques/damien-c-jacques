@@ -104,7 +104,7 @@
     
     <url>
     
-      <loc>/project/deep-learning/</loc>
+      <loc>/project/data-for-development/</loc>
       <lastmod>2016-04-27T00:00:00+00:00</lastmod>
     </url>
     
@@ -254,17 +254,7 @@
     
     <url>
     
-      <loc>/tags/deep-learning/</loc>
-      <lastmod>2016-04-27T00:00:00+00:00</lastmod>
-      <priority>0</priority>
-    </url>
-    
-  
-    
-    
-    <url>
-    
-      <loc>/tags/fun/</loc>
+      <loc>/tags/earth-observation/</loc>
       <lastmod>2016-04-27T00:00:00+00:00</lastmod>
       <priority>0</priority>
     </url>
@@ -304,6 +294,16 @@
     
     <url>
     
+      <loc>/tags/mobile-phone-data/</loc>
+      <lastmod>2016-04-27T00:00:00+00:00</lastmod>
+      <priority>0</priority>
+    </url>
+    
+  
+    
+    
+    <url>
+    
       <loc>/tags/nighttime-lights/</loc>
       <lastmod>2018-03-15T00:00:00+00:00</lastmod>
       <priority>0</priority>
@@ -334,7 +334,7 @@
     
     <url>
     
-      <loc>/categories/r/</loc>
+      <loc>/tags/r/</loc>
       <lastmod>2018-03-15T00:00:00+00:00</lastmod>
       <priority>0</priority>
     </url>
@@ -344,7 +344,7 @@
     
     <url>
     
-      <loc>/tags/r/</loc>
+      <loc>/categories/r/</loc>
       <lastmod>2018-03-15T00:00:00+00:00</lastmod>
       <priority>0</priority>
     </url>
@@ -356,6 +356,16 @@
     
       <loc>/tags/remote-sensing/</loc>
       <lastmod>2018-03-15T00:00:00+00:00</lastmod>
+      <priority>0</priority>
+    </url>
+    
+  
+    
+    
+    <url>
+    
+      <loc>/tags/sdgs/</loc>
+      <lastmod>2016-04-27T00:00:00+00:00</lastmod>
       <priority>0</priority>
     </url>
     

@@ -33,8 +33,16 @@ filter_default = 0
   tag = "*"
 
 [[filter]]
-  name = "Deep Learning"
-  tag = ".deep-learning"
+  name = "SDGs"
+  tag = ".SDGs"
+  
+[[filter]]
+  name = "Earth Observation"
+  tag = ".Earth-Observation"
+  
+[[filter]]
+  name = "Mobile Phone Data"
+  tag = ".Mobile-Phone-Data"
 
 [[filter]]
   name = "Other"
