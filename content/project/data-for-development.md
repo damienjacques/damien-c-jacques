@@ -1,12 +1,12 @@
 +++
 # Date this page was created.
-date = "2016-04-27"
+date = "2014-12-31"
 
 # Project title.
 title = "Data For Development (D4D) Senegal"
 
 # Project summary to display on homepage.
-summary = "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+summary = "Data For Development (D4D) Senegal."
 
 # Optional image to display on homepage (relative to `static/img/` folder).
 image_preview = "D4D.jpg"
@@ -27,13 +27,18 @@ image = "headers/D4D.jpg"
 caption = "My caption :smile:"
 
 +++
-Damien
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis posuere tellus ac convallis placerat. Proin tincidunt magna sed ex sollicitudin condimentum. Sed ac faucibus dolor, scelerisque sollicitudin nisi. Cras purus urna, suscipit quis sapien eu, pulvinar tempor diam. Quisque risus orci, mollis id ante sit amet, gravida egestas nisl. Sed ac tempus magna. Proin in dui enim. Donec condimentum, sem id dapibus fringilla, tellus enim condimentum arcu, nec volutpat est felis vel metus. Vestibulum sit amet erat at nulla eleifend gravida.
+'[Data for Development Senegal](http://www.d4d.orange.com/en/Accueil)' was an innovation challenge open on ICT Big Data for the purposes of societal development. Sonatel and the Orange Group made anonymous data, extracted from the mobile network in Senegal, available to international research laboratories.
 
-Nullam vel molestie justo. Curabitur vitae efficitur leo. In hac habitasse platea dictumst. Sed pulvinar mauris dui, eget varius purus congue ac. Nulla euismod, lorem vel elementum dapibus, nunc justo porta mi, sed tempus est est vel tellus. Nam et enim eleifend, laoreet sem sit amet, elementum sem. Morbi ut leo congue, maximus velit ut, finibus arcu. In et libero cursus, rutrum risus non, molestie leo. Nullam congue quam et volutpat malesuada. Sed risus tortor, pulvinar et dictum nec, sodales non mi. Phasellus lacinia commodo laoreet. Nam mollis, erat in feugiat consectetur, purus eros egestas tellus, in auctor urna odio at nibh. Mauris imperdiet nisi ac magna convallis, at rhoncus ligula cursus.
+The first objective of the 'Data For Development Senegal' Challenge was to contribute to the development and welfare of the populations. For this purpose, 5 priority subject matters have been defined, for which the requirements have been expressed in collaboration with the responsible Ministries or the partner institutions:
+	
+* Health
+* Agriculture
+* Transport/Urban planning
+* Energy
+* National Statistics
 
-Cras aliquam rhoncus ipsum, in hendrerit nunc mattis vitae. Duis vitae efficitur metus, ac tempus leo. Cras nec fringilla lacus. Quisque sit amet risus at ipsum pharetra commodo. Sed aliquam mauris at consequat eleifend. Praesent porta, augue sed viverra bibendum, neque ante euismod ante, in vehicula justo lorem ac eros. Suspendisse augue libero, venenatis eget tincidunt ut, malesuada at lorem. Donec vitae bibendum arcu. Aenean maximus nulla non pretium iaculis. Quisque imperdiet, nulla in pulvinar aliquet, velit quam ultrices quam, sit amet fringilla leo sem vel nunc. Mauris in lacinia lacus.
+[![Video](http://www.dailymotion.com/thumbnail/320x240/video/x2ptl10)](http://dai.ly/x2ptl10)
 
-Suspendisse a tincidunt lacus. Curabitur at urna sagittis, dictum ante sit amet, euismod magna. Sed rutrum massa id tortor commodo, vitae elementum turpis tempus. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean purus turpis, venenatis a ullamcorper nec, tincidunt et massa. Integer posuere quam rutrum arcu vehicula imperdiet. Mauris ullamcorper quam vitae purus congue, quis euismod magna eleifend. Vestibulum semper vel augue eget tincidunt. Fusce eget justo sodales, dapibus odio eu, ultrices lorem. Duis condimentum lorem id eros commodo, in facilisis mauris scelerisque. Morbi sed auctor leo. Nullam volutpat a lacus quis pharetra. Nulla congue rutrum magna a ornare.
+The results of the challenge were presented at [MIT Media Lab](https://www.media.mit.edu/) during the [Netmob Conference](http://netmob.org/www15/index.html) in April 2015.
 
-Aliquam in turpis accumsan, malesuada nibh ut, hendrerit justo. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Quisque sed erat nec justo posuere suscipit. Donec ut efficitur arcu, in malesuada neque. Nunc dignissim nisl massa, id vulputate nunc pretium nec. Quisque eget urna in risus suscipit ultricies. Pellentesque odio odio, tincidunt in eleifend sed, posuere a diam. Nam gravida nisl convallis semper elementum. Morbi vitae felis faucibus, vulputate orci placerat, aliquet nisi. Aliquam erat volutpat. Maecenas sagittis pulvinar purus, sed porta quam laoreet at.
+For this whallenge, we were awarded the [Agriculture Prize](http://d4d.orange.com/content/download/43330/405662/version/3/file/D4Dchallenge_leaflet_A4_V2Eweblite.pdf) for our project '[Genesis of millet prices in Senegal: the role of production, markets and their failures](http://damien-c-jacques.rbind.io/publication/jacques-2015-millet-prices-netmob-d4d/)' (later published as '[Social capital and transaction costs in millet markets](http://damien-c-jacques.rbind.io/publication/jacques-2018-social-capital/)'). We have also received a small [Bill & Melinda Gates Foundation grant](https://www.gatesfoundation.org/How-We-Work/Quick-Links/Grants-Database/Grants/2014/10/OPP1114791) to support the follow-up research necessary to progress towards the development of products and services on the most relevant development opportunities identified during the challenge.
