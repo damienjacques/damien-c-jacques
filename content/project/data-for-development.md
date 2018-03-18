@@ -24,7 +24,7 @@ math = false
 # Optional featured image (relative to `static/img/` folder).
 [header]
 image = "headers/D4D.jpg"
-caption = "My caption :smile:"
+caption = "D4D Senegal"
 
 +++
 '[Data for Development Senegal](http://www.d4d.orange.com/en/Accueil)' was an innovation challenge open on ICT Big Data for the purposes of societal development. Sonatel and the Orange Group made anonymous data, extracted from the mobile network in Senegal, available to international research laboratories.
@@ -41,4 +41,4 @@ The first objective of the 'Data For Development Senegal' Challenge was to contr
 
 The results of the challenge were presented at [MIT Media Lab](https://www.media.mit.edu/) during the [Netmob Conference](http://netmob.org/www15/index.html) in April 2015.
 
-For this whallenge, we were awarded the [Agriculture Prize](http://d4d.orange.com/content/download/43330/405662/version/3/file/D4Dchallenge_leaflet_A4_V2Eweblite.pdf) for our project '[Genesis of millet prices in Senegal: the role of production, markets and their failures](http://damien-c-jacques.rbind.io/publication/jacques-2015-millet-prices-netmob-d4d/)' (later published as '[Social capital and transaction costs in millet markets](http://damien-c-jacques.rbind.io/publication/jacques-2018-social-capital/)'). We have also received a small [Bill & Melinda Gates Foundation grant](https://www.gatesfoundation.org/How-We-Work/Quick-Links/Grants-Database/Grants/2014/10/OPP1114791) to support the follow-up research necessary to progress towards the development of products and services on the most relevant development opportunities identified during the challenge.
+For this challenge, we were awarded the [Agriculture Prize](http://d4d.orange.com/content/download/43330/405662/version/3/file/D4Dchallenge_leaflet_A4_V2Eweblite.pdf) for our project '[Genesis of millet prices in Senegal: the role of production, markets and their failures](http://damien-c-jacques.rbind.io/publication/jacques-2015-millet-prices-netmob-d4d/)' (later published as '[Social capital and transaction costs in millet markets](http://damien-c-jacques.rbind.io/publication/jacques-2018-social-capital/)'). We have also received a small [Bill & Melinda Gates Foundation grant](https://www.gatesfoundation.org/How-We-Work/Quick-Links/Grants-Database/Grants/2014/10/OPP1114791) to support the follow-up research necessary to progress towards the development of products and services on the most relevant development opportunities identified during the challenge.

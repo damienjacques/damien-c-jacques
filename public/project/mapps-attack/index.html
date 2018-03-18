@@ -17,7 +17,8 @@
       
     
   
-  <meta name="description" content="Got the heart of an explorer ? Be involved in a thrilling race to conquer the world. Over deserts, seas and mountains, be the first pioneer to tread on unchartered territory. Always be on your guard, you are not alone in this undertaking and the enemy might be nearby. Protect your land against invaders and consolidate your positions. The earth is limited and therefore, a highly coveted resource. Hurry, and take the lion’s share !">
+  <meta name="description" content="For the International Space Apps Challenge 2014, we worked on a proof-of-concept apps aiming to crowdsourcing land cover validation data points through a game-like interface.
+  Project Description Got the heart of an explorer ? Be involved in a thrilling race to conquer the world. Over deserts, seas and mountains, be the first pioneer to tread on unchartered territory. Always be on your guard, you are not alone in this undertaking and the enemy might be nearby.">
 
   
   <link rel="alternate" hreflang="en-us" href="/project/mapps-attack/">
@@ -94,7 +95,8 @@
   <meta property="og:site_name" content="Damien C. Jacques">
   <meta property="og:url" content="/project/mapps-attack/">
   <meta property="og:title" content="Mapps Attack | Damien C. Jacques">
-  <meta property="og:description" content="Got the heart of an explorer ? Be involved in a thrilling race to conquer the world. Over deserts, seas and mountains, be the first pioneer to tread on unchartered territory. Always be on your guard, you are not alone in this undertaking and the enemy might be nearby. Protect your land against invaders and consolidate your positions. The earth is limited and therefore, a highly coveted resource. Hurry, and take the lion’s share !"><meta property="og:image" content="/img/headers/MappsAttack.jpg">
+  <meta property="og:description" content="For the International Space Apps Challenge 2014, we worked on a proof-of-concept apps aiming to crowdsourcing land cover validation data points through a game-like interface.
+  Project Description Got the heart of an explorer ? Be involved in a thrilling race to conquer the world. Over deserts, seas and mountains, be the first pioneer to tread on unchartered territory. Always be on your guard, you are not alone in this undertaking and the enemy might be nearby."><meta property="og:image" content="/img/headers/MappsAttack.jpg">
   <meta property="og:locale" content="en-us">
   
   <meta property="article:published_time" content="2016-04-27T00:00:00&#43;00:00">
@@ -305,9 +307,11 @@
     
 
     <div class="article-style" itemprop="articleBody">
-      <p>Got the heart of an explorer ? Be involved in a thrilling race to conquer the world. Over deserts, seas and mountains, be the first pioneer to tread on unchartered territory. Always be on your guard, you are not alone in this undertaking and the enemy might be nearby. Protect your land against invaders and consolidate your positions. The earth is limited and therefore, a highly coveted resource. Hurry, and take the lion’s share !</p>
+      
 
-<p>Through a highly convenient and addictive game application, the project aims to develop a database of land cover observation photo-interpreted (and/or observed in the field) on a global scale. Thanks to an innovative method allowing to assess observer’s accuracy, this massive crowdsourced data can be used as training dataset for an automated land cover classification algorithm (SVM) of Landsat images. This near real time active learning method, to the best of our knowledge, is unique in the world.</p>
+<p>For the <a href="https://2014.spaceappschallenge.org/project/mapps-attack/" target="_blank">International Space Apps Challenge 2014</a>, we worked on a proof-of-concept apps aiming to crowdsourcing land cover validation data points through a game-like interface.</p>
+
+<p><img src="/img/GalacticProblemSolver.jpg" alt="" /></p>
 
 
 <div style="position: relative; padding-bottom: 56.25%; padding-top: 30px; height: 0; overflow: hidden;">
@@ -315,9 +319,33 @@
  </div>
 
 
-<p>##METHOD</p>
+<h3 id="project-description">Project Description</h3>
 
-<p>#THE SAMPLING</p>
+<p>Got the heart of an explorer ? Be involved in a thrilling race to conquer the world. Over deserts, seas and mountains, be the first pioneer to tread on unchartered territory. Always be on your guard, you are not alone in this undertaking and the enemy might be nearby. Protect your land against invaders and consolidate your positions. The earth is limited and therefore, a highly coveted resource. Hurry, and take the lion’s share !</p>
+
+<p>Through a highly convenient and addictive game application, the project aims to develop a database of land cover observation photo-interpreted (and/or observed in the field) on a global scale. Thanks to an innovative method allowing to assess observer’s accuracy, this massive crowdsourced data can be used as training dataset for an automated land cover classification algorithm (SVM) of Landsat images. This near real time active learning method, to the best of our knowledge, is unique in the world.</p>
+
+
+<figure>
+    
+        <img src="/img/printscreen.jpg" alt="Screenshots of the apps." />
+    
+    
+    <figcaption>
+        <p>
+        Screenshots of the apps.
+        
+            
+        
+        </p> 
+    </figcaption>
+    
+</figure>
+
+
+<h3 id="method">Method</h3>
+
+<h5 id="sampling">Sampling</h5>
 
 <p>The most recent Landsat images are downloaded and sampled in objects of 9x9 pixels by stratified sampling. Strata are defined using the world map of Köppen−Geiger Climate Classes (figure 1), larger is the area of the classes (figure 2), the more units are sampled.</p>
 
@@ -339,13 +367,31 @@
 </figure>
 
 
-<p>#GAME RULES</p>
+<h5 id="games-rules">Games Rules</h5>
 
 <p>The goal is to conquer as much territory (district, province, region) as possible and become the master of the World. To claim a territory, the user has to correctly identify the land cover of each sample units in it and complete several challenges (quiz, speed test, etc). Each new user starts with a dedicated game mode, the sandbox. During the sandbox phase, the accuracy of the gamer will be tested against a series of sample unit that have been preclassified based on expert knowledge. After this phase, a level of confidence (specified for each classes) will be given at each user. From that point,, the gamer will be able to choose territories he wants to explore. When a territory is discover for the first time, the explorer mode will be activated. This phase continues until each sample units of the territory have been assessed by 10 different users. When the phase is over, a “true” land cover is determined for each sample unit based on a weighting of the different answers (function of the level of confidence) and the last up-to-date land cover map. If the guess was right, the gamer marked a point. A territory is given at a user if he had an accuracy higher than 70%. When a territory has passed the explorer stage, it can be visited by any users, the “true” land cover of a sample unit can changed in time if the new weighted answer is different. In this case points are deducted to concerned gamers. The level of confidence of each users is also updated during the game depending on the number of his right answers. A territory is never definitively acquired. New sample units can appear in a zone already owned. In this case the territory is under siege (similar mechanisms than the explorer mode) until each new sample unit has been validated by 10 users or more.</p>
 
+
+<figure>
+    
+        <img src="/img/overview.jpg" alt="Game modes." />
+    
+    
+    <figcaption>
+        <p>
+        Game modes.
+        
+            
+        
+        </p> 
+    </figcaption>
+    
+</figure>
+
+
 <p>Improved the gaming experience with several features: League, Badges, Special Challenge, Bet your territories…</p>
 
-<p>#LAND COVER CLASSIFICATION</p>
+<h4 id="land-cover-classification">Land Cover Classification</h4>
 
 <p>The sample units that have passed the explorer mode are used to train a Support Vector Machine algorithm in the stratum concerned. As the carry out of the validation data progresses, the best available land cover map is updated. When change are detected between successive land cover maps, the area will be submitted to users for validation. This kind of feedback from the users is, to the best of our knowledge, unique in the world.</p>
 

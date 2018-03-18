@@ -604,9 +604,11 @@ legend(&amp;quot;topleft&amp;quot;, col=c(&amp;quot;black&amp;quot;, &amp;quot;r
       <pubDate>Wed, 27 Apr 2016 00:00:00 +0000</pubDate>
       
       <guid>/project/mapps-attack/</guid>
-      <description>&lt;p&gt;Got the heart of an explorer ? Be involved in a thrilling race to conquer the world. Over deserts, seas and mountains, be the first pioneer to tread on unchartered territory. Always be on your guard, you are not alone in this undertaking and the enemy might be nearby. Protect your land against invaders and consolidate your positions. The earth is limited and therefore, a highly coveted resource. Hurry, and take the lion’s share !&lt;/p&gt;
+      <description>
 
-&lt;p&gt;Through a highly convenient and addictive game application, the project aims to develop a database of land cover observation photo-interpreted (and/or observed in the field) on a global scale. Thanks to an innovative method allowing to assess observer’s accuracy, this massive crowdsourced data can be used as training dataset for an automated land cover classification algorithm (SVM) of Landsat images. This near real time active learning method, to the best of our knowledge, is unique in the world.&lt;/p&gt;
+&lt;p&gt;For the &lt;a href=&#34;https://2014.spaceappschallenge.org/project/mapps-attack/&#34; target=&#34;_blank&#34;&gt;International Space Apps Challenge 2014&lt;/a&gt;, we worked on a proof-of-concept apps aiming to crowdsourcing land cover validation data points through a game-like interface.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;/img/GalacticProblemSolver.jpg&#34; alt=&#34;&#34; /&gt;&lt;/p&gt;
 
 
 &lt;div style=&#34;position: relative; padding-bottom: 56.25%; padding-top: 30px; height: 0; overflow: hidden;&#34;&gt;
@@ -614,9 +616,33 @@ legend(&amp;quot;topleft&amp;quot;, col=c(&amp;quot;black&amp;quot;, &amp;quot;r
  &lt;/div&gt;
 
 
-&lt;p&gt;##METHOD&lt;/p&gt;
+&lt;h3 id=&#34;project-description&#34;&gt;Project Description&lt;/h3&gt;
 
-&lt;p&gt;#THE SAMPLING&lt;/p&gt;
+&lt;p&gt;Got the heart of an explorer ? Be involved in a thrilling race to conquer the world. Over deserts, seas and mountains, be the first pioneer to tread on unchartered territory. Always be on your guard, you are not alone in this undertaking and the enemy might be nearby. Protect your land against invaders and consolidate your positions. The earth is limited and therefore, a highly coveted resource. Hurry, and take the lion’s share !&lt;/p&gt;
+
+&lt;p&gt;Through a highly convenient and addictive game application, the project aims to develop a database of land cover observation photo-interpreted (and/or observed in the field) on a global scale. Thanks to an innovative method allowing to assess observer’s accuracy, this massive crowdsourced data can be used as training dataset for an automated land cover classification algorithm (SVM) of Landsat images. This near real time active learning method, to the best of our knowledge, is unique in the world.&lt;/p&gt;
+
+
+&lt;figure&gt;
+    
+        &lt;img src=&#34;/img/printscreen.jpg&#34; alt=&#34;Screenshots of the apps.&#34; /&gt;
+    
+    
+    &lt;figcaption&gt;
+        &lt;p&gt;
+        Screenshots of the apps.
+        
+            
+        
+        &lt;/p&gt; 
+    &lt;/figcaption&gt;
+    
+&lt;/figure&gt;
+
+
+&lt;h3 id=&#34;method&#34;&gt;Method&lt;/h3&gt;
+
+&lt;h5 id=&#34;sampling&#34;&gt;Sampling&lt;/h5&gt;
 
 &lt;p&gt;The most recent Landsat images are downloaded and sampled in objects of 9x9 pixels by stratified sampling. Strata are defined using the world map of Köppen−Geiger Climate Classes (figure 1), larger is the area of the classes (figure 2), the more units are sampled.&lt;/p&gt;
 
@@ -638,13 +664,31 @@ legend(&amp;quot;topleft&amp;quot;, col=c(&amp;quot;black&amp;quot;, &amp;quot;r
 &lt;/figure&gt;
 
 
-&lt;p&gt;#GAME RULES&lt;/p&gt;
+&lt;h5 id=&#34;games-rules&#34;&gt;Games Rules&lt;/h5&gt;
 
 &lt;p&gt;The goal is to conquer as much territory (district, province, region) as possible and become the master of the World. To claim a territory, the user has to correctly identify the land cover of each sample units in it and complete several challenges (quiz, speed test, etc). Each new user starts with a dedicated game mode, the sandbox. During the sandbox phase, the accuracy of the gamer will be tested against a series of sample unit that have been preclassified based on expert knowledge. After this phase, a level of confidence (specified for each classes) will be given at each user. From that point,, the gamer will be able to choose territories he wants to explore. When a territory is discover for the first time, the explorer mode will be activated. This phase continues until each sample units of the territory have been assessed by 10 different users. When the phase is over, a “true” land cover is determined for each sample unit based on a weighting of the different answers (function of the level of confidence) and the last up-to-date land cover map. If the guess was right, the gamer marked a point. A territory is given at a user if he had an accuracy higher than 70%. When a territory has passed the explorer stage, it can be visited by any users, the “true” land cover of a sample unit can changed in time if the new weighted answer is different. In this case points are deducted to concerned gamers. The level of confidence of each users is also updated during the game depending on the number of his right answers. A territory is never definitively acquired. New sample units can appear in a zone already owned. In this case the territory is under siege (similar mechanisms than the explorer mode) until each new sample unit has been validated by 10 users or more.&lt;/p&gt;
 
+
+&lt;figure&gt;
+    
+        &lt;img src=&#34;/img/overview.jpg&#34; alt=&#34;Game modes.&#34; /&gt;
+    
+    
+    &lt;figcaption&gt;
+        &lt;p&gt;
+        Game modes.
+        
+            
+        
+        &lt;/p&gt; 
+    &lt;/figcaption&gt;
+    
+&lt;/figure&gt;
+
+
 &lt;p&gt;Improved the gaming experience with several features: League, Badges, Special Challenge, Bet your territories…&lt;/p&gt;
 
-&lt;p&gt;#LAND COVER CLASSIFICATION&lt;/p&gt;
+&lt;h4 id=&#34;land-cover-classification&#34;&gt;Land Cover Classification&lt;/h4&gt;
 
 &lt;p&gt;The sample units that have passed the explorer mode are used to train a Support Vector Machine algorithm in the stratum concerned. As the carry out of the validation data progresses, the best available land cover map is updated. When change are detected between successive land cover maps, the area will be submitted to users for validation. This kind of feedback from the users is, to the best of our knowledge, unique in the world.&lt;/p&gt;
 </description>
@@ -717,7 +761,7 @@ legend(&amp;quot;topleft&amp;quot;, col=c(&amp;quot;black&amp;quot;, &amp;quot;r
 
 &lt;p&gt;The results of the challenge were presented at &lt;a href=&#34;https://www.media.mit.edu/&#34; target=&#34;_blank&#34;&gt;MIT Media Lab&lt;/a&gt; during the &lt;a href=&#34;http://netmob.org/www15/index.html&#34; target=&#34;_blank&#34;&gt;Netmob Conference&lt;/a&gt; in April 2015.&lt;/p&gt;
 
-&lt;p&gt;For this whallenge, we were awarded the &lt;a href=&#34;http://d4d.orange.com/content/download/43330/405662/version/3/file/D4Dchallenge_leaflet_A4_V2Eweblite.pdf&#34; target=&#34;_blank&#34;&gt;Agriculture Prize&lt;/a&gt; for our project &amp;lsquo;&lt;a href=&#34;http://damien-c-jacques.rbind.io/publication/jacques-2015-millet-prices-netmob-d4d/&#34; target=&#34;_blank&#34;&gt;Genesis of millet prices in Senegal: the role of production, markets and their failures&lt;/a&gt;&amp;rsquo; (later published as &amp;lsquo;&lt;a href=&#34;http://damien-c-jacques.rbind.io/publication/jacques-2018-social-capital/&#34; target=&#34;_blank&#34;&gt;Social capital and transaction costs in millet markets&lt;/a&gt;&amp;rsquo;). We have also received a small &lt;a href=&#34;https://www.gatesfoundation.org/How-We-Work/Quick-Links/Grants-Database/Grants/2014/10/OPP1114791&#34; target=&#34;_blank&#34;&gt;Bill &amp;amp; Melinda Gates Foundation grant&lt;/a&gt; to support the follow-up research necessary to progress towards the development of products and services on the most relevant development opportunities identified during the challenge.&lt;/p&gt;
+&lt;p&gt;For this challenge, we were awarded the &lt;a href=&#34;http://d4d.orange.com/content/download/43330/405662/version/3/file/D4Dchallenge_leaflet_A4_V2Eweblite.pdf&#34; target=&#34;_blank&#34;&gt;Agriculture Prize&lt;/a&gt; for our project &amp;lsquo;&lt;a href=&#34;http://damien-c-jacques.rbind.io/publication/jacques-2015-millet-prices-netmob-d4d/&#34; target=&#34;_blank&#34;&gt;Genesis of millet prices in Senegal: the role of production, markets and their failures&lt;/a&gt;&amp;rsquo; (later published as &amp;lsquo;&lt;a href=&#34;http://damien-c-jacques.rbind.io/publication/jacques-2018-social-capital/&#34; target=&#34;_blank&#34;&gt;Social capital and transaction costs in millet markets&lt;/a&gt;&amp;rsquo;). We have also received a small &lt;a href=&#34;https://www.gatesfoundation.org/How-We-Work/Quick-Links/Grants-Database/Grants/2014/10/OPP1114791&#34; target=&#34;_blank&#34;&gt;Bill &amp;amp; Melinda Gates Foundation grant&lt;/a&gt; to support the follow-up research necessary to progress towards the development of products and services on the most relevant development opportunities identified during the challenge.&lt;/p&gt;
 </description>
     </item>
     
