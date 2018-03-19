@@ -6,7 +6,7 @@ date = "2014-12-31"
 title = "Data For Development (D4D) Senegal"
 
 # Project summary to display on homepage.
-summary = "Data For Development (D4D) Senegal."
+summary = "D4D is an innovation challenge open on ICT Big Data for the purposes of societal development."
 
 # Optional image to display on homepage (relative to `static/img/` folder).
 image_preview = "D4D.jpg"
