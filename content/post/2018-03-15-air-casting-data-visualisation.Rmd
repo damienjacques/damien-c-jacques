@@ -141,13 +141,13 @@ library(dplyr)
 agg_data <- session_content_data.df.all %>% 
             group_by(date, hour) %>% 
             summarise(MeanPPM = mean(value))
-```
 
-```{r}
 agg_data$labelPPM <- "< 10 PPM" #green
 agg_data$labelPPM[agg_data$MeanPPM > 10] <- "> 10 & < 35 PPM" #yellow
 agg_data$labelPPM[agg_data$MeanPPM > 35] <- "> 35 & < 60 PPM" #orange
 agg_data$labelPPM[agg_data$MeanPPM > 60] <- "> 60 PPM" #red
+agg_data$labelPPM <- as.factor(agg_data$labelPPM)
+agg_data$labelPPM <- factor(agg_data$labelPPM, levels(agg_data$labelPPM)[c(2,1,3,4)])
 
 colors <- c("#26c98b", "#ffe968", "#ffae65", "#ff5a63")
 
@@ -167,8 +167,9 @@ agg_data$labelPPM <- "< 10 PPM" #green
 agg_data$labelPPM[agg_data$value > 10] <- "> 10 & < 35 PPM" #yellow
 agg_data$labelPPM[agg_data$value > 35] <- "> 35 & < 60 PPM" #orange
 agg_data$labelPPM[agg_data$value > 60] <- "> 60 PPM" #red
+agg_data$labelPPM <- as.factor(agg_data$labelPPM)
+agg_data$labelPPM <- factor(agg_data$labelPPM, levels(agg_data$labelPPM)[c(2,1,3,4)])
 
-colors <- c("#26c98b", "#ffe968", "#ffae65", "#ff5a63")
 
 library(forcats)
 
