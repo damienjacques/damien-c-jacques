@@ -12,7 +12,6 @@ tags:
   - API
 ---
 
-
 This R Notebook describes the steps to download the data from the Air Quality API, convert them to R data and make some basic figures.
 
 First, we need to load two packages to deal with the API request (`httr`) and format (`jsonlite`). You can use `install.package(c("httr", "jsonlite"))` to install the packages.
@@ -80,7 +79,7 @@ save(session_content_data.df.all, file="/home/ubuntu/Dropbox/Entreprenership/Pro
 
 Next we will filter the data that are outside Brussels by using the extent of Brussels region.
 
-```{r}
+```{r, message=FALSE}
 load("/home/ubuntu/Dropbox/Entreprenership/Projects/AirCasting/Data/session_content_data.df.all")
 
 ###################
@@ -126,3 +125,62 @@ leaflet(session_content_data.shp) %>% addProviderTiles(providers$Stamen.Toner) %
 
 ![](/img/leaflet.png)
 
+## HeatMaps
+
+```{r, message=FALSE }
+library(lubridate)
+session_content_data.df.all$time <- ymd_hms(session_content_data.df.all$time)
+session_content_data.df.all$date <- date(session_content_data.df.all$time)
+unique(session_content_data.df.all$date)
+session_content_data.df.all$hour <- hour(session_content_data.df.all$time)
+unique(session_content_data.df.all$hour)
+session_content_data.df.all$minute <- minute(session_content_data.df.all$time)
+
+# Aggregate data by date and hour
+library(dplyr)
+agg_data <- session_content_data.df.all %>% 
+            group_by(date, hour) %>% 
+            summarise(MeanPPM = mean(value))
+```
+
+```{r}
+agg_data$labelPPM <- "< 10 PPM" #green
+agg_data$labelPPM[agg_data$MeanPPM > 10] <- "> 10 & < 35 PPM" #yellow
+agg_data$labelPPM[agg_data$MeanPPM > 35] <- "> 35 & < 60 PPM" #orange
+agg_data$labelPPM[agg_data$MeanPPM > 60] <- "> 60 PPM" #red
+
+colors <- c("#26c98b", "#ffe968", "#ffae65", "#ff5a63")
+
+library(ggplot2)
+ggplot(agg_data, aes(x=date, y=hour, fill=labelPPM)) +
+  geom_tile() +
+  scale_fill_manual(values=colors, "") +
+  theme_bw()
+```
+
+```{r, fig.height = 18, fig.width = 12}
+agg_data <- session_content_data.df.all %>% 
+            group_by(session.id, date) %>% 
+            mutate(time.scaled = time - min(time), length = length(time))
+
+agg_data$labelPPM <- "< 10 PPM" #green
+agg_data$labelPPM[agg_data$value > 10] <- "> 10 & < 35 PPM" #yellow
+agg_data$labelPPM[agg_data$value > 35] <- "> 35 & < 60 PPM" #orange
+agg_data$labelPPM[agg_data$value > 60] <- "> 60 PPM" #red
+
+colors <- c("#26c98b", "#ffe968", "#ffae65", "#ff5a63")
+
+library(forcats)
+
+ggplot(agg_data, aes(x=time.scaled/60, y=fct_reorder(factor(session.id), length) , fill=labelPPM)) +
+  geom_raster() +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_discrete(expand = c(0, 0)) +
+  scale_fill_manual(values=colors, "") +
+  ylab("Session ID") +
+  xlab("Minutes") +
+  theme_bw() +
+  theme(axis.text=element_text(size=14),
+        axis.title=element_text(size=16,face="bold"),
+        legend.text=element_text(size=16))
+```

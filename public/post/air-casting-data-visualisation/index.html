@@ -267,7 +267,7 @@ library(httr) library(jsonlite) First, we need to get the ID of all sessions of 
   
   <span class="middot-divider"></span>
   <span class="article-reading-time">
-    5 min read
+    6 min read
   </span>
   
 
@@ -508,9 +508,8 @@ save(session_content_data.df.all, file=&quot;/home/ubuntu/Dropbox/Entreprenershi
 <pre class="r"><code>load(&quot;/home/ubuntu/Dropbox/Entreprenership/Projects/AirCasting/Data/session_content_data.df.all&quot;)
 
 ###################
-library(raster)</code></pre>
-<pre><code>## Loading required package: sp</code></pre>
-<pre class="r"><code>belgium &lt;- getData(&#39;GADM&#39;, country=&#39;BE&#39;, level=2)
+library(raster)
+belgium &lt;- getData(&#39;GADM&#39;, country=&#39;BE&#39;, level=2)
 brussels &lt;- belgium[belgium$NAME_1==&quot;Bruxelles&quot;,]
 ext.bru &lt;- extent(brussels)
 plot(brussels)</code></pre>
@@ -537,6 +536,69 @@ leaflet(session_content_data.shp) %&gt;% addProviderTiles(providers$Stamen.Toner
 <div class="figure">
 <img src="/img/leaflet.png" />
 
+</div>
+<div id="heatmaps" class="section level2">
+<h2>HeatMaps</h2>
+<pre class="r"><code>library(lubridate)
+session_content_data.df.all$time &lt;- ymd_hms(session_content_data.df.all$time)
+session_content_data.df.all$date &lt;- date(session_content_data.df.all$time)
+unique(session_content_data.df.all$date)</code></pre>
+<pre><code>##  [1] &quot;2018-03-13&quot; &quot;2018-03-09&quot; &quot;2018-03-07&quot; &quot;2018-03-08&quot; &quot;2018-03-06&quot;
+##  [6] &quot;2018-03-02&quot; &quot;2018-03-01&quot; &quot;2018-02-26&quot; &quot;2018-02-27&quot; &quot;2018-02-28&quot;
+## [11] &quot;2018-02-23&quot; &quot;2018-02-22&quot; &quot;2018-02-21&quot; &quot;2018-02-19&quot; &quot;2018-02-12&quot;
+## [16] &quot;2018-02-10&quot; &quot;2018-02-09&quot; &quot;2018-02-08&quot; &quot;2018-02-07&quot; &quot;2018-02-06&quot;
+## [21] &quot;2017-11-29&quot; &quot;2018-02-02&quot; &quot;2018-02-01&quot; &quot;2018-01-31&quot; &quot;2018-01-24&quot;
+## [26] &quot;2017-12-15&quot; &quot;2017-12-12&quot; &quot;2017-12-11&quot; &quot;2017-12-08&quot; &quot;2017-12-01&quot;
+## [31] &quot;2017-11-16&quot; &quot;2017-11-15&quot; &quot;2017-11-14&quot; &quot;2017-11-13&quot; &quot;2017-11-03&quot;
+## [36] &quot;2017-10-31&quot; &quot;2017-10-28&quot; &quot;2017-09-25&quot; &quot;2017-09-22&quot;</code></pre>
+<pre class="r"><code>session_content_data.df.all$hour &lt;- hour(session_content_data.df.all$time)
+unique(session_content_data.df.all$hour)</code></pre>
+<pre><code>##  [1] 17  8 16 15  9 18  7 12 14 13 19  0 20 11 10</code></pre>
+<pre class="r"><code>session_content_data.df.all$minute &lt;- minute(session_content_data.df.all$time)
+
+# Aggregate data by date and hour
+library(dplyr)
+agg_data &lt;- session_content_data.df.all %&gt;% 
+            group_by(date, hour) %&gt;% 
+            summarise(MeanPPM = mean(value))</code></pre>
+<pre class="r"><code>agg_data$labelPPM &lt;- &quot;&lt; 10 PPM&quot; #green
+agg_data$labelPPM[agg_data$MeanPPM &gt; 10] &lt;- &quot;&gt; 10 &amp; &lt; 35 PPM&quot; #yellow
+agg_data$labelPPM[agg_data$MeanPPM &gt; 35] &lt;- &quot;&gt; 35 &amp; &lt; 60 PPM&quot; #orange
+agg_data$labelPPM[agg_data$MeanPPM &gt; 60] &lt;- &quot;&gt; 60 PPM&quot; #red
+
+colors &lt;- c(&quot;#26c98b&quot;, &quot;#ffe968&quot;, &quot;#ffae65&quot;, &quot;#ff5a63&quot;)
+
+library(ggplot2)
+ggplot(agg_data, aes(x=date, y=hour, fill=labelPPM)) +
+  geom_tile() +
+  scale_fill_manual(values=colors, &quot;&quot;) +
+  theme_bw()</code></pre>
+<p><img src="/post/2018-03-15-air-casting-data-visualisation_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
+<pre class="r"><code>agg_data &lt;- session_content_data.df.all %&gt;% 
+            group_by(session.id, date) %&gt;% 
+            mutate(time.scaled = time - min(time), length = length(time))
+
+agg_data$labelPPM &lt;- &quot;&lt; 10 PPM&quot; #green
+agg_data$labelPPM[agg_data$value &gt; 10] &lt;- &quot;&gt; 10 &amp; &lt; 35 PPM&quot; #yellow
+agg_data$labelPPM[agg_data$value &gt; 35] &lt;- &quot;&gt; 35 &amp; &lt; 60 PPM&quot; #orange
+agg_data$labelPPM[agg_data$value &gt; 60] &lt;- &quot;&gt; 60 PPM&quot; #red
+
+colors &lt;- c(&quot;#26c98b&quot;, &quot;#ffe968&quot;, &quot;#ffae65&quot;, &quot;#ff5a63&quot;)
+
+library(forcats)
+
+ggplot(agg_data, aes(x=time.scaled/60, y=fct_reorder(factor(session.id), length) , fill=labelPPM)) +
+  geom_raster() +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_discrete(expand = c(0, 0)) +
+  scale_fill_manual(values=colors, &quot;&quot;) +
+  ylab(&quot;Session ID&quot;) +
+  xlab(&quot;Minutes&quot;) +
+  theme_bw() +
+  theme(axis.text=element_text(size=14),
+        axis.title=element_text(size=16,face=&quot;bold&quot;),
+        legend.text=element_text(size=16))</code></pre>
+<p><img src="/post/2018-03-15-air-casting-data-visualisation_files/figure-html/unnamed-chunk-12-1.png" width="1152" /></p>
 </div>
 
     </div>

@@ -11,7 +11,10 @@ header:
   image: ''
 ---
 
-Here, I am listing several interesting papers from the scientific literature and other (under construction). 
+The list below includes some interesting papers from the scientific literature and the internet (under construction).
+An up to date bibtex file of my scientific bibliography (created with Jabref) can be found [here](https://www.dropbox.com/preview/Research/Bibliography/Biblio).
+
+
 # Table of Contents
 1. [History / Archaeology](#history)
 2. [Network](#network)

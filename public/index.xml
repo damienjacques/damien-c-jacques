@@ -18,7 +18,8 @@
       <guid>/post/interesting-papers/</guid>
       <description>
 
-&lt;p&gt;Here, I am listing several interesting papers from the scientific literature and other (under construction).&lt;/p&gt;
+&lt;p&gt;The list below includes some interesting papers from the scientific literature and the internet (under construction).
+An up to date bibtex file of my scientific bibliography (created with Jabref) can be found &lt;a href=&#34;https://www.dropbox.com/preview/Research/Bibliography/Biblio&#34; target=&#34;_blank&#34;&gt;here&lt;/a&gt;.&lt;/p&gt;
 
 &lt;h1 id=&#34;table-of-contents&#34;&gt;Table of Contents&lt;/h1&gt;
 
@@ -247,9 +248,8 @@ save(session_content_data.df.all, file=&amp;quot;/home/ubuntu/Dropbox/Entreprene
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;load(&amp;quot;/home/ubuntu/Dropbox/Entreprenership/Projects/AirCasting/Data/session_content_data.df.all&amp;quot;)
 
 ###################
-library(raster)&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;## Loading required package: sp&lt;/code&gt;&lt;/pre&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;belgium &amp;lt;- getData(&amp;#39;GADM&amp;#39;, country=&amp;#39;BE&amp;#39;, level=2)
+library(raster)
+belgium &amp;lt;- getData(&amp;#39;GADM&amp;#39;, country=&amp;#39;BE&amp;#39;, level=2)
 brussels &amp;lt;- belgium[belgium$NAME_1==&amp;quot;Bruxelles&amp;quot;,]
 ext.bru &amp;lt;- extent(brussels)
 plot(brussels)&lt;/code&gt;&lt;/pre&gt;
@@ -276,6 +276,69 @@ leaflet(session_content_data.shp) %&amp;gt;% addProviderTiles(providers$Stamen.T
 &lt;div class=&#34;figure&#34;&gt;
 &lt;img src=&#34;/img/leaflet.png&#34; /&gt;
 
+&lt;/div&gt;
+&lt;div id=&#34;heatmaps&#34; class=&#34;section level2&#34;&gt;
+&lt;h2&gt;HeatMaps&lt;/h2&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;library(lubridate)
+session_content_data.df.all$time &amp;lt;- ymd_hms(session_content_data.df.all$time)
+session_content_data.df.all$date &amp;lt;- date(session_content_data.df.all$time)
+unique(session_content_data.df.all$date)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;##  [1] &amp;quot;2018-03-13&amp;quot; &amp;quot;2018-03-09&amp;quot; &amp;quot;2018-03-07&amp;quot; &amp;quot;2018-03-08&amp;quot; &amp;quot;2018-03-06&amp;quot;
+##  [6] &amp;quot;2018-03-02&amp;quot; &amp;quot;2018-03-01&amp;quot; &amp;quot;2018-02-26&amp;quot; &amp;quot;2018-02-27&amp;quot; &amp;quot;2018-02-28&amp;quot;
+## [11] &amp;quot;2018-02-23&amp;quot; &amp;quot;2018-02-22&amp;quot; &amp;quot;2018-02-21&amp;quot; &amp;quot;2018-02-19&amp;quot; &amp;quot;2018-02-12&amp;quot;
+## [16] &amp;quot;2018-02-10&amp;quot; &amp;quot;2018-02-09&amp;quot; &amp;quot;2018-02-08&amp;quot; &amp;quot;2018-02-07&amp;quot; &amp;quot;2018-02-06&amp;quot;
+## [21] &amp;quot;2017-11-29&amp;quot; &amp;quot;2018-02-02&amp;quot; &amp;quot;2018-02-01&amp;quot; &amp;quot;2018-01-31&amp;quot; &amp;quot;2018-01-24&amp;quot;
+## [26] &amp;quot;2017-12-15&amp;quot; &amp;quot;2017-12-12&amp;quot; &amp;quot;2017-12-11&amp;quot; &amp;quot;2017-12-08&amp;quot; &amp;quot;2017-12-01&amp;quot;
+## [31] &amp;quot;2017-11-16&amp;quot; &amp;quot;2017-11-15&amp;quot; &amp;quot;2017-11-14&amp;quot; &amp;quot;2017-11-13&amp;quot; &amp;quot;2017-11-03&amp;quot;
+## [36] &amp;quot;2017-10-31&amp;quot; &amp;quot;2017-10-28&amp;quot; &amp;quot;2017-09-25&amp;quot; &amp;quot;2017-09-22&amp;quot;&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;session_content_data.df.all$hour &amp;lt;- hour(session_content_data.df.all$time)
+unique(session_content_data.df.all$hour)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;##  [1] 17  8 16 15  9 18  7 12 14 13 19  0 20 11 10&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;session_content_data.df.all$minute &amp;lt;- minute(session_content_data.df.all$time)
+
+# Aggregate data by date and hour
+library(dplyr)
+agg_data &amp;lt;- session_content_data.df.all %&amp;gt;% 
+            group_by(date, hour) %&amp;gt;% 
+            summarise(MeanPPM = mean(value))&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;agg_data$labelPPM &amp;lt;- &amp;quot;&amp;lt; 10 PPM&amp;quot; #green
+agg_data$labelPPM[agg_data$MeanPPM &amp;gt; 10] &amp;lt;- &amp;quot;&amp;gt; 10 &amp;amp; &amp;lt; 35 PPM&amp;quot; #yellow
+agg_data$labelPPM[agg_data$MeanPPM &amp;gt; 35] &amp;lt;- &amp;quot;&amp;gt; 35 &amp;amp; &amp;lt; 60 PPM&amp;quot; #orange
+agg_data$labelPPM[agg_data$MeanPPM &amp;gt; 60] &amp;lt;- &amp;quot;&amp;gt; 60 PPM&amp;quot; #red
+
+colors &amp;lt;- c(&amp;quot;#26c98b&amp;quot;, &amp;quot;#ffe968&amp;quot;, &amp;quot;#ffae65&amp;quot;, &amp;quot;#ff5a63&amp;quot;)
+
+library(ggplot2)
+ggplot(agg_data, aes(x=date, y=hour, fill=labelPPM)) +
+  geom_tile() +
+  scale_fill_manual(values=colors, &amp;quot;&amp;quot;) +
+  theme_bw()&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2018-03-15-air-casting-data-visualisation_files/figure-html/unnamed-chunk-11-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;agg_data &amp;lt;- session_content_data.df.all %&amp;gt;% 
+            group_by(session.id, date) %&amp;gt;% 
+            mutate(time.scaled = time - min(time), length = length(time))
+
+agg_data$labelPPM &amp;lt;- &amp;quot;&amp;lt; 10 PPM&amp;quot; #green
+agg_data$labelPPM[agg_data$value &amp;gt; 10] &amp;lt;- &amp;quot;&amp;gt; 10 &amp;amp; &amp;lt; 35 PPM&amp;quot; #yellow
+agg_data$labelPPM[agg_data$value &amp;gt; 35] &amp;lt;- &amp;quot;&amp;gt; 35 &amp;amp; &amp;lt; 60 PPM&amp;quot; #orange
+agg_data$labelPPM[agg_data$value &amp;gt; 60] &amp;lt;- &amp;quot;&amp;gt; 60 PPM&amp;quot; #red
+
+colors &amp;lt;- c(&amp;quot;#26c98b&amp;quot;, &amp;quot;#ffe968&amp;quot;, &amp;quot;#ffae65&amp;quot;, &amp;quot;#ff5a63&amp;quot;)
+
+library(forcats)
+
+ggplot(agg_data, aes(x=time.scaled/60, y=fct_reorder(factor(session.id), length) , fill=labelPPM)) +
+  geom_raster() +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_discrete(expand = c(0, 0)) +
+  scale_fill_manual(values=colors, &amp;quot;&amp;quot;) +
+  ylab(&amp;quot;Session ID&amp;quot;) +
+  xlab(&amp;quot;Minutes&amp;quot;) +
+  theme_bw() +
+  theme(axis.text=element_text(size=14),
+        axis.title=element_text(size=16,face=&amp;quot;bold&amp;quot;),
+        legend.text=element_text(size=16))&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2018-03-15-air-casting-data-visualisation_files/figure-html/unnamed-chunk-12-1.png&#34; width=&#34;1152&#34; /&gt;&lt;/p&gt;
 &lt;/div&gt;
 </description>
     </item>
