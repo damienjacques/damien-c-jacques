@@ -11,6 +11,8 @@ tags:
 ---
 
 
+This Notebook details the steps of the analysis of the Dynamic Population WP of the Smartpop project.
+
 ## Data Exploration
 
 ```{r, message = F}
@@ -72,16 +74,20 @@ belgium <- getData('GADM', country='BE', level=4)
 liege <- belgium[belgium$NAME_4=="Liège",]
 liege <- spTransform(liege, crs(antenna_shp))
 
-# plot(liege, main = "antennas from cadastre + database") +
-# plot(cadastre_antenna, pch="*", col="red", add=T) +
-# plot(antenna_shp, pch="*", add=T) 
-# 
-# plot(liege, main = "antennas from cadastre") +
-# plot(cadastre_antenna, pch="*", col="red", add=T)
+plot(liege, main = "antennas from cadastre + database") +
+plot(cadastre_antenna, pch="*", col="red", add=T) +
+plot(antenna_shp, pch="*", add=T)
+
+plot(liege, main = "antennas from cadastre") +
+plot(cadastre_antenna, pch="*", col="red", add=T)
 
 # plot(liege, main = "antennas from database") +
-# plot(antenna_shp, pch="*", add=T) 
+# plot(antenna_shp, pch="*", add=T)
+```
 
+Leaflet plot for dynamic exploration (not shown here).
+
+```{r, eval=F}
 library(leaflet)
 
 antenna_latlon <- spTransform(antenna_shp, CRS("+init=epsg:4326"))
@@ -90,22 +96,21 @@ antenna_latlon <- data.frame(lat=coordinates(antenna_latlon)[ , 2], lon=coordina
 cadastre_latlon <- spTransform(cadastre_antenna, CRS("+init=epsg:4326"))
 cadastre_latlon <- data.frame(lat=coordinates(cadastre_latlon)[ , 2], lon=coordinates(cadastre_latlon)[ , 1])
 
-leaflet() %>% 
+leaflet() %>%
   setView(lng = 5.578661, lat = 50.633766, zoom = 12) %>%
   # Base groups
   addProviderTiles(providers$Stamen.Toner, group = "Toner") %>%
   addTiles(group = "OSM (default)") %>%
   addProviderTiles(providers$Stamen.TonerLite, group = "Toner Lite") %>%
   # Overlay groups
-  addCircles(data = antenna_latlon, ~lon, ~lat,  weight = 5,  
-             color="green", fillOpacity = 0.8, group = "antenna db") %>% 
-  addCircles(data = cadastre_latlon, ~lon, ~lat,  weight = 5,  
-             color="red", fillOpacity = 0.8, group = "antenna cadastre") %>% 
+  addCircles(data = antenna_latlon, ~lon, ~lat,  weight = 5,
+             color="blue", fillOpacity = 0.9, group = "antenna db") %>%
+  addCircles(data = cadastre_latlon, ~lon, ~lat,  weight = 5,
+             color="red", fillOpacity = 0.9, group = "antenna cadastre") %>%
   # Layers control
   addLayersControl(
     baseGroups = c("Toner", "OSM (default)", "Toner Lite"),
     overlayGroups = c("antenna db", "antenna cadastre"),
     options = layersControlOptions(collapsed = FALSE)
   )
-  
 ```
