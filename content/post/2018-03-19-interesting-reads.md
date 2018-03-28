@@ -19,6 +19,7 @@ An up to date bibtex file of my scientific bibliography (created with Jabref) ca
 1. [History / Archaeology](#history)
 2. [Network](#network)
 3. [Society](#society)
+3. [Privacy / Ethics](#privacy)
 
 <a name="history"></a> 
 ## History / Archaeology
@@ -52,3 +53,33 @@ An up to date bibtex file of my scientific bibliography (created with Jabref) ca
 > The largely dominant meritocratic paradigm of highly competitive Western cultures is rooted on the belief that success is due mainly, if not exclusively, to personal qualities such as talent, intelligence, skills, efforts or risk taking. Sometimes, we are willing to admit that a certain degree of luck could also play a role in achieving significant material success. But, as a matter of fact, it is rather common to underestimate the importance of external forces in individual successful stories. It is very well known that intelligence or talent exhibit a Gaussian distribution among the population, whereas the distribution of wealth - considered a proxy of success - follows typically a power law (Pareto law). Such a discrepancy between a Normal distribution of inputs, with a typical scale, and the scale invariant distribution of outputs, suggests that some hidden ingredient is at work behind the scenes. In this paper, with the help of a very simple agent-based model, we suggest that such an ingredient is just randomness. In particular, we show that, if it is true that some degree of talent is necessary to be successful in life, almost never the most talented people reach the highest peaks of success, being overtaken by mediocre but sensibly luckier individuals. As to our knowledge, this counterintuitive result - although implicitly suggested between the lines in a vast literature - is quantified here for the first time. It sheds new light on the effectiveness of assessing merit on the basis of the reached level of success and underlines the risks of distributing excessive honors or resources to people who, at the end of the day, could have been simply luckier than others. With the help of this model, several policy hypotheses are also addressed and compared to show the most efficient strategies for public funding of research in order to improve meritocracy, diversity and innovation.
 
 ![Pluchino2018](/img/bibliography/Pluchino2018.png)
+
+<a name="privacy"></a>
+## Privacy / Ethics
+
+### [Ten simple rules for responsible big data research](http://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005399)
+
+**Matthew Zook, Solon Barocas, danah boyd, Kate Crawford, Emily Keller, Seeta Peña Gangadharan, Alyssa Goodman, Rachelle Hollander, Barbara A. Koenig, Jacob Metcalf, Arvind Narayanan, Alondra Nelson, Frank Pasquale. *Plos Computational Biology*, 2017**.
+
+> 1. Acknowledge that data are people and can do harm
+
+> 2. Recognize that privacy is more than a binary value
+
+> 3. Guard against the reidentification of your data
+
+> 4. Practice ethical data sharing
+
+> 5. Consider the strengths and limitations of your data; big does not automatically mean better
+
+> 6. Debate the tough, ethical choices
+
+> 7. Develop a code of conduct for your organization, research community, or industry
+
+> 8. Design your data and systems for auditability
+
+> 9. Engage with the broader consequences of data and analysis practices
+
+> 10. Know when to break these rules
+
+
+

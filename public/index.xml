@@ -11,6 +11,15 @@
     <atom:link href="/" rel="self" type="application/rss+xml" />
     
     <item>
+      <title>Smartpop - Dynamic Population Mapping</title>
+      <link>/post/smartpop-dynamic-population-mapping/</link>
+      <pubDate>Tue, 27 Mar 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/post/smartpop-dynamic-population-mapping/</guid>
+      <description></description>
+    </item>
+    
+    <item>
       <title>Interesting Reads</title>
       <link>/post/interesting-papers/</link>
       <pubDate>Mon, 19 Mar 2018 00:00:00 +0000</pubDate>
@@ -27,6 +36,7 @@ An up to date bibtex file of my scientific bibliography (created with Jabref) ca
 &lt;li&gt;&lt;a href=&#34;#history&#34;&gt;History / Archaeology&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&#34;#network&#34;&gt;Network&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&#34;#society&#34;&gt;Society&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#privacy&#34;&gt;Privacy / Ethics&lt;/a&gt;&lt;/li&gt;
 &lt;/ol&gt;
 
 &lt;p&gt;&lt;a name=&#34;history&#34;&gt;&lt;/a&gt;&lt;/p&gt;
@@ -70,6 +80,38 @@ An up to date bibtex file of my scientific bibliography (created with Jabref) ca
 &lt;/blockquote&gt;
 
 &lt;p&gt;&lt;img src=&#34;/img/bibliography/Pluchino2018.png&#34; alt=&#34;Pluchino2018&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a name=&#34;privacy&#34;&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;h2 id=&#34;privacy-ethics&#34;&gt;Privacy / Ethics&lt;/h2&gt;
+
+&lt;h3 id=&#34;ten-simple-rules-for-responsible-big-data-research-http-journals-plos-org-ploscompbiol-article-id-10-1371-journal-pcbi-1005399&#34;&gt;&lt;a href=&#34;http://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005399&#34; target=&#34;_blank&#34;&gt;Ten simple rules for responsible big data research&lt;/a&gt;&lt;/h3&gt;
+
+&lt;p&gt;&lt;strong&gt;Matthew Zook, Solon Barocas, danah boyd, Kate Crawford, Emily Keller, Seeta Peña Gangadharan, Alyssa Goodman, Rachelle Hollander, Barbara A. Koenig, Jacob Metcalf, Arvind Narayanan, Alondra Nelson, Frank Pasquale. &lt;em&gt;Plos Computational Biology&lt;/em&gt;, 2017&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;p&gt;Acknowledge that data are people and can do harm&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Recognize that privacy is more than a binary value&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Guard against the reidentification of your data&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Practice ethical data sharing&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Consider the strengths and limitations of your data; big does not automatically mean better&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Debate the tough, ethical choices&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Develop a code of conduct for your organization, research community, or industry&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Design your data and systems for auditability&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Engage with the broader consequences of data and analysis practices&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Know when to break these rules&lt;/p&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/blockquote&gt;
 </description>
     </item>
     
@@ -870,15 +912,6 @@ legend(&amp;quot;topleft&amp;quot;, col=c(&amp;quot;black&amp;quot;, &amp;quot;r
       <pubDate>Thu, 16 Apr 2015 00:00:00 +0000</pubDate>
       
       <guid>/publication/ardekani-2016-gpr/</guid>
-      <description></description>
-    </item>
-    
-    <item>
-      <title>Genesis of millet prices in Senegal: the role of production, markets and their failures</title>
-      <link>/publication/jacques-2015-millet-prices-netmob-d4d/</link>
-      <pubDate>Sat, 11 Apr 2015 00:00:00 +0000</pubDate>
-      
-      <guid>/publication/jacques-2015-millet-prices-netmob-d4d/</guid>
       <description></description>
     </item>
     

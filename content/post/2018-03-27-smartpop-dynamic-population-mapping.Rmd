@@ -1,0 +1,12 @@
+---
+title: Smartpop - Dynamic Population Mapping
+author: Damien C. Jacques
+date: '2018-03-27'
+slug: smartpop-dynamic-population-mapping
+categories:
+  - R
+tags:
+  - population
+  - mobile phone data
+---
+
