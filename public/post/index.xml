@@ -18,7 +18,7 @@
       <pubDate>Tue, 27 Mar 2018 00:00:00 +0000</pubDate>
       
       <guid>/post/smartpop-dynamic-population-mapping/</guid>
-      <description></description>
+      <description>--- title: Smartpop - Dynamic Population Mapping author: Damien C. Jacques date: &#39;2018-03-27&#39; slug: smartpop-dynamic-population-mapping categories: - R tags: - population - mobile phone data ---          Data Exploration library(data.table) Mobile_Phone &amp;lt;- fread(&amp;quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/MobilePhone/OBE_traffic_per_antenna_201405_201504.csv&amp;quot;) ## Read 0.0% of 40194140 rows Read 10.9% of 40194140 rows Read 21.1% of 40194140 rows Read 31.7% of 40194140 rows Read 43.1% of 40194140 rows Read 54.5% of 40194140 rows Read 65.</description>
     </item>
     
     <item>

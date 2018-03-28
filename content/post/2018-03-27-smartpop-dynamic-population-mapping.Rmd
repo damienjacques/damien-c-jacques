@@ -10,3 +10,102 @@ tags:
   - mobile phone data
 ---
 
+
+## Data Exploration
+
+```{r, message = F}
+library(data.table)
+
+Mobile_Phone <- fread("/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/MobilePhone/OBE_traffic_per_antenna_201405_201504.csv")
+
+Mobile_Phone
+```
+
+### Antenna
+
+How many antennas in the database ?
+
+```{r}
+unique_antenna <- unique(Mobile_Phone[, c("CELL_BTS_XCOORD_NUM" ,"CELL_BTS_YCOORD_NUM")])
+
+nrow(unique_antenna)
+```
+
+Plot these antennas.
+
+```{r, message = FALSE}
+library(rgdal)
+
+antenna_shp <- SpatialPointsDataFrame(unique_antenna[ , 1:2], data.frame(ID = 1:nrow(unique_antenna)))
+
+plot(antenna_shp, pch = "*")
+```
+
+Two antennas are mislocated, we will discard them. We have now 5259 antennas.
+
+```{r, message = FALSE}
+library(raster)
+library(rgeos)
+
+crs(antenna_shp) <- CRS("+init=epsg:103300") # Lambert 72 proj !! NOT EQUAL to EPSG:31300
+
+belgium <- getData('GADM', country = 'BE', level = 0)
+belgium <- spTransform(belgium, crs(antenna_shp))
+belgium <- gBuffer(belgium, width = 5000)  # Buffer to get all antennas close to belgium border
+
+antenna_discarded <- antenna_shp[which(!gIntersects(antenna_shp, belgium, byid=TRUE)), ]
+antenna_shp <- antenna_shp[which(gIntersects(antenna_shp, belgium, byid=TRUE)), ]
+
+plot(antenna_shp, pch= "*") +
+plot(antenna_discarded, add=T, col="red", pch = "*")  # to be sure the buffer was large enough
+
+nrow(antenna_shp@data)
+```
+
+Comparison with the cadastre (from [Walloon Region](http://geoapps.wallonie.be/antennes/#BBOX=-45890.77766488868,367190.77766488865,-12341.35551604438,197672.0853441707)) shows that several antennas from cadaster are not in the db and the other way around. 
+
+```{r}
+cadastre_antenna <- readOGR("/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Cadastre_antenna/antenna_orange_cadastre.shp")
+cadastre_antenna <- spTransform(cadastre_antenna, crs(antenna_shp))
+
+belgium <- getData('GADM', country='BE', level=4)
+liege <- belgium[belgium$NAME_4=="Liège",]
+liege <- spTransform(liege, crs(antenna_shp))
+
+# plot(liege, main = "antennas from cadastre + database") +
+# plot(cadastre_antenna, pch="*", col="red", add=T) +
+# plot(antenna_shp, pch="*", add=T) 
+# 
+# plot(liege, main = "antennas from cadastre") +
+# plot(cadastre_antenna, pch="*", col="red", add=T)
+
+# plot(liege, main = "antennas from database") +
+# plot(antenna_shp, pch="*", add=T) 
+
+library(leaflet)
+
+antenna_latlon <- spTransform(antenna_shp, CRS("+init=epsg:4326"))
+antenna_latlon <- data.frame(lat=coordinates(antenna_latlon)[ , 2], lon=coordinates(antenna_latlon)[ , 1])
+
+cadastre_latlon <- spTransform(cadastre_antenna, CRS("+init=epsg:4326"))
+cadastre_latlon <- data.frame(lat=coordinates(cadastre_latlon)[ , 2], lon=coordinates(cadastre_latlon)[ , 1])
+
+leaflet() %>% 
+  setView(lng = 5.578661, lat = 50.633766, zoom = 12) %>%
+  # Base groups
+  addProviderTiles(providers$Stamen.Toner, group = "Toner") %>%
+  addTiles(group = "OSM (default)") %>%
+  addProviderTiles(providers$Stamen.TonerLite, group = "Toner Lite") %>%
+  # Overlay groups
+  addCircles(data = antenna_latlon, ~lon, ~lat,  weight = 5,  
+             color="green", fillOpacity = 0.8, group = "antenna db") %>% 
+  addCircles(data = cadastre_latlon, ~lon, ~lat,  weight = 5,  
+             color="red", fillOpacity = 0.8, group = "antenna cadastre") %>% 
+  # Layers control
+  addLayersControl(
+    baseGroups = c("Toner", "OSM (default)", "Toner Lite"),
+    overlayGroups = c("antenna db", "antenna cadastre"),
+    options = layersControlOptions(collapsed = FALSE)
+  )
+  
+```
