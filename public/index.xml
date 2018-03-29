@@ -16,7 +16,12 @@
       <pubDate>Tue, 27 Mar 2018 00:00:00 +0000</pubDate>
       
       <guid>/post/smartpop-dynamic-population-mapping/</guid>
-      <description>&lt;p&gt;This Notebook details the steps of the analysis of the Dynamic Population WP of the Smartpop project.&lt;/p&gt;
+      <description>&lt;script src=&#34;/rmarkdown-libs/htmlwidgets/htmlwidgets.js&#34;&gt;&lt;/script&gt;
+&lt;script src=&#34;/rmarkdown-libs/pymjs/pym.v1.js&#34;&gt;&lt;/script&gt;
+&lt;script src=&#34;/rmarkdown-libs/widgetframe-binding/widgetframe.js&#34;&gt;&lt;/script&gt;
+
+
+&lt;p&gt;This Notebook details the steps of the analysis of the Dynamic Population WP of the Smartpop project.&lt;/p&gt;
 &lt;div id=&#34;data-exploration&#34; class=&#34;section level2&#34;&gt;
 &lt;h2&gt;Data Exploration&lt;/h2&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;library(data.table)
@@ -24,14 +29,16 @@
 Mobile_Phone &amp;lt;- fread(&amp;quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/MobilePhone/OBE_traffic_per_antenna_201405_201504.csv&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
 &lt;pre&gt;&lt;code&gt;## 
 Read 0.0% of 40194140 rows
-Read 12.3% of 40194140 rows
-Read 25.0% of 40194140 rows
-Read 37.8% of 40194140 rows
-Read 50.9% of 40194140 rows
-Read 63.6% of 40194140 rows
-Read 76.6% of 40194140 rows
-Read 89.7% of 40194140 rows
-Read 40194140 rows and 7 (of 7) columns from 1.472 GB file in 00:00:11&lt;/code&gt;&lt;/pre&gt;
+Read 9.7% of 40194140 rows
+Read 18.7% of 40194140 rows
+Read 29.4% of 40194140 rows
+Read 40.5% of 40194140 rows
+Read 50.1% of 40194140 rows
+Read 61.0% of 40194140 rows
+Read 72.5% of 40194140 rows
+Read 82.8% of 40194140 rows
+Read 94.0% of 40194140 rows
+Read 40194140 rows and 7 (of 7) columns from 1.472 GB file in 00:00:12&lt;/code&gt;&lt;/pre&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;Mobile_Phone&lt;/code&gt;&lt;/pre&gt;
 &lt;pre&gt;&lt;code&gt;##               DATE_HOUR CELL_BTS_XCOORD_NUM CELL_BTS_YCOORD_NUM NBR_SIM_BE
 ##        1: 2014-05-01 00               24625              200309         22
@@ -75,7 +82,7 @@ plot(antenna_shp, pch = &amp;quot;*&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;library(raster)
 library(rgeos)
 
-crs(antenna_shp) &amp;lt;- CRS(&amp;quot;+init=epsg:103300&amp;quot;) # Lambert 72 proj !! NOT EQUAL to EPSG:31300
+crs(antenna_shp) &amp;lt;- CRS(&amp;quot;+init=epsg:31370&amp;quot;) # Lambert 72 proj !! NOT EQUAL to EPSG:31300 or EPSG:103300. Made some test to find the good one.
 
 belgium &amp;lt;- getData(&amp;#39;GADM&amp;#39;, country = &amp;#39;BE&amp;#39;, level = 0)
 belgium &amp;lt;- spTransform(belgium, crs(antenna_shp))
@@ -91,12 +98,13 @@ plot(antenna_discarded, add=T, col=&amp;quot;red&amp;quot;, pch = &amp;quot;*&am
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;nrow(antenna_shp@data)&lt;/code&gt;&lt;/pre&gt;
 &lt;pre&gt;&lt;code&gt;## [1] 5259&lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;Comparison with the cadastre (from &lt;a href=&#34;http://geoapps.wallonie.be/antennes/#BBOX=-45890.77766488868,367190.77766488865,-12341.35551604438,197672.0853441707&#34;&gt;Walloon Region&lt;/a&gt;) shows that several antennas from cadaster are not in the db and the other way around.&lt;/p&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;cadastre_antenna &amp;lt;- readOGR(&amp;quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Cadastre_antenna/antenna_orange_cadastre.shp&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;cadastre_antenna &amp;lt;- readOGR(&amp;quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Cadastre_antenna/antenna_orange_cadastre_31370.shp&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
 &lt;pre&gt;&lt;code&gt;## OGR data source with driver: ESRI Shapefile 
-## Source: &amp;quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Cadastre_antenna/antenna_orange_cadastre.shp&amp;quot;, layer: &amp;quot;antenna_orange_cadastre&amp;quot;
-## with 1970 features
+## Source: &amp;quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Cadastre_antenna/antenna_orange_cadastre_31370.shp&amp;quot;, layer: &amp;quot;antenna_orange_cadastre_31370&amp;quot;
+## with 1966 features
 ## It has 17 fields&lt;/code&gt;&lt;/pre&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;cadastre_antenna &amp;lt;- spTransform(cadastre_antenna, crs(antenna_shp))
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;crs(cadastre_antenna) &amp;lt;- CRS(&amp;quot;+init=epsg:31370&amp;quot;)
+cadastre_antenna &amp;lt;- spTransform(cadastre_antenna, crs(antenna_shp))
 
 belgium &amp;lt;- getData(&amp;#39;GADM&amp;#39;, country=&amp;#39;BE&amp;#39;, level=4)
 liege &amp;lt;- belgium[belgium$NAME_4==&amp;quot;Liège&amp;quot;,]
@@ -107,14 +115,14 @@ plot(cadastre_antenna, pch=&amp;quot;*&amp;quot;, col=&amp;quot;red&amp;quot;, a
 plot(antenna_shp, pch=&amp;quot;*&amp;quot;, add=T)&lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;&lt;img src=&#34;/post/2018-03-27-smartpop-dynamic-population-mapping_files/figure-html/unnamed-chunk-5-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
 &lt;pre&gt;&lt;code&gt;## integer(0)&lt;/code&gt;&lt;/pre&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;plot(liege, main = &amp;quot;antennas from cadastre&amp;quot;) +
-plot(cadastre_antenna, pch=&amp;quot;*&amp;quot;, col=&amp;quot;red&amp;quot;, add=T)&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2018-03-27-smartpop-dynamic-population-mapping_files/figure-html/unnamed-chunk-5-2.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;## integer(0)&lt;/code&gt;&lt;/pre&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# plot(liege, main = &amp;quot;antennas from database&amp;quot;) +
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# plot(liege, main = &amp;quot;antennas from cadastre&amp;quot;) +
+# plot(cadastre_antenna, pch=&amp;quot;*&amp;quot;, col=&amp;quot;red&amp;quot;, add=T)
+
+# plot(liege, main = &amp;quot;antennas from database&amp;quot;) +
 # plot(antenna_shp, pch=&amp;quot;*&amp;quot;, add=T)&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Leaflet plot for dynamic exploration (not shown here).&lt;/p&gt;
+&lt;p&gt;Leaflet plot for dynamic exploration.&lt;/p&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;library(leaflet)
+library(widgetframe)
 
 antenna_latlon &amp;lt;- spTransform(antenna_shp, CRS(&amp;quot;+init=epsg:4326&amp;quot;))
 antenna_latlon &amp;lt;- data.frame(lat=coordinates(antenna_latlon)[ , 2], lon=coordinates(antenna_latlon)[ , 1])
@@ -122,12 +130,12 @@ antenna_latlon &amp;lt;- data.frame(lat=coordinates(antenna_latlon)[ , 2], lon=c
 cadastre_latlon &amp;lt;- spTransform(cadastre_antenna, CRS(&amp;quot;+init=epsg:4326&amp;quot;))
 cadastre_latlon &amp;lt;- data.frame(lat=coordinates(cadastre_latlon)[ , 2], lon=coordinates(cadastre_latlon)[ , 1])
 
-leaflet() %&amp;gt;%
+l &amp;lt;- leaflet() %&amp;gt;%
   setView(lng = 5.578661, lat = 50.633766, zoom = 12) %&amp;gt;%
   # Base groups
   addProviderTiles(providers$Stamen.Toner, group = &amp;quot;Toner&amp;quot;) %&amp;gt;%
   addTiles(group = &amp;quot;OSM (default)&amp;quot;) %&amp;gt;%
-  addProviderTiles(providers$Stamen.TonerLite, group = &amp;quot;Toner Lite&amp;quot;) %&amp;gt;%
+  addProviderTiles(providers$Esri.WorldImagery, group = &amp;quot;ESRI World Imagery&amp;quot;) %&amp;gt;%
   # Overlay groups
   addCircles(data = antenna_latlon, ~lon, ~lat,  weight = 5,
              color=&amp;quot;blue&amp;quot;, fillOpacity = 0.9, group = &amp;quot;antenna db&amp;quot;) %&amp;gt;%
@@ -135,10 +143,13 @@ leaflet() %&amp;gt;%
              color=&amp;quot;red&amp;quot;, fillOpacity = 0.9, group = &amp;quot;antenna cadastre&amp;quot;) %&amp;gt;%
   # Layers control
   addLayersControl(
-    baseGroups = c(&amp;quot;Toner&amp;quot;, &amp;quot;OSM (default)&amp;quot;, &amp;quot;Toner Lite&amp;quot;),
+    baseGroups = c(&amp;quot;Toner&amp;quot;, &amp;quot;OSM (default)&amp;quot;, &amp;quot;ESRI World Imagery&amp;quot;),
     overlayGroups = c(&amp;quot;antenna db&amp;quot;, &amp;quot;antenna cadastre&amp;quot;),
     options = layersControlOptions(collapsed = FALSE)
-  )&lt;/code&gt;&lt;/pre&gt;
+  )
+frameWidget(l)&lt;/code&gt;&lt;/pre&gt;
+&lt;div id=&#34;htmlwidget-1&#34; style=&#34;width:100%;height:480px;&#34; class=&#34;widgetframe html-widget&#34;&gt;&lt;/div&gt;
+&lt;script type=&#34;application/json&#34; data-for=&#34;htmlwidget-1&#34;&gt;{&#34;x&#34;:{&#34;url&#34;:&#34;/post/2018-03-27-smartpop-dynamic-population-mapping_files/figure-html//widgets/widget_unnamed-chunk-6.html&#34;,&#34;options&#34;:{&#34;xdomain&#34;:&#34;*&#34;,&#34;allowfullscreen&#34;:false,&#34;lazyload&#34;:false}},&#34;evals&#34;:[],&#34;jsHooks&#34;:[]}&lt;/script&gt;
 &lt;/div&gt;
 &lt;/div&gt;
 </description>

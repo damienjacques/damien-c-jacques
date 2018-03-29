@@ -49,7 +49,7 @@ Two antennas are mislocated, we will discard them. We have now 5259 antennas.
 library(raster)
 library(rgeos)
 
-crs(antenna_shp) <- CRS("+init=epsg:103300") # Lambert 72 proj !! NOT EQUAL to EPSG:31300
+crs(antenna_shp) <- CRS("+init=epsg:31370") # Lambert 72 proj !! NOT EQUAL to EPSG:31300 or EPSG:103300. Made some test to find the good one.
 
 belgium <- getData('GADM', country = 'BE', level = 0)
 belgium <- spTransform(belgium, crs(antenna_shp))
@@ -66,8 +66,9 @@ nrow(antenna_shp@data)
 
 Comparison with the cadastre (from [Walloon Region](http://geoapps.wallonie.be/antennes/#BBOX=-45890.77766488868,367190.77766488865,-12341.35551604438,197672.0853441707)) shows that several antennas from cadaster are not in the db and the other way around. 
 
-```{r}
-cadastre_antenna <- readOGR("/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Cadastre_antenna/antenna_orange_cadastre.shp")
+```{r, message = FALSE}
+cadastre_antenna <- readOGR("/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Cadastre_antenna/antenna_orange_cadastre_31370.shp")
+crs(cadastre_antenna) <- CRS("+init=epsg:31370")
 cadastre_antenna <- spTransform(cadastre_antenna, crs(antenna_shp))
 
 belgium <- getData('GADM', country='BE', level=4)
@@ -78,17 +79,18 @@ plot(liege, main = "antennas from cadastre + database") +
 plot(cadastre_antenna, pch="*", col="red", add=T) +
 plot(antenna_shp, pch="*", add=T)
 
-plot(liege, main = "antennas from cadastre") +
-plot(cadastre_antenna, pch="*", col="red", add=T)
+# plot(liege, main = "antennas from cadastre") +
+# plot(cadastre_antenna, pch="*", col="red", add=T)
 
 # plot(liege, main = "antennas from database") +
 # plot(antenna_shp, pch="*", add=T)
 ```
 
-Leaflet plot for dynamic exploration (not shown here).
+Leaflet plot for dynamic exploration.
 
-```{r, eval=F}
+```{r, message = F}
 library(leaflet)
+library(widgetframe)
 
 antenna_latlon <- spTransform(antenna_shp, CRS("+init=epsg:4326"))
 antenna_latlon <- data.frame(lat=coordinates(antenna_latlon)[ , 2], lon=coordinates(antenna_latlon)[ , 1])
@@ -96,12 +98,12 @@ antenna_latlon <- data.frame(lat=coordinates(antenna_latlon)[ , 2], lon=coordina
 cadastre_latlon <- spTransform(cadastre_antenna, CRS("+init=epsg:4326"))
 cadastre_latlon <- data.frame(lat=coordinates(cadastre_latlon)[ , 2], lon=coordinates(cadastre_latlon)[ , 1])
 
-leaflet() %>%
+l <- leaflet() %>%
   setView(lng = 5.578661, lat = 50.633766, zoom = 12) %>%
   # Base groups
   addProviderTiles(providers$Stamen.Toner, group = "Toner") %>%
   addTiles(group = "OSM (default)") %>%
-  addProviderTiles(providers$Stamen.TonerLite, group = "Toner Lite") %>%
+  addProviderTiles(providers$Esri.WorldImagery, group = "ESRI World Imagery") %>%
   # Overlay groups
   addCircles(data = antenna_latlon, ~lon, ~lat,  weight = 5,
              color="blue", fillOpacity = 0.9, group = "antenna db") %>%
@@ -109,8 +111,10 @@ leaflet() %>%
              color="red", fillOpacity = 0.9, group = "antenna cadastre") %>%
   # Layers control
   addLayersControl(
-    baseGroups = c("Toner", "OSM (default)", "Toner Lite"),
+    baseGroups = c("Toner", "OSM (default)", "ESRI World Imagery"),
     overlayGroups = c("antenna db", "antenna cadastre"),
     options = layersControlOptions(collapsed = FALSE)
   )
+frameWidget(l)
 ```
+

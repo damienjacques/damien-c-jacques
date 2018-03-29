@@ -19,7 +19,7 @@
       
       <guid>/post/smartpop-dynamic-population-mapping/</guid>
       <description>This Notebook details the steps of the analysis of the Dynamic Population WP of the Smartpop project.
-Data Exploration library(data.table) Mobile_Phone &amp;lt;- fread(&amp;quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/MobilePhone/OBE_traffic_per_antenna_201405_201504.csv&amp;quot;) ## Read 0.0% of 40194140 rows Read 12.3% of 40194140 rows Read 25.0% of 40194140 rows Read 37.8% of 40194140 rows Read 50.9% of 40194140 rows Read 63.6% of 40194140 rows Read 76.6% of 40194140 rows Read 89.7% of 40194140 rows Read 40194140 rows and 7 (of 7) columns from 1.</description>
+Data Exploration library(data.table) Mobile_Phone &amp;lt;- fread(&amp;quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/MobilePhone/OBE_traffic_per_antenna_201405_201504.csv&amp;quot;) ## Read 0.0% of 40194140 rows Read 9.7% of 40194140 rows Read 18.7% of 40194140 rows Read 29.4% of 40194140 rows Read 40.5% of 40194140 rows Read 50.1% of 40194140 rows Read 61.0% of 40194140 rows Read 72.5% of 40194140 rows Read 82.8% of 40194140 rows Read 94.</description>
     </item>
     
     <item>
