@@ -11,6 +11,165 @@
     <atom:link href="/" rel="self" type="application/rss+xml" />
     
     <item>
+      <title>Estimating Moments of a Mixture Distribution</title>
+      <link>/post/estimating-moments-of-a-mixture-distribution/</link>
+      <pubDate>Tue, 10 Apr 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/post/estimating-moments-of-a-mixture-distribution/</guid>
+      <description>&lt;p&gt;This notebook aims to explore the statistical meaning behind the &lt;em&gt;data fusion&lt;/em&gt; proposed in &lt;a href=&#34;http://www.pnas.org/content/114/46/E9783&#34;&gt;Pokhriyal, 2017&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;For this purpose, let us first generate some gaussian distributions.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;Gaussian.1.mean &amp;lt;- 40
+Gaussian.2.mean &amp;lt;- 60
+Gaussian.1.sd &amp;lt;- 10
+Gaussian.2.sd &amp;lt;- 10
+x &amp;lt;- seq(-50,150,length=1000)
+
+Gaussian.1 &amp;lt;- dnorm(x, mean = Gaussian.1.mean, sd = Gaussian.1.sd)
+Gaussian.2 &amp;lt;- dnorm(x, mean = Gaussian.2.mean, sd = Gaussian.2.sd)
+
+plot(x, Gaussian.1, col=2, type=&amp;quot;l&amp;quot;, ylab=&amp;quot;Density&amp;quot;, xlab = &amp;quot;&amp;quot;, lwd=2)
+lines(x, Gaussian.2, col=3, lwd=2)
+legend(&amp;quot;toprigh&amp;quot;, bty=&amp;quot;n&amp;quot;, col=2:3, c(&amp;quot;Gaussian 1&amp;quot;, &amp;quot;Gaussian 2&amp;quot;), lty=1, lwd=2)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2018-04-10-estimating-moments-of-a-mixture-distribution_files/figure-html/unnamed-chunk-1-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;We combine both gaussians following the procedure described in &lt;a href=&#34;http://www.pnas.org/content/114/46/E9783&#34;&gt;Pokhriyal, 2017&lt;/a&gt;.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;weight.1 = (1/Gaussian.1.sd^2)/((1/Gaussian.1.sd^2)+(1/Gaussian.2.sd^2))
+weight.2 = (1/Gaussian.2.sd^2)/((1/Gaussian.1.sd^2)+(1/Gaussian.2.sd^2))
+weight.1&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## [1] 0.5&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;weight.2&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## [1] 0.5&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;Combined.mean &amp;lt;- weight.1*Gaussian.1.mean + weight.2*Gaussian.2.mean
+Combined.sd &amp;lt;- sqrt(weight.1*Gaussian.1.sd^2 + weight.2*Gaussian.2.sd^2 + weight.1*weight.2*(Gaussian.1.mean-Gaussian.2.mean)^2) 
+
+
+Gaussian.combined &amp;lt;- dnorm(x, mean = Combined.mean, sd = Combined.sd)
+
+plot(x, Gaussian.1, col=2, type=&amp;quot;l&amp;quot;,  xlab = &amp;quot;&amp;quot;, ylab=&amp;quot;Density&amp;quot;, lwd=2)
+lines(x, Gaussian.2, col=3, lwd=2)
+lines(x, Gaussian.combined, col=1, lwd=2)
+legend(&amp;quot;toprigh&amp;quot;, bty=&amp;quot;n&amp;quot;, col=c(2,3,1), c(&amp;quot;Gaussian 1&amp;quot;, &amp;quot;Gaussian 2&amp;quot;, &amp;quot;Gaussian comb.&amp;quot;), lty=1, lwd=2)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2018-04-10-estimating-moments-of-a-mixture-distribution_files/figure-html/unnamed-chunk-2-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;Now, we can study different cases.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;Gaussian.1.mean &amp;lt;- 40
+Gaussian.2.mean &amp;lt;- 60
+
+for (sd in seq(10,30,10)){
+  Gaussian.1.sd &amp;lt;- sd
+  Gaussian.2.sd &amp;lt;- sd
+  Gaussian.1 &amp;lt;- dnorm(x, mean = Gaussian.1.mean, sd = Gaussian.1.sd)
+  Gaussian.2 &amp;lt;- dnorm(x, mean = Gaussian.2.mean, sd = Gaussian.2.sd)
+  
+  
+  weight.1 = (1/Gaussian.1.sd^2)/((1/Gaussian.1.sd^2)+(1/Gaussian.2.sd^2))
+  weight.2 = (1/Gaussian.2.sd^2)/((1/Gaussian.1.sd^2)+(1/Gaussian.2.sd^2))
+  weight.1
+  weight.2
+  
+  Combined.mean &amp;lt;- weight.1*Gaussian.1.mean + weight.2*Gaussian.2.mean
+  Combined.sd &amp;lt;- sqrt(weight.1*Gaussian.1.sd^2 + weight.2*Gaussian.2.sd^2 + weight.1*weight.2*(Gaussian.1.mean-Gaussian.2.mean)^2) 
+  
+  
+  Gaussian.combined &amp;lt;- dnorm(x, mean = Combined.mean, sd = Combined.sd)
+  
+  plot(x, Gaussian.1, col=2, type=&amp;quot;l&amp;quot;,  xlab = &amp;quot;&amp;quot;, ylab=&amp;quot;Density&amp;quot;, lwd=2, main=paste0(&amp;quot;G1 mean= 40, G2 mean=60, sd=&amp;quot;,sd))
+  lines(x, Gaussian.2, col=3, lwd=2)
+  lines(x, Gaussian.combined, col=1, lwd=2)
+  legend(&amp;quot;toprigh&amp;quot;, bty=&amp;quot;n&amp;quot;, col=c(2,3,1), c(&amp;quot;Gaussian 1&amp;quot;, &amp;quot;Gaussian 2&amp;quot;, &amp;quot;Gaussian comb.&amp;quot;), lty=1, lwd=2)
+}&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2018-04-10-estimating-moments-of-a-mixture-distribution_files/figure-html/unnamed-chunk-3-1.png&#34; width=&#34;672&#34; /&gt;&lt;img src=&#34;/post/2018-04-10-estimating-moments-of-a-mixture-distribution_files/figure-html/unnamed-chunk-3-2.png&#34; width=&#34;672&#34; /&gt;&lt;img src=&#34;/post/2018-04-10-estimating-moments-of-a-mixture-distribution_files/figure-html/unnamed-chunk-3-3.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;Gaussian.1.sd &amp;lt;- 10
+Gaussian.2.sd &amp;lt;- 10
+  
+for (i in seq(10,30,10)){
+  Gaussian.1.mean &amp;lt;- 50 - i
+  Gaussian.2.mean &amp;lt;- 50 + i
+
+  Gaussian.1 &amp;lt;- dnorm(x, mean = Gaussian.1.mean, sd = Gaussian.1.sd)
+  Gaussian.2 &amp;lt;- dnorm(x, mean = Gaussian.2.mean, sd = Gaussian.2.sd)
+  
+  
+  weight.1 = (1/Gaussian.1.sd^2)/((1/Gaussian.1.sd^2)+(1/Gaussian.2.sd^2))
+  weight.2 = (1/Gaussian.2.sd^2)/((1/Gaussian.1.sd^2)+(1/Gaussian.2.sd^2))
+  weight.1
+  weight.2
+  
+  Combined.mean &amp;lt;- weight.1*Gaussian.1.mean + weight.2*Gaussian.2.mean
+  Combined.sd &amp;lt;- sqrt(weight.1*Gaussian.1.sd^2 + weight.2*Gaussian.2.sd^2 + weight.1*weight.2*(Gaussian.1.mean-Gaussian.2.mean)^2) 
+  
+  
+  Gaussian.combined &amp;lt;- dnorm(x, mean = Combined.mean, sd = Combined.sd)
+  
+  plot(x, Gaussian.1, type=&amp;quot;l&amp;quot;, col=2,  xlab = &amp;quot;&amp;quot;, ylab=&amp;quot;Density&amp;quot;, lwd=2, main=paste0(&amp;quot;G1 mean=&amp;quot;,50-i, &amp;quot;, G2 mean=&amp;quot;,50+i, &amp;quot;, sd=10&amp;quot;))
+  lines(x, Gaussian.2, col=3, lwd=2)
+  lines(x, Gaussian.combined, col=1, lwd=2)
+  legend(&amp;quot;toprigh&amp;quot;, bty=&amp;quot;n&amp;quot;, col=c(2,3,1), c(&amp;quot;Gaussian 1&amp;quot;, &amp;quot;Gaussian 2&amp;quot;, &amp;quot;Gaussian comb.&amp;quot;), lty=1, lwd=2)
+}&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2018-04-10-estimating-moments-of-a-mixture-distribution_files/figure-html/unnamed-chunk-4-1.png&#34; width=&#34;672&#34; /&gt;&lt;img src=&#34;/post/2018-04-10-estimating-moments-of-a-mixture-distribution_files/figure-html/unnamed-chunk-4-2.png&#34; width=&#34;672&#34; /&gt;&lt;img src=&#34;/post/2018-04-10-estimating-moments-of-a-mixture-distribution_files/figure-html/unnamed-chunk-4-3.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;Gaussian.1.mean &amp;lt;- 40
+Gaussian.2.mean &amp;lt;- 60
+  
+for (i in seq(0,15,5)){
+  Gaussian.1.sd &amp;lt;- 20 - i
+  Gaussian.2.sd &amp;lt;- 20 + i
+
+  Gaussian.1 &amp;lt;- dnorm(x, mean = Gaussian.1.mean, sd = Gaussian.1.sd)
+  Gaussian.2 &amp;lt;- dnorm(x, mean = Gaussian.2.mean, sd = Gaussian.2.sd)
+  
+  
+  weight.1 = (1/Gaussian.1.sd^2)/((1/Gaussian.1.sd^2)+(1/Gaussian.2.sd^2))
+  weight.2 = (1/Gaussian.2.sd^2)/((1/Gaussian.1.sd^2)+(1/Gaussian.2.sd^2))
+
+  Combined.mean &amp;lt;- weight.1*Gaussian.1.mean + weight.2*Gaussian.2.mean
+  Combined.sd &amp;lt;- sqrt(weight.1*Gaussian.1.sd^2 + weight.2*Gaussian.2.sd^2 + weight.1*weight.2*(Gaussian.1.mean-Gaussian.2.mean)^2) 
+  
+  
+  Gaussian.combined &amp;lt;- dnorm(x, mean = Combined.mean, sd = Combined.sd)
+  
+  plot(x, Gaussian.1, col=2, type=&amp;quot;l&amp;quot;,  xlab = &amp;quot;&amp;quot;, ylab=&amp;quot;Density&amp;quot;, lwd=2, main=paste0(&amp;quot;G1 mean=&amp;quot;,Gaussian.1.mean, &amp;quot;, G2 mean=&amp;quot;,Gaussian.2.mean, &amp;quot;, G1 sd=&amp;quot;,Gaussian.1.sd,&amp;quot;, G2 sd=&amp;quot;,Gaussian.2.sd ))
+  lines(x, Gaussian.2, col=3, lwd=2)
+  lines(x, Gaussian.combined, col=1, lwd=2)
+  legend(&amp;quot;toprigh&amp;quot;, bty=&amp;quot;n&amp;quot;, col=c(2,3,1), c(&amp;quot;Gaussian 1&amp;quot;, &amp;quot;Gaussian 2&amp;quot;, &amp;quot;Gaussian comb.&amp;quot;), lty=1, lwd=2)
+  legend(&amp;quot;topleft&amp;quot;, paste0(&amp;quot;combined sd &amp;quot;, round(Combined.sd,2)), bty=&amp;quot;n&amp;quot;)
+}&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2018-04-10-estimating-moments-of-a-mixture-distribution_files/figure-html/unnamed-chunk-5-1.png&#34; width=&#34;672&#34; /&gt;&lt;img src=&#34;/post/2018-04-10-estimating-moments-of-a-mixture-distribution_files/figure-html/unnamed-chunk-5-2.png&#34; width=&#34;672&#34; /&gt;&lt;img src=&#34;/post/2018-04-10-estimating-moments-of-a-mixture-distribution_files/figure-html/unnamed-chunk-5-3.png&#34; width=&#34;672&#34; /&gt;&lt;img src=&#34;/post/2018-04-10-estimating-moments-of-a-mixture-distribution_files/figure-html/unnamed-chunk-5-4.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;Gaussian.1.mean &amp;lt;- 50
+Gaussian.2.mean &amp;lt;- 50 
+
+Gaussian.1.sd &amp;lt;- 10
+Gaussian.2.sd &amp;lt;- 20
+
+Gaussian.1 &amp;lt;- dnorm(x, mean = Gaussian.1.mean, sd = Gaussian.1.sd)
+Gaussian.2 &amp;lt;- dnorm(x, mean = Gaussian.2.mean, sd = Gaussian.2.sd)
+
+weight.1 = (1/Gaussian.1.sd^2)/((1/Gaussian.1.sd^2)+(1/Gaussian.2.sd^2))
+weight.2 = (1/Gaussian.2.sd^2)/((1/Gaussian.1.sd^2)+(1/Gaussian.2.sd^2))
+
+
+Combined.mean &amp;lt;- weight.1*Gaussian.1.mean + weight.2*Gaussian.2.mean
+Combined.sd &amp;lt;- sqrt(weight.1*Gaussian.1.sd^2 + weight.2*Gaussian.2.sd^2 + weight.1*weight.2*(Gaussian.1.mean-Gaussian.2.mean)^2) 
+
+
+Gaussian.combined &amp;lt;- dnorm(x, mean = Combined.mean, sd = Combined.sd)
+
+plot(x, Gaussian.1, col=2, type=&amp;quot;l&amp;quot;,  xlab = &amp;quot;&amp;quot;, ylab=&amp;quot;Density&amp;quot;, lwd=2, main=paste0(&amp;quot;G1 mean=&amp;quot;,Gaussian.1.mean, &amp;quot;, G2 mean=&amp;quot;,Gaussian.2.mean, &amp;quot;, G1 sd=&amp;quot;,Gaussian.1.sd,&amp;quot;, G2 sd=&amp;quot;,Gaussian.2.sd ))
+lines(x, Gaussian.2, col=3, lwd=2)
+lines(x, Gaussian.combined, col=1, lwd=2)
+legend(&amp;quot;toprigh&amp;quot;, bty=&amp;quot;n&amp;quot;, col=c(2,3,1), c(&amp;quot;Gaussian 1&amp;quot;, &amp;quot;Gaussian 2&amp;quot;, &amp;quot;Gaussian comb.&amp;quot;), lty=1, lwd=2)
+legend(&amp;quot;topleft&amp;quot;, paste0(&amp;quot;combined sd &amp;quot;, round(Combined.sd,2)), bty=&amp;quot;n&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2018-04-10-estimating-moments-of-a-mixture-distribution_files/figure-html/unnamed-chunk-6-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Produce a nice map in R</title>
+      <link>/post/produce-a-nice-map-in-r/</link>
+      <pubDate>Mon, 02 Apr 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/post/produce-a-nice-map-in-r/</guid>
+      <description></description>
+    </item>
+    
+    <item>
       <title>Smartpop - Dynamic Population Mapping</title>
       <link>/post/smartpop-dynamic-population-mapping/</link>
       <pubDate>Tue, 27 Mar 2018 00:00:00 +0000</pubDate>
@@ -1081,54 +1240,6 @@ legend(&amp;quot;topleft&amp;quot;, col=c(&amp;quot;black&amp;quot;, &amp;quot;r
       <pubDate>Wed, 27 Apr 2016 00:00:00 +0000</pubDate>
       
       <guid>/project/open-science/</guid>
-      <description>
-
-&lt;h3 id=&#34;open-access&#34;&gt;Open Access&lt;/h3&gt;
-
-&lt;h3 id=&#34;open-peer-review&#34;&gt;Open Peer Review&lt;/h3&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>PechaKucha Night Liège</title>
-      <link>/project/pechakucha/</link>
-      <pubDate>Wed, 27 Apr 2016 00:00:00 +0000</pubDate>
-      
-      <guid>/project/pechakucha/</guid>
-      <description>
-
-&lt;h2 id=&#34;knowledge-mutation&#34;&gt;Knowledge Mutation&lt;/h2&gt;
-
-&lt;p&gt;&lt;a href=&#34;https://www.youtube.com/watch?v=O78fS3pxHi0&amp;amp;list=PL2iuWDbwWaXJtEIIO9bQFuEkVH_cv8Dv3&#34; target=&#34;_blank&#34;&gt;&lt;img src=&#34;/img/pk/knowledge-mutation.jpg&#34; alt=&#34;&#34; /&gt;&lt;/a&gt;&lt;/p&gt;
-
-
-&lt;div style=&#34;position: relative; padding-bottom: 56.25%; padding-top: 30px; height: 0; overflow: hidden;&#34;&gt;
-  &lt;iframe src=&#34;//www.youtube.com/embed/O78fS3pxHi0&#34; style=&#34;position: absolute; top: 0; left: 0; width: 100%; height: 100%;&#34; allowfullscreen frameborder=&#34;0&#34; title=&#34;YouTube Video&#34;&gt;&lt;/iframe&gt;
- &lt;/div&gt;
-
-
-&lt;h2 id=&#34;in-visible-design&#34;&gt;(In)visible Design&lt;/h2&gt;
-
-&lt;p&gt;&lt;a href=&#34;https://www.pechakucha.org/events/57248ea0168963fda0000001&#34; target=&#34;_blank&#34;&gt;&lt;img src=&#34;/img/pk/(in)visible-design.jpg&#34; alt=&#34;&#34; /&gt;&lt;/a&gt;&lt;/p&gt;
-
-
-&lt;div style=&#34;position: relative; padding-bottom: 56.25%; padding-top: 30px; height: 0; overflow: hidden;&#34;&gt;
-  &lt;iframe src=&#34;//www.youtube.com/embed/gBa4hk2uH2c&#34; style=&#34;position: absolute; top: 0; left: 0; width: 100%; height: 100%;&#34; allowfullscreen frameborder=&#34;0&#34; title=&#34;YouTube Video&#34;&gt;&lt;/iframe&gt;
- &lt;/div&gt;
-
-
-&lt;h2 id=&#34;open-science&#34;&gt;Open Science&lt;/h2&gt;
-
-&lt;p&gt;&lt;a href=&#34;https://www.youtube.com/watch?v=6JbJ0yKlxfI&amp;amp;list=PL2iuWDbwWaXI2lN0cb4-MWn7L86tC7TKu&#34; target=&#34;_blank&#34;&gt;&lt;img src=&#34;/img/pk/open-science.jpg&#34; alt=&#34;&#34; /&gt;&lt;/a&gt;&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>STEMGARDEN</title>
-      <link>/project/stemgarden/</link>
-      <pubDate>Wed, 27 Apr 2016 00:00:00 +0000</pubDate>
-      
-      <guid>/project/stemgarden/</guid>
       <description>
 
 &lt;h3 id=&#34;open-access&#34;&gt;Open Access&lt;/h3&gt;

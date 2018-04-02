@@ -1,0 +1,69 @@
+---
+title: Produce a nice map in R
+author: Damien C. Jacques
+date: '2018-04-02'
+slug: produce-a-nice-map-in-r
+draft: true 
+categories:
+  - R
+tags:
+  - map
+---
+
+```{r, eval = F, echo = F, message = FALSE}
+library(raster)
+library(maps)
+
+# getData('ISO3') # Get Code Country for getData('GADM')
+
+senegal <- getData('GADM', country = 'SEN', level = 0)
+senegal_1 <- getData('GADM', country = 'SEN', level = 1)
+mauritania <- getData('GADM', country = 'MRT', level = 0)
+mali <- getData('GADM', country = 'MLI', level = 0)
+gambia <- getData('GADM', country = 'GMB', level = 0)
+guinea_bissau <- getData('GADM', country = 'GNB', level = 0)
+guinea <- getData('GADM', country = 'GIN', level = 0)
+
+plot(senegal_1) +
+plot(mauritania, add = T) +
+plot(mali, add = T) +
+plot(gambia, add = T) +
+plot(guinea_bissau, add = T) +
+plot(guinea, add = T) +
+plot(senegal, add = T, lwd = 2, border = "red") 
+
+maps::map.scale(x=-13, y=16.8, ratio=FALSE, relwidth=0.2)  
+GISTools::north.arrow(xb=-17.2, yb=16.4, len=0.05, lab="N", col='gray10')  
+
+text(-14, 16.9, "Mauritania")
+```
+
+```{r,, eval = F, echo = F}
+library(maps)
+library(mapdata)
+library(raster)
+
+map(senegal, ylim=c(10,18))
+map.axes(cex.axis=0.8)
+plot(senegal, add = T, lwd = 2, border = "red") 
+plot(mali, add = T) 
+
+# xat <- pretty(m$range[1:2])
+# xlab <- parse(text=degreeLabelsEW(xat))
+# 
+# yat <- pretty(m$range[3:4])
+# ylab <- parse(text=degreeLabelsNS(yat))
+# 
+# 
+# box()
+# axis(1, at=xat, labels=xlab)
+# axis(2, las=TRUE, at=yat, labels=ylab)
+# axis(3, at=xat, labels=xlab)
+# axis(4, las=TRUE, at=yat, labels=ylab)
+# 
+# map.scale(y=16)
+```
+
+
+
+

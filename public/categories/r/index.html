@@ -95,7 +95,7 @@
   <meta property="og:description" content="Ph.D. in Bioengineering">
   <meta property="og:locale" content="en-us">
   
-  <meta property="og:updated_time" content="2018-03-27T00:00:00&#43;00:00">
+  <meta property="og:updated_time" content="2018-04-10T00:00:00&#43;00:00">
   
 
   
@@ -244,6 +244,24 @@
   
 
   
+  
+  <div>
+    <h2><a href="/post/estimating-moments-of-a-mixture-distribution/">Estimating Moments of a Mixture Distribution</a></h2>
+    <div class="article-style">
+      
+      This notebook aims to explore the statistical meaning behind the data fusion proposed in Pokhriyal, 2017.
+For this purpose, let us first generate some gaussian distributions.
+Gaussian.1.mean &lt;- 40 Gaussian.2.mean &lt;- 60 Gaussian.1.sd &lt;- 10 Gaussian.2.sd &lt;- 10 x &lt;- seq(-50,150,length=1000) Gaussian.1 &lt;- dnorm(x, mean = Gaussian.1.mean, sd = Gaussian.1.sd) Gaussian.2 &lt;- dnorm(x, mean = Gaussian.2.mean, sd = Gaussian.2.sd) plot(x, Gaussian.1, col=2, type=&quot;l&quot;, ylab=&quot;Density&quot;, xlab = &quot;&quot;, lwd=2) lines(x, Gaussian.2, col=3, lwd=2) legend(&quot;toprigh&quot;, bty=&quot;n&quot;, col=2:3, c(&quot;Gaussian 1&quot;, &quot;Gaussian 2&quot;), lty=1, lwd=2) We combine both gaussians following the procedure described in Pokhriyal, 2017.
+      
+    </div>
+  </div>
+  
+  <div>
+    <h2><a href="/post/produce-a-nice-map-in-r/">Produce a nice map in R</a></h2>
+    <div class="article-style">
+      
+    </div>
+  </div>
   
   <div>
     <h2><a href="/post/smartpop-dynamic-population-mapping/">Smartpop - Dynamic Population Mapping</a></h2>

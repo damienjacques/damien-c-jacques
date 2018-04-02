@@ -24,8 +24,8 @@ math = false
 # Optional featured image (relative to `static/img/` folder).   
 
 [header]
-image = "headers/"
-caption = ""
+image = "headers/pk-banner.jpg"
+caption = "PechaKucha Nights Liège"
 
 +++
 

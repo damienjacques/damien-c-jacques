@@ -13,6 +13,26 @@
     
     
     <item>
+      <title>Estimating Moments of a Mixture Distribution</title>
+      <link>/post/estimating-moments-of-a-mixture-distribution/</link>
+      <pubDate>Tue, 10 Apr 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/post/estimating-moments-of-a-mixture-distribution/</guid>
+      <description>This notebook aims to explore the statistical meaning behind the data fusion proposed in Pokhriyal, 2017.
+For this purpose, let us first generate some gaussian distributions.
+Gaussian.1.mean &amp;lt;- 40 Gaussian.2.mean &amp;lt;- 60 Gaussian.1.sd &amp;lt;- 10 Gaussian.2.sd &amp;lt;- 10 x &amp;lt;- seq(-50,150,length=1000) Gaussian.1 &amp;lt;- dnorm(x, mean = Gaussian.1.mean, sd = Gaussian.1.sd) Gaussian.2 &amp;lt;- dnorm(x, mean = Gaussian.2.mean, sd = Gaussian.2.sd) plot(x, Gaussian.1, col=2, type=&amp;quot;l&amp;quot;, ylab=&amp;quot;Density&amp;quot;, xlab = &amp;quot;&amp;quot;, lwd=2) lines(x, Gaussian.2, col=3, lwd=2) legend(&amp;quot;toprigh&amp;quot;, bty=&amp;quot;n&amp;quot;, col=2:3, c(&amp;quot;Gaussian 1&amp;quot;, &amp;quot;Gaussian 2&amp;quot;), lty=1, lwd=2) We combine both gaussians following the procedure described in Pokhriyal, 2017.</description>
+    </item>
+    
+    <item>
+      <title>Produce a nice map in R</title>
+      <link>/post/produce-a-nice-map-in-r/</link>
+      <pubDate>Mon, 02 Apr 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/post/produce-a-nice-map-in-r/</guid>
+      <description></description>
+    </item>
+    
+    <item>
       <title>Smartpop - Dynamic Population Mapping</title>
       <link>/post/smartpop-dynamic-population-mapping/</link>
       <pubDate>Tue, 27 Mar 2018 00:00:00 +0000</pubDate>
