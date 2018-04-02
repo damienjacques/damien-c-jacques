@@ -99,7 +99,7 @@ cadastre_latlon <- spTransform(cadastre_antenna, CRS("+init=epsg:4326"))
 cadastre_latlon <- data.frame(lat=coordinates(cadastre_latlon)[ , 2], lon=coordinates(cadastre_latlon)[ , 1])
 
 l <- leaflet() %>%
-  setView(lng = 5.578661, lat = 50.633766, zoom = 12) %>%
+  setView(lng = 3.410255, lat = 50.62723, zoom = 12) %>%
   # Base groups
   addProviderTiles(providers$Stamen.Toner, group = "Toner") %>%
   addTiles(group = "OSM (default)") %>%
@@ -117,4 +117,56 @@ l <- leaflet() %>%
   )
 frameWidget(l)
 ```
+
+After exploration some cluster of very close antenna exist. Let's further investigate this point.
+
+First, we compute the distance matrix between each antenna.
+
+```{r, eval = FALSE}
+library(geosphere)
+library(reshape)
+
+dt <- expand.grid.df(antenna_latlon[, c("lon", "lat")], antenna_latlon[, c("lon", "lat")])
+names(dt)[3:4] <- c("lon_dest", "lat_dest")
+dt$dist <- distGeo(matrix(c(dt$lon, dt$lat), ncol = 2), 
+                   matrix(c(dt$lon_dest, dt$lat_dest), ncol = 2))
+save(dt, file = "/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/WorkingDataBase/antenna_distance", compress = T)
+
+dt.cad <- expand.grid.df(cadastre_latlon[, c("lon", "lat")], cadastre_latlon[, c("lon", "lat")])
+names(dt.cad)[3:4] <- c("lon_dest", "lat_dest")
+dt.cad$dist <- distGeo(matrix(c(dt.cad$lon, dt.cad$lat), ncol = 2), 
+                   matrix(c(dt.cad$lon_dest, dt.cad$lat_dest), ncol = 2))
+save(dt.cad, file = "/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/WorkingDataBase/cadastre_distance", compress = T)
+```
+
+
+Then, we explore the histogram of distances between antennas from the cadastre:
+
+```{r}
+load("/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/WorkingDataBase/cadastre_distance")
+
+range(dt.cad$dist[dt.cad$dist > 0])
+hist(dt.cad$dist[dt.cad$dist > 0 & dt.cad$dist < 50], xlab = "Distance between points", main = "")
+
+length(dt.cad$dist[dt.cad$dist > 0 & dt.cad$dist < 50])/length(dt.cad$dist[dt.cad$dist > 0])
+```
+
+
+
+
+```{r, eval = FALSE, echo = FALSE}
+load("/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/WorkingDataBase/antenna_distance")
+
+hist(dt$dist, xlab = "Distance between points", main = "")
+hist(dt$dist[dt$dist < 50 & dt$dist < 50], xlab = "Distance between points", main = "",  breaks = -0.5:50.5)
+
+
+dt <- dt[dt$dist > 0 & dt$dist < 2, ]
+dt <- dt[apply(which(all(x[1:2] == x[3:4]) & all(x[3:4] == x[1:2])),]
+-which(dt[, 1:2] == dt[, 3:4] & dt[, 3:4] == dt[, 1:2])
+
+unique(dt$dist[dt$dist < 3])
+```
+
+Now, let's plot the number of antennas over time.
 

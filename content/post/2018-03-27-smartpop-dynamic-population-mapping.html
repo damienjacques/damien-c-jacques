@@ -23,15 +23,15 @@ tags:
 Mobile_Phone &lt;- fread(&quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/MobilePhone/OBE_traffic_per_antenna_201405_201504.csv&quot;)</code></pre>
 <pre><code>## 
 Read 0.0% of 40194140 rows
-Read 9.7% of 40194140 rows
-Read 18.7% of 40194140 rows
-Read 29.4% of 40194140 rows
-Read 40.5% of 40194140 rows
-Read 50.1% of 40194140 rows
-Read 61.0% of 40194140 rows
-Read 72.5% of 40194140 rows
-Read 82.8% of 40194140 rows
-Read 94.0% of 40194140 rows
+Read 11.8% of 40194140 rows
+Read 23.1% of 40194140 rows
+Read 34.1% of 40194140 rows
+Read 44.7% of 40194140 rows
+Read 55.0% of 40194140 rows
+Read 65.2% of 40194140 rows
+Read 75.4% of 40194140 rows
+Read 84.5% of 40194140 rows
+Read 93.9% of 40194140 rows
 Read 40194140 rows and 7 (of 7) columns from 1.472 GB file in 00:00:12</code></pre>
 <pre class="r"><code>Mobile_Phone</code></pre>
 <pre><code>##               DATE_HOUR CELL_BTS_XCOORD_NUM CELL_BTS_YCOORD_NUM NBR_SIM_BE
@@ -125,7 +125,7 @@ cadastre_latlon &lt;- spTransform(cadastre_antenna, CRS(&quot;+init=epsg:4326&qu
 cadastre_latlon &lt;- data.frame(lat=coordinates(cadastre_latlon)[ , 2], lon=coordinates(cadastre_latlon)[ , 1])
 
 l &lt;- leaflet() %&gt;%
-  setView(lng = 5.578661, lat = 50.633766, zoom = 12) %&gt;%
+  setView(lng = 3.410255, lat = 50.62723, zoom = 12) %&gt;%
   # Base groups
   addProviderTiles(providers$Stamen.Toner, group = &quot;Toner&quot;) %&gt;%
   addTiles(group = &quot;OSM (default)&quot;) %&gt;%
@@ -144,5 +144,31 @@ l &lt;- leaflet() %&gt;%
 frameWidget(l)</code></pre>
 <div id="htmlwidget-1" style="width:100%;height:480px;" class="widgetframe html-widget"></div>
 <script type="application/json" data-for="htmlwidget-1">{"x":{"url":"/post/2018-03-27-smartpop-dynamic-population-mapping_files/figure-html//widgets/widget_unnamed-chunk-6.html","options":{"xdomain":"*","allowfullscreen":false,"lazyload":false}},"evals":[],"jsHooks":[]}</script>
+<p>After exploration some cluster of very close antenna exist. Let’s further investigate this point.</p>
+<p>First, we compute the distance matrix between each antenna.</p>
+<pre class="r"><code>library(geosphere)
+library(reshape)
+
+dt &lt;- expand.grid.df(antenna_latlon[, c(&quot;lon&quot;, &quot;lat&quot;)], antenna_latlon[, c(&quot;lon&quot;, &quot;lat&quot;)])
+names(dt)[3:4] &lt;- c(&quot;lon_dest&quot;, &quot;lat_dest&quot;)
+dt$dist &lt;- distGeo(matrix(c(dt$lon, dt$lat), ncol = 2), 
+                   matrix(c(dt$lon_dest, dt$lat_dest), ncol = 2))
+save(dt, file = &quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/WorkingDataBase/antenna_distance&quot;, compress = T)
+
+dt.cad &lt;- expand.grid.df(cadastre_latlon[, c(&quot;lon&quot;, &quot;lat&quot;)], cadastre_latlon[, c(&quot;lon&quot;, &quot;lat&quot;)])
+names(dt.cad)[3:4] &lt;- c(&quot;lon_dest&quot;, &quot;lat_dest&quot;)
+dt.cad$dist &lt;- distGeo(matrix(c(dt.cad$lon, dt.cad$lat), ncol = 2), 
+                   matrix(c(dt.cad$lon_dest, dt.cad$lat_dest), ncol = 2))
+save(dt.cad, file = &quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/WorkingDataBase/cadastre_distance&quot;, compress = T)</code></pre>
+<p>Then, we explore the histogram of distances between antennas from the cadastre:</p>
+<pre class="r"><code>load(&quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/WorkingDataBase/cadastre_distance&quot;)
+
+range(dt.cad$dist[dt.cad$dist &gt; 0])</code></pre>
+<pre><code>## [1] 3.605757e+00 2.489118e+05</code></pre>
+<pre class="r"><code>hist(dt.cad$dist[dt.cad$dist &gt; 0 &amp; dt.cad$dist &lt; 50], xlab = &quot;Distance between points&quot;, main = &quot;&quot;)</code></pre>
+<p><img src="/post/2018-03-27-smartpop-dynamic-population-mapping_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+<pre class="r"><code>length(dt.cad$dist[dt.cad$dist &gt; 0 &amp; dt.cad$dist &lt; 50])/length(dt.cad$dist[dt.cad$dist &gt; 0])</code></pre>
+<pre><code>## [1] 8.28331e-06</code></pre>
+<p>Now, let’s plot the number of antennas over time.</p>
 </div>
 </div>

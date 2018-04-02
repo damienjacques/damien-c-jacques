@@ -29,15 +29,15 @@
 Mobile_Phone &amp;lt;- fread(&amp;quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/MobilePhone/OBE_traffic_per_antenna_201405_201504.csv&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
 &lt;pre&gt;&lt;code&gt;## 
 Read 0.0% of 40194140 rows
-Read 9.7% of 40194140 rows
-Read 18.7% of 40194140 rows
-Read 29.4% of 40194140 rows
-Read 40.5% of 40194140 rows
-Read 50.1% of 40194140 rows
-Read 61.0% of 40194140 rows
-Read 72.5% of 40194140 rows
-Read 82.8% of 40194140 rows
-Read 94.0% of 40194140 rows
+Read 11.8% of 40194140 rows
+Read 23.1% of 40194140 rows
+Read 34.1% of 40194140 rows
+Read 44.7% of 40194140 rows
+Read 55.0% of 40194140 rows
+Read 65.2% of 40194140 rows
+Read 75.4% of 40194140 rows
+Read 84.5% of 40194140 rows
+Read 93.9% of 40194140 rows
 Read 40194140 rows and 7 (of 7) columns from 1.472 GB file in 00:00:12&lt;/code&gt;&lt;/pre&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;Mobile_Phone&lt;/code&gt;&lt;/pre&gt;
 &lt;pre&gt;&lt;code&gt;##               DATE_HOUR CELL_BTS_XCOORD_NUM CELL_BTS_YCOORD_NUM NBR_SIM_BE
@@ -131,7 +131,7 @@ cadastre_latlon &amp;lt;- spTransform(cadastre_antenna, CRS(&amp;quot;+init=epsg
 cadastre_latlon &amp;lt;- data.frame(lat=coordinates(cadastre_latlon)[ , 2], lon=coordinates(cadastre_latlon)[ , 1])
 
 l &amp;lt;- leaflet() %&amp;gt;%
-  setView(lng = 5.578661, lat = 50.633766, zoom = 12) %&amp;gt;%
+  setView(lng = 3.410255, lat = 50.62723, zoom = 12) %&amp;gt;%
   # Base groups
   addProviderTiles(providers$Stamen.Toner, group = &amp;quot;Toner&amp;quot;) %&amp;gt;%
   addTiles(group = &amp;quot;OSM (default)&amp;quot;) %&amp;gt;%
@@ -150,6 +150,32 @@ l &amp;lt;- leaflet() %&amp;gt;%
 frameWidget(l)&lt;/code&gt;&lt;/pre&gt;
 &lt;div id=&#34;htmlwidget-1&#34; style=&#34;width:100%;height:480px;&#34; class=&#34;widgetframe html-widget&#34;&gt;&lt;/div&gt;
 &lt;script type=&#34;application/json&#34; data-for=&#34;htmlwidget-1&#34;&gt;{&#34;x&#34;:{&#34;url&#34;:&#34;/post/2018-03-27-smartpop-dynamic-population-mapping_files/figure-html//widgets/widget_unnamed-chunk-6.html&#34;,&#34;options&#34;:{&#34;xdomain&#34;:&#34;*&#34;,&#34;allowfullscreen&#34;:false,&#34;lazyload&#34;:false}},&#34;evals&#34;:[],&#34;jsHooks&#34;:[]}&lt;/script&gt;
+&lt;p&gt;After exploration some cluster of very close antenna exist. Let’s further investigate this point.&lt;/p&gt;
+&lt;p&gt;First, we compute the distance matrix between each antenna.&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;library(geosphere)
+library(reshape)
+
+dt &amp;lt;- expand.grid.df(antenna_latlon[, c(&amp;quot;lon&amp;quot;, &amp;quot;lat&amp;quot;)], antenna_latlon[, c(&amp;quot;lon&amp;quot;, &amp;quot;lat&amp;quot;)])
+names(dt)[3:4] &amp;lt;- c(&amp;quot;lon_dest&amp;quot;, &amp;quot;lat_dest&amp;quot;)
+dt$dist &amp;lt;- distGeo(matrix(c(dt$lon, dt$lat), ncol = 2), 
+                   matrix(c(dt$lon_dest, dt$lat_dest), ncol = 2))
+save(dt, file = &amp;quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/WorkingDataBase/antenna_distance&amp;quot;, compress = T)
+
+dt.cad &amp;lt;- expand.grid.df(cadastre_latlon[, c(&amp;quot;lon&amp;quot;, &amp;quot;lat&amp;quot;)], cadastre_latlon[, c(&amp;quot;lon&amp;quot;, &amp;quot;lat&amp;quot;)])
+names(dt.cad)[3:4] &amp;lt;- c(&amp;quot;lon_dest&amp;quot;, &amp;quot;lat_dest&amp;quot;)
+dt.cad$dist &amp;lt;- distGeo(matrix(c(dt.cad$lon, dt.cad$lat), ncol = 2), 
+                   matrix(c(dt.cad$lon_dest, dt.cad$lat_dest), ncol = 2))
+save(dt.cad, file = &amp;quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/WorkingDataBase/cadastre_distance&amp;quot;, compress = T)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Then, we explore the histogram of distances between antennas from the cadastre:&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;load(&amp;quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/WorkingDataBase/cadastre_distance&amp;quot;)
+
+range(dt.cad$dist[dt.cad$dist &amp;gt; 0])&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## [1] 3.605757e+00 2.489118e+05&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;hist(dt.cad$dist[dt.cad$dist &amp;gt; 0 &amp;amp; dt.cad$dist &amp;lt; 50], xlab = &amp;quot;Distance between points&amp;quot;, main = &amp;quot;&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2018-03-27-smartpop-dynamic-population-mapping_files/figure-html/unnamed-chunk-8-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;length(dt.cad$dist[dt.cad$dist &amp;gt; 0 &amp;amp; dt.cad$dist &amp;lt; 50])/length(dt.cad$dist[dt.cad$dist &amp;gt; 0])&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## [1] 8.28331e-06&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Now, let’s plot the number of antennas over time.&lt;/p&gt;
 &lt;/div&gt;
 &lt;/div&gt;
 </description>
