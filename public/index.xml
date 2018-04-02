@@ -199,6 +199,7 @@ An up to date bibtex file of my scientific bibliography (created with Jabref) ca
 &lt;li&gt;&lt;a href=&#34;#network&#34;&gt;Network&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&#34;#society&#34;&gt;Society&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&#34;#privacy&#34;&gt;Privacy / Ethics&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#urban&#34;&gt;Urban Planning&lt;/a&gt;&lt;/li&gt;
 &lt;/ol&gt;
 
 &lt;p&gt;&lt;a name=&#34;history&#34;&gt;&lt;/a&gt;&lt;/p&gt;
@@ -274,6 +275,20 @@ An up to date bibtex file of my scientific bibliography (created with Jabref) ca
 &lt;li&gt;&lt;p&gt;Know when to break these rules&lt;/p&gt;&lt;/li&gt;
 &lt;/ol&gt;
 &lt;/blockquote&gt;
+
+&lt;p&gt;&lt;a name=&#34;urban&#34;&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;h2 id=&#34;urban-planning&#34;&gt;Urban Planning&lt;/h2&gt;
+
+&lt;h3 id=&#34;crowdsourced-quantification-and-visualization-of-urban-mobility-space-inequality-https-www-cogitatiopress-com-urbanplanning-article-view-1209&#34;&gt;&lt;a href=&#34;https://www.cogitatiopress.com/urbanplanning/article/view/1209/&#34; target=&#34;_blank&#34;&gt;Crowdsourced Quantification and Visualization of Urban Mobility Space Inequality&lt;/a&gt;&lt;/h3&gt;
+
+&lt;p&gt;&lt;strong&gt;Michael Szell. &lt;em&gt;Urban Planning&lt;/em&gt;, 2018&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Most cities are car-centric, allocating a privileged amount of urban space to cars at the expense of sustainable mobility like cycling. Simultaneously, privately owned vehicles are vastly underused, wasting valuable opportunities for accommodating more people in a livable urban environment by occupying spacious parking areas. Since a data-driven quantification and visualization of such urban mobility space inequality is lacking, here we explore how crowdsourced data can help to advance its understanding. In particular, we describe how the open-source online platform What the Street!? uses massive user-generated data from OpenStreetMap for the interactive exploration of city-wide mobility spaces. Using polygon packing and graph algorithms, the platform rearranges all parking and mobility spaces of cars, rails, and bicycles of a city to be directly comparable, making mobility space inequality accessible to a broad public. This crowdsourced method confirms a prevalent imbalance between modal share and space allocation in 23 cities worldwide, typically discriminating bicycles. Analyzing the guesses of the platform’s visitors about mobility space distributions, we find that this discrimination is consistently underestimated in the public opinion. Finally, we discuss a visualized scenario in which extensive parking areas are regained through fleets of shared, autonomous vehicles. We outline how such accessible visualization platforms can facilitate urban planners and policy makers to reclaim road and parking space for pushing forward sustainable transport solutions.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;&lt;img src=&#34;/img/bibliography/Szell2018.png&#34; alt=&#34;Szell2018&#34; /&gt;&lt;/p&gt;
 </description>
     </item>
     
@@ -932,6 +947,39 @@ legend(&amp;quot;topleft&amp;quot;, col=c(&amp;quot;black&amp;quot;, &amp;quot;r
     </item>
     
     <item>
+      <title>Food Porn Show</title>
+      <link>/project/food-porn-show/</link>
+      <pubDate>Wed, 27 Apr 2016 00:00:00 +0000</pubDate>
+      
+      <guid>/project/food-porn-show/</guid>
+      <description>&lt;p&gt;
+&lt;div style=&#34;position: relative; padding-bottom: 56.25%; padding-top: 30px; height: 0; overflow: hidden;&#34;&gt;
+  &lt;iframe src=&#34;//www.youtube.com/embed/LXkT-cnFTLs&#34; style=&#34;position: absolute; top: 0; left: 0; width: 100%; height: 100%;&#34; allowfullscreen frameborder=&#34;0&#34; title=&#34;YouTube Video&#34;&gt;&lt;/iframe&gt;
+ &lt;/div&gt;
+
+
+&lt;div style=&#34;position: relative; padding-bottom: 56.25%; padding-top: 30px; height: 0; overflow: hidden;&#34;&gt;
+  &lt;iframe src=&#34;//player.vimeo.com/video/224237760&#34; style=&#34;position: absolute; top: 0; left: 0; width: 100%; height: 100%;&#34; webkitallowfullscreen mozallowfullscreen allowfullscreen&gt;&lt;/iframe&gt;
+ &lt;/div&gt;
+&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Guru GIS</title>
+      <link>/project/guru-gis/</link>
+      <pubDate>Wed, 27 Apr 2016 00:00:00 +0000</pubDate>
+      
+      <guid>/project/guru-gis/</guid>
+      <description>
+
+&lt;h3 id=&#34;open-access&#34;&gt;Open Access&lt;/h3&gt;
+
+&lt;h3 id=&#34;open-peer-review&#34;&gt;Open Peer Review&lt;/h3&gt;
+</description>
+    </item>
+    
+    <item>
       <title>Mapps Attack</title>
       <link>/project/mapps-attack/</link>
       <pubDate>Wed, 27 Apr 2016 00:00:00 +0000</pubDate>
@@ -1042,39 +1090,43 @@ legend(&amp;quot;topleft&amp;quot;, col=c(&amp;quot;black&amp;quot;, &amp;quot;r
     </item>
     
     <item>
-      <title>The academic, economic and societal impacts of Open Access: an evidence-based review</title>
-      <link>/publication/tennant-2016-academic/</link>
-      <pubDate>Mon, 11 Apr 2016 00:00:00 +0000</pubDate>
+      <title>PechaKucha Night Liège</title>
+      <link>/project/pechakucha/</link>
+      <pubDate>Wed, 27 Apr 2016 00:00:00 +0000</pubDate>
       
-      <guid>/publication/tennant-2016-academic/</guid>
-      <description></description>
+      <guid>/project/pechakucha/</guid>
+      <description>
+
+&lt;h2 id=&#34;knowledge-mutation&#34;&gt;Knowledge Mutation&lt;/h2&gt;
+
+
+&lt;div style=&#34;position: relative; padding-bottom: 56.25%; padding-top: 30px; height: 0; overflow: hidden;&#34;&gt;
+  &lt;iframe src=&#34;//www.youtube.com/embed/O78fS3pxHi0&#34; style=&#34;position: absolute; top: 0; left: 0; width: 100%; height: 100%;&#34; allowfullscreen frameborder=&#34;0&#34; title=&#34;YouTube Video&#34;&gt;&lt;/iframe&gt;
+ &lt;/div&gt;
+
+
+&lt;h2 id=&#34;invisible-design&#34;&gt;Invisible Design&lt;/h2&gt;
+
+&lt;p&gt;
+&lt;div style=&#34;position: relative; padding-bottom: 56.25%; padding-top: 30px; height: 0; overflow: hidden;&#34;&gt;
+  &lt;iframe src=&#34;//www.youtube.com/embed/gBa4hk2uH2c&#34; style=&#34;position: absolute; top: 0; left: 0; width: 100%; height: 100%;&#34; allowfullscreen frameborder=&#34;0&#34; title=&#34;YouTube Video&#34;&gt;&lt;/iframe&gt;
+ &lt;/div&gt;
+&lt;/p&gt;
+</description>
     </item>
     
     <item>
-      <title>The impact of training class proportions on binary cropland classification</title>
-      <link>/publication/waldner-2017-training-proportion/</link>
-      <pubDate>Mon, 11 Apr 2016 00:00:00 +0000</pubDate>
+      <title>STEMGARDEN</title>
+      <link>/project/stemgarden/</link>
+      <pubDate>Wed, 27 Apr 2016 00:00:00 +0000</pubDate>
       
-      <guid>/publication/waldner-2017-training-proportion/</guid>
-      <description></description>
-    </item>
-    
-    <item>
-      <title>A Dynamic Vegetation Senescence Indicator for Near-Real-Time Desert Locust Habitat Monitoring with MODIS</title>
-      <link>/publication/renier-2015-desert-locust/</link>
-      <pubDate>Mon, 15 Jun 2015 00:00:00 +0000</pubDate>
-      
-      <guid>/publication/renier-2015-desert-locust/</guid>
-      <description></description>
-    </item>
-    
-    <item>
-      <title>A Layered Vegetation Model for GPR Full-Wave Inversion</title>
-      <link>/publication/ardekani-2016-gpr/</link>
-      <pubDate>Thu, 16 Apr 2015 00:00:00 +0000</pubDate>
-      
-      <guid>/publication/ardekani-2016-gpr/</guid>
-      <description></description>
+      <guid>/project/stemgarden/</guid>
+      <description>
+
+&lt;h3 id=&#34;open-access&#34;&gt;Open Access&lt;/h3&gt;
+
+&lt;h3 id=&#34;open-peer-review&#34;&gt;Open Peer Review&lt;/h3&gt;
+</description>
     </item>
     
   </channel>

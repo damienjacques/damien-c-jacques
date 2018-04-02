@@ -3,20 +3,20 @@
 date = "2016-04-27"
 
 # Project title.
-title = "Open Science"
+title = "STEMGARDEN"
 
 # Project summary to display on homepage.
-summary = "Open Science and its role in academic publishing."
+summary = "Urban gardening solutions."
 
 # Optional image to display on homepage (relative to `static/img/` folder).
-image_preview = "OpenSci3.png"
+image_preview = "stemgarden-banner.png"
 
 # Tags: can be used for filtering projects.
 # Example: `tags = ["machine-learning", "deep-learning"]`
-tags = ["Open-Science", "Open-Access"]
+tags = ["Urban Garden", "Entrepreneurship"]
 
 # Optional external URL for project (replaces project detail page).
-external_link = "" 
+external_link = "https://stemgarden.co/" 
 
 # Does the project detail page use math formatting?
 math = false
@@ -24,8 +24,8 @@ math = false
 # Optional featured image (relative to `static/img/` folder).   
 
 [header]
-image = "headers/opensci_header.jpg"
-caption = "Open Science - PechaKucha Night and OpenCon satellite"
+image = "headers/stemgarden-banner.png"
+caption = "STEMGARDEN - Urban Gardening Solutions."
 
 +++
 

@@ -3,17 +3,17 @@
 date = "2016-04-27"
 
 # Project title.
-title = "Open Science"
+title = "Food Porn Show"
 
 # Project summary to display on homepage.
-summary = "Open Science and its role in academic publishing."
+summary = "’All-in-one’ gastronomical recipe kits."
 
 # Optional image to display on homepage (relative to `static/img/` folder).
-image_preview = "OpenSci3.png"
+image_preview = "fps-logo-2.png"
 
 # Tags: can be used for filtering projects.
 # Example: `tags = ["machine-learning", "deep-learning"]`
-tags = ["Open-Science", "Open-Access"]
+tags = ["Entrepreneurship", "Gastronomy"]
 
 # Optional external URL for project (replaces project detail page).
 external_link = "" 
@@ -24,14 +24,13 @@ math = false
 # Optional featured image (relative to `static/img/` folder).   
 
 [header]
-image = "headers/opensci_header.jpg"
-caption = "Open Science - PechaKucha Night and OpenCon satellite"
+image = "headers/fps-banner.png"
+caption = "Food Porn Show"
 
 +++
 
-### Open Access
-
-### Open Peer Review
+{{< youtube LXkT-cnFTLs>}}
+{{< vimeo 224237760>}}
 
 
 

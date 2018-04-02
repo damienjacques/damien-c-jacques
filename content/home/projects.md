@@ -45,8 +45,10 @@ filter_default = 0
   tag = ".Mobile-Phone-Data"
 
 [[filter]]
-  name = "Other"
-  tag = ".demo"
+  name = "Entrepreneurship"
+  tag = ".Entrepreneurship"
+  
+  
 
 +++
 

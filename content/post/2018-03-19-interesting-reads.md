@@ -19,7 +19,8 @@ An up to date bibtex file of my scientific bibliography (created with Jabref) ca
 1. [History / Archaeology](#history)
 2. [Network](#network)
 3. [Society](#society)
-3. [Privacy / Ethics](#privacy)
+4. [Privacy / Ethics](#privacy)
+5. [Urban Planning](#urban)
 
 <a name="history"></a> 
 ## History / Archaeology
@@ -81,5 +82,14 @@ An up to date bibtex file of my scientific bibliography (created with Jabref) ca
 
 > 10. Know when to break these rules
 
+<a name="urban"></a>
+## Urban Planning
 
+### [Crowdsourced Quantification and Visualization of Urban Mobility Space Inequality](https://www.cogitatiopress.com/urbanplanning/article/view/1209/)
+
+**Michael Szell. *Urban Planning*, 2018**.
+
+> Most cities are car-centric, allocating a privileged amount of urban space to cars at the expense of sustainable mobility like cycling. Simultaneously, privately owned vehicles are vastly underused, wasting valuable opportunities for accommodating more people in a livable urban environment by occupying spacious parking areas. Since a data-driven quantification and visualization of such urban mobility space inequality is lacking, here we explore how crowdsourced data can help to advance its understanding. In particular, we describe how the open-source online platform What the Street!? uses massive user-generated data from OpenStreetMap for the interactive exploration of city-wide mobility spaces. Using polygon packing and graph algorithms, the platform rearranges all parking and mobility spaces of cars, rails, and bicycles of a city to be directly comparable, making mobility space inequality accessible to a broad public. This crowdsourced method confirms a prevalent imbalance between modal share and space allocation in 23 cities worldwide, typically discriminating bicycles. Analyzing the guesses of the platform’s visitors about mobility space distributions, we find that this discrimination is consistently underestimated in the public opinion. Finally, we discuss a visualized scenario in which extensive parking areas are regained through fleets of shared, autonomous vehicles. We outline how such accessible visualization platforms can facilitate urban planners and policy makers to reclaim road and parking space for pushing forward sustainable transport solutions.
+
+![Szell2018](/img/bibliography/Szell2018.png)
 
