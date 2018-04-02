@@ -30,9 +30,18 @@ caption = ""
 +++
 
 ## Knowledge Mutation
+
+[![](/img/pk/knowledge-mutation.jpg)](https://www.youtube.com/watch?v=O78fS3pxHi0&list=PL2iuWDbwWaXJtEIIO9bQFuEkVH_cv8Dv3)
+
 {{< youtube O78fS3pxHi0>}}
 
-## Invisible Design
+## (In)visible Design
+
+[![](/img/pk/(in)visible-design.jpg)](https://www.pechakucha.org/events/57248ea0168963fda0000001)
+
 {{< youtube gBa4hk2uH2c>}}
 
+## Open Science
+
+[![](/img/pk/open-science.jpg)](https://www.youtube.com/watch?v=6JbJ0yKlxfI&list=PL2iuWDbwWaXI2lN0cb4-MWn7L86tC7TKu)
 
