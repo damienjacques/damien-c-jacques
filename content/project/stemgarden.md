@@ -13,7 +13,7 @@ image_preview = "stemgarden-banner.png"
 
 # Tags: can be used for filtering projects.
 # Example: `tags = ["machine-learning", "deep-learning"]`
-tags = ["Urban Garden", "Entrepreneurship"]
+tags = ["urban garden", "entrepreneurship"]
 
 # Optional external URL for project (replaces project detail page).
 external_link = "https://stemgarden.co/" 

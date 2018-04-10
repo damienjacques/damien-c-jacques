@@ -13,7 +13,7 @@ image_preview = "fps-logo-2.png"
 
 # Tags: can be used for filtering projects.
 # Example: `tags = ["machine-learning", "deep-learning"]`
-tags = ["Entrepreneurship", "Gastronomy"]
+tags = ["entrepreneurship", "gastronomy"]
 
 # Optional external URL for project (replaces project detail page).
 external_link = "" 

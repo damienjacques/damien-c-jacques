@@ -13,7 +13,7 @@ image_preview = "MappsAttack.jpg"
 
 # Tags: can be used for filtering projects.
 # Example: `tags = ["machine-learning", "deep-learning"]`
-tags = ["Space-Apps", "Game", "Land-Cover", "Crowdsourcing", "SDGs", "Earth-Observation"]
+tags = ["Space-Apps", "game", "land-cover", "crowdsourcing", "SDGs", "Earth-Observation", "research"]
 
 # Optional external URL for project (replaces project detail page).
 external_link = "" #https://2014.spaceappschallenge.org/project/mapps-attack/

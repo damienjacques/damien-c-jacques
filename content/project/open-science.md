@@ -13,7 +13,7 @@ image_preview = "OpenSci3.png"
 
 # Tags: can be used for filtering projects.
 # Example: `tags = ["machine-learning", "deep-learning"]`
-tags = ["Open-Science", "Open-Access"]
+tags = ["open-science", "open-access", "research"]
 
 # Optional external URL for project (replaces project detail page).
 external_link = "" 
