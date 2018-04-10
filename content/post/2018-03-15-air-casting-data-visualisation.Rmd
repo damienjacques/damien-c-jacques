@@ -1,6 +1,7 @@
 ---
 title: Air Casting Data Visualisation
 author: Damien C. Jacques
+summary: "This R Notebook describes the steps to download the data from the Air Quality API, convert them to R data and make some basic figures."
 date: '2018-03-15'
 slug: air-casting-data-visualisation
 categories:

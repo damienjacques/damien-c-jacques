@@ -1,6 +1,7 @@
 ---
 title: Interesting Reads
 author: Damien C. Jacques
+summary: "List including some interesting papers from the scientific literature and the internet."
 date: '2018-03-19'
 slug: interesting-papers
 categories:

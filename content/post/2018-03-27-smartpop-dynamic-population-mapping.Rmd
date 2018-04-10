@@ -1,20 +1,20 @@
 ---
-title: Smartpop - Dynamic Population Mapping
+title: Dynamic Population Mapping (Smartpop)
 author: Damien C. Jacques
 date: '2018-03-27'
-slug: smartpop-dynamic-population-mapping
 categories:
   - R
 tags:
-  - population
   - mobile phone data
+  - population
+summary: "This Notebook details the steps of the data analysis carried out for the Smartpop project -- Dynamic Population WP."
+slug: smartpop-dynamic-population-mapping
 output:
   blogdown::html_page:
-    toc: true
+    toc: yes
 ---
 
-
-This Notebook details the steps of the analysis of the Dynamic Population WP of the Smartpop project.
+This Notebook details the steps of the data analysis carried out for the Smartpop project -- Dynamic Population WP.
 
 ## Data Cleaning
 
@@ -23,7 +23,7 @@ This Notebook details the steps of the analysis of the Dynamic Population WP of 
 ```{r, eval = F, message = F}
 library(data.table)
 
-Mobile_Phone <- fread("/mobile_phone.csv")
+Mobile_Phone <- fread("/mobile_phone.csv",  showProgress = F)
 
 Mobile_Phone
 ```
@@ -31,7 +31,7 @@ Mobile_Phone
 ```{r, echo = F, message = F}
 library(data.table)
 
-Mobile_Phone <- fread("/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/MobilePhone/OBE_traffic_per_antenna_201405_201504.csv")
+Mobile_Phone <- fread("/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/MobilePhone/OBE_traffic_per_antenna_201405_201504.csv", showProgress = F)
 
 Mobile_Phone
 ```
@@ -40,7 +40,7 @@ Mobile_Phone
 
 ### Antenna
 
-How many antennas in the database ?
+How many antennas in the database?
 
 ```{r}
 unique_antenna <- unique(Mobile_Phone[, c("CELL_BTS_XCOORD_NUM" ,"CELL_BTS_YCOORD_NUM")])
@@ -48,7 +48,7 @@ unique_antenna <- unique(Mobile_Phone[, c("CELL_BTS_XCOORD_NUM" ,"CELL_BTS_YCOOR
 nrow(unique_antenna)
 ```
 
-Plot these antennas.
+Where are they located? 
 
 ```{r, message = FALSE}
 library(rgdal)
@@ -59,6 +59,10 @@ plot(antenna_shp, pch = "*")
 ```
 
 Two antennas are mislocated, we will discard them. We have now 5259 antennas.
+
+{{% alert warning %}}
+First Assumption: 2
+{{% /alert %}}
 
 ```{r, message = FALSE}
 library(raster)
@@ -114,7 +118,7 @@ cadastre_latlon <- spTransform(cadastre_antenna, CRS("+init=epsg:4326"))
 cadastre_latlon <- data.frame(lat=coordinates(cadastre_latlon)[ , 2], lon=coordinates(cadastre_latlon)[ , 1])
 
 l <- leaflet() %>%
-  setView(lng = 3.410255, lat = 50.62723, zoom = 12) %>%
+  setView(lng = 5.578661, lat = 50.633766,, zoom = 12) %>%
   # Base groups
   addProviderTiles(providers$Stamen.Toner, group = "Toner") %>%
   addTiles(group = "OSM (default)") %>%
