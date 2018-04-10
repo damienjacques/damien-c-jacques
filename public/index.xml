@@ -16,8 +16,10 @@
       <pubDate>Tue, 10 Apr 2018 00:00:00 +0000</pubDate>
       
       <guid>/post/estimating-moments-of-a-mixture-distribution/</guid>
-      <description>&lt;p&gt;This notebook aims to explore the statistical meaning behind the &lt;em&gt;data fusion&lt;/em&gt; proposed in &lt;a href=&#34;http://www.pnas.org/content/114/46/E9783&#34;&gt;Pokhriyal, 2017&lt;/a&gt;.&lt;/p&gt;
-&lt;p&gt;For this purpose, let us first generate some gaussian distributions.&lt;/p&gt;
+      <description>&lt;p&gt;This notebook aims to visually explore the statistical meaning behind the &lt;em&gt;data fusion&lt;/em&gt; proposed in &lt;a href=&#34;http://www.pnas.org/content/114/46/E9783&#34;&gt;Pokhriyal, 2017&lt;/a&gt;.&lt;/p&gt;
+&lt;div id=&#34;first-example&#34; class=&#34;section level2&#34;&gt;
+&lt;h2&gt;First example&lt;/h2&gt;
+&lt;p&gt;First, we generate some gaussian distributions.&lt;/p&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;Gaussian.1.mean &amp;lt;- 40
 Gaussian.2.mean &amp;lt;- 60
 Gaussian.1.sd &amp;lt;- 10
@@ -31,7 +33,7 @@ plot(x, Gaussian.1, col=2, type=&amp;quot;l&amp;quot;, ylab=&amp;quot;Density&am
 lines(x, Gaussian.2, col=3, lwd=2)
 legend(&amp;quot;toprigh&amp;quot;, bty=&amp;quot;n&amp;quot;, col=2:3, c(&amp;quot;Gaussian 1&amp;quot;, &amp;quot;Gaussian 2&amp;quot;), lty=1, lwd=2)&lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;&lt;img src=&#34;/post/2018-04-10-estimating-moments-of-a-mixture-distribution_files/figure-html/unnamed-chunk-1-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
-&lt;p&gt;We combine both gaussians following the procedure described in &lt;a href=&#34;http://www.pnas.org/content/114/46/E9783&#34;&gt;Pokhriyal, 2017&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;We now combine both gaussians following the procedure described in &lt;a href=&#34;http://www.pnas.org/content/114/46/E9783&#34;&gt;Pokhriyal, 2017&lt;/a&gt;.&lt;/p&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;weight.1 = (1/Gaussian.1.sd^2)/((1/Gaussian.1.sd^2)+(1/Gaussian.2.sd^2))
 weight.2 = (1/Gaussian.2.sd^2)/((1/Gaussian.1.sd^2)+(1/Gaussian.2.sd^2))
 weight.1&lt;/code&gt;&lt;/pre&gt;
@@ -49,7 +51,9 @@ lines(x, Gaussian.2, col=3, lwd=2)
 lines(x, Gaussian.combined, col=1, lwd=2)
 legend(&amp;quot;toprigh&amp;quot;, bty=&amp;quot;n&amp;quot;, col=c(2,3,1), c(&amp;quot;Gaussian 1&amp;quot;, &amp;quot;Gaussian 2&amp;quot;, &amp;quot;Gaussian comb.&amp;quot;), lty=1, lwd=2)&lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;&lt;img src=&#34;/post/2018-04-10-estimating-moments-of-a-mixture-distribution_files/figure-html/unnamed-chunk-2-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
-&lt;p&gt;Now, we can study different cases.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;particular-cases&#34; class=&#34;section level2&#34;&gt;
+&lt;h2&gt;Particular cases&lt;/h2&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;Gaussian.1.mean &amp;lt;- 40
 Gaussian.2.mean &amp;lt;- 60
 
@@ -157,6 +161,7 @@ lines(x, Gaussian.combined, col=1, lwd=2)
 legend(&amp;quot;toprigh&amp;quot;, bty=&amp;quot;n&amp;quot;, col=c(2,3,1), c(&amp;quot;Gaussian 1&amp;quot;, &amp;quot;Gaussian 2&amp;quot;, &amp;quot;Gaussian comb.&amp;quot;), lty=1, lwd=2)
 legend(&amp;quot;topleft&amp;quot;, paste0(&amp;quot;combined sd &amp;quot;, round(Combined.sd,2)), bty=&amp;quot;n&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;&lt;img src=&#34;/post/2018-04-10-estimating-moments-of-a-mixture-distribution_files/figure-html/unnamed-chunk-6-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;/div&gt;
 </description>
     </item>
     

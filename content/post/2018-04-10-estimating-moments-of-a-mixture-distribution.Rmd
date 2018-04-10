@@ -10,9 +10,11 @@ tags:
 ---
 
 
-This notebook aims to explore the statistical meaning behind the *data fusion* proposed in [Pokhriyal, 2017](http://www.pnas.org/content/114/46/E9783).
+This notebook aims to visually explore the statistical meaning behind the *data fusion* proposed in [Pokhriyal, 2017](http://www.pnas.org/content/114/46/E9783).
 
-For this purpose, let us first generate some gaussian distributions.
+## First example
+
+First, we generate some gaussian distributions.
 
 ```{r}
 Gaussian.1.mean <- 40
@@ -29,7 +31,7 @@ lines(x, Gaussian.2, col=3, lwd=2)
 legend("toprigh", bty="n", col=2:3, c("Gaussian 1", "Gaussian 2"), lty=1, lwd=2)
 ```
 
-We combine both gaussians following the procedure described in [Pokhriyal, 2017](http://www.pnas.org/content/114/46/E9783).
+We now combine both gaussians following the procedure described in [Pokhriyal, 2017](http://www.pnas.org/content/114/46/E9783).
 
 ```{r}
 weight.1 = (1/Gaussian.1.sd^2)/((1/Gaussian.1.sd^2)+(1/Gaussian.2.sd^2))
@@ -50,7 +52,7 @@ legend("toprigh", bty="n", col=c(2,3,1), c("Gaussian 1", "Gaussian 2", "Gaussian
 ```
 
 
-Now, we can study different cases. 
+## Particular cases
 
 
 ```{r}
