@@ -10,6 +10,7 @@ tags:
   - remote sensing
 ---
 
+
 ## Plot Nighttime Lights Time Series for Senegal
 
 First, we load the Version 4 DMSP-OLS Nighttime Lights Time Series (downloaded from [here](https://ngdc.noaa.gov/eog/dmsp/downloadV4composites.html)). 

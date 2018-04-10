@@ -42,8 +42,8 @@ Website under construction
 
 I am researcher in geomatics, "[the discipline of gathering, storing, processing, and delivering geographic information or spatially referenced information](https://en.wikipedia.org/wiki/Geomatics)". I am currently working as a research assistant at ULB (Belgium) while completing a Ph.D. entitled ”Harnessing the Data Revolution for Food Security and Poverty Mapping: Synergies between Mobile Phone Data, Earth Observation and Official Statistics in Senegal” at UCL (Belgium).  
 
-I am using mobile phone metadata (call detail records), Earth Observation data and other geographic data for GIS, machine learning and other geostatistics analysis. 
+I am using mobile phone metadata (call detail records), Earth Observation data and other geospatial data for GIS, machine learning and geostatistics analysis. 
 
-I have a [blog](http://www.guru-gis.net) with a couple of colleagues where we share chunks of code related to geospatial analysis using open source programming languages and  softwares (R, Python, Qgis, OTB...).
+I have a [blog](http://www.guru-gis.net) with a couple of colleagues where we share(d) chunks of code related to geospatial analysis using open source programming languages and  softwares (R, Python, Qgis, OTB...).
 
 I am also one of the founders of [STEMGARDEN](http://www.stemgarden.co), an online platform that promotes urban gardening and farming solutions.

@@ -184,6 +184,13 @@ legend(&amp;quot;topleft&amp;quot;, paste0(&amp;quot;combined sd &amp;quot;, rou
 &lt;script src=&#34;/rmarkdown-libs/pymjs/pym.v1.js&#34;&gt;&lt;/script&gt;
 &lt;script src=&#34;/rmarkdown-libs/widgetframe-binding/widgetframe.js&#34;&gt;&lt;/script&gt;
 
+&lt;div id=&#34;TOC&#34;&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;#data-exploration&#34;&gt;Data Exploration&lt;/a&gt;&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;#antenna&#34;&gt;Antenna&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
 
 &lt;p&gt;This Notebook details the steps of the analysis of the Dynamic Population WP of the Smartpop project.&lt;/p&gt;
 &lt;div id=&#34;data-exploration&#34; class=&#34;section level2&#34;&gt;
@@ -193,16 +200,15 @@ legend(&amp;quot;topleft&amp;quot;, paste0(&amp;quot;combined sd &amp;quot;, rou
 Mobile_Phone &amp;lt;- fread(&amp;quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/MobilePhone/OBE_traffic_per_antenna_201405_201504.csv&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
 &lt;pre&gt;&lt;code&gt;## 
 Read 0.0% of 40194140 rows
-Read 11.8% of 40194140 rows
-Read 23.1% of 40194140 rows
-Read 34.1% of 40194140 rows
-Read 44.7% of 40194140 rows
-Read 55.0% of 40194140 rows
-Read 65.2% of 40194140 rows
-Read 75.4% of 40194140 rows
-Read 84.5% of 40194140 rows
-Read 93.9% of 40194140 rows
-Read 40194140 rows and 7 (of 7) columns from 1.472 GB file in 00:00:12&lt;/code&gt;&lt;/pre&gt;
+Read 12.5% of 40194140 rows
+Read 25.2% of 40194140 rows
+Read 38.0% of 40194140 rows
+Read 50.5% of 40194140 rows
+Read 62.3% of 40194140 rows
+Read 74.0% of 40194140 rows
+Read 86.0% of 40194140 rows
+Read 97.3% of 40194140 rows
+Read 40194140 rows and 7 (of 7) columns from 1.472 GB file in 00:00:11&lt;/code&gt;&lt;/pre&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;Mobile_Phone&lt;/code&gt;&lt;/pre&gt;
 &lt;pre&gt;&lt;code&gt;##               DATE_HOUR CELL_BTS_XCOORD_NUM CELL_BTS_YCOORD_NUM NBR_SIM_BE
 ##        1: 2014-05-01 00               24625              200309         22

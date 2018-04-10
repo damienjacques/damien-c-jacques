@@ -8,20 +8,35 @@ categories:
 tags:
   - population
   - mobile phone data
+output:
+  blogdown::html_page:
+    toc: true
 ---
 
 
 This Notebook details the steps of the analysis of the Dynamic Population WP of the Smartpop project.
 
-## Data Exploration
+## Data Cleaning
 
-```{r, message = F}
+### Data Loading
+
+```{r, eval = F, message = F}
+library(data.table)
+
+Mobile_Phone <- fread("/mobile_phone.csv")
+
+Mobile_Phone
+```
+
+```{r, echo = F, message = F}
 library(data.table)
 
 Mobile_Phone <- fread("/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/MobilePhone/OBE_traffic_per_antenna_201405_201504.csv")
 
 Mobile_Phone
 ```
+
+
 
 ### Antenna
 

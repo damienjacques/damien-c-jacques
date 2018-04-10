@@ -10,6 +10,7 @@ tags:
 ---
 
 
+
 This notebook aims to visually explore the statistical meaning behind the *data fusion* proposed in [Pokhriyal, 2017](http://www.pnas.org/content/114/46/E9783).
 
 ## First example
