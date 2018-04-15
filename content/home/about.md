@@ -38,7 +38,6 @@ weight = 5
 Website under construction
 {{% /alert %}}
 
-# About me
 
 I am researcher in geomatics, "[the discipline of gathering, storing, processing, and delivering geographic information or spatially referenced information](https://en.wikipedia.org/wiki/Geomatics)". I am currently working as a research assistant at ULB (Belgium) while completing a Ph.D. entitled ”Harnessing the Data Revolution for Food Security and Poverty Mapping: Synergies between Mobile Phone Data, Earth Observation and Official Statistics in Senegal” at UCL (Belgium).  
 

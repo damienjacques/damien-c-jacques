@@ -168,11 +168,33 @@ code {
   background-color: #f9f2f4;
 }
 
+
+
 pre {
+  margin: 0 0 1rem 0;
+  overflow: auto;
+  background-color: rgb(255, 255, 255); /* Match default highlight theme. */
+  border-color: rgb(192,192,192);
+}
+
+
+pre.r {
   margin: 0 0 1rem 0;
   overflow: auto;
   background-color: rgb(248, 248, 248); /* Match default highlight theme. */
   border-color: rgb(192,192,192);
+}
+
+code.hljs.shell {
+  background-color: rgb(255, 255, 255); 
+}
+
+code.hljs.css {
+  background-color: rgb(255, 255, 255); 
+}
+
+code.hljs.objectivec {
+  background-color: rgb(255, 255, 255); 
 }
 
 hr {

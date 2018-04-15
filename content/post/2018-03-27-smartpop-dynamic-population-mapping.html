@@ -72,6 +72,7 @@ nrow(unique_antenna)</code></pre>
 <p>Where are they located?</p>
 <pre class="r"><code>library(rgdal)
 
+# An ID field is added and will serve as reference for the rest of the analysis
 antenna_shp &lt;- SpatialPointsDataFrame(unique_antenna[ , 1:2], data.frame(ID = 1:nrow(unique_antenna)))
 
 plot(antenna_shp, pch = &quot;*&quot;)</code></pre>

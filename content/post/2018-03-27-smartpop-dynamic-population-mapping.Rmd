@@ -53,6 +53,7 @@ Where are they located?
 ```{r, message = FALSE}
 library(rgdal)
 
+# An ID field is added and will serve as reference for the rest of the analysis
 antenna_shp <- SpatialPointsDataFrame(unique_antenna[ , 1:2], data.frame(ID = 1:nrow(unique_antenna)))
 
 plot(antenna_shp, pch = "*")
