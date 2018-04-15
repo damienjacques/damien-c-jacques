@@ -24,6 +24,7 @@ publication = "*F1000Research*"
 abstract = "Ongoing debates surrounding Open Access to the scholarly literature are multifaceted and complicated by disparate and often polarised viewpoints from engaged stakeholders. At the current stage, Open Access has become such a global issue that it is critical for all involved in scholarly publishing, including policymakers, publishers, research funders, governments, learned societies, librarians, and academic communities, to be well-informed on the history, benefits, and pitfalls of Open Access. In spite of this, there is a general lack of consensus regarding the potential pros and cons of Open Access at multiple levels. This review aims to be a resource for current knowledge on the impacts of Open Access by synthesizing important research in three major areas: academic, economic and societal. While there is clearly much scope for additional research, several key trends are identified, including a broad citation advantage for researchers who publish openly, as well as additional benefits to the non-academic dissemination of their work. The economic impact of Open Access is less well-understood, although it is clear that access to the research literature is key for innovative enterprises, and a range of governmental and non-governmental services. Furthermore, Open Access has the potential to save both publishers and research funders considerable amounts of financial resources, and can provide some economic benefits to traditionally subscription-based journals. The societal impact of Open Access is strong, in particular for advancing citizen science initiatives, and leveling the playing field for researchers in developing countries. Open Access supersedes all potential alternative modes of access to the scholarly literature through enabling unrestricted re-use, and long-term stability independent of financial constraints of traditional publishers that impede knowledge sharing. However, Open Access has the potential to become unsustainable for research communities if high-cost options are allowed to continue to prevail in a widely unregulated scholarly publishing market. Open Access remains only one of the multiple challenges that the scholarly publishing system is currently facing. Yet, it provides one foundation for increasing engagement with researchers regarding ethical standards of publishing and the broader implications of 'Open Research'."
 abstract_short = "A mobile visual clothing search system is presented whereby a smart phone user can either choose a social networking image or capture a new photo of a person wearing clothing of interest and search for similar clothing in a large cloud-based ecommerce database. The phone's GPS location is used to re-rank results by retail store location, to inform the user of local stores where similar clothing items can be tried on."
 
+
 # Featured image thumbnail (optional)
 image_preview = ""
 
@@ -64,3 +65,12 @@ highlight = true
 # caption = "My caption :smile:"
 
 +++
+
+<!--html_preserve-->
+<script type='text/javascript' src='https://d1bxh8uas1mnw7.cloudfront.net/assets/embed.js'></script>
+<div data-badge-details="right" data-badge-type="medium-donut" data-doi="10.12688/f1000research.8460.3" data-hide-no-mentions="true" class="altmetric-embed"></div>
+<div data-badge-details="right" data-badge-type="medium-donut" data-doi="10.12688/f1000research.8460.2" data-hide-no-mentions="true" class="altmetric-embed"></div>
+<div data-badge-details="right" data-badge-type="medium-donut" data-doi="10.12688/f1000research.8460.1" data-hide-no-mentions="true" class="altmetric-embed"></div>
+<!--/html_preserve-->
+
+
