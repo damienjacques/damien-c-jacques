@@ -10,7 +10,7 @@ tags:
   - map
 ---
 
-```{r, eval = F, echo = F, message = FALSE}
+```{r, eval = T, echo = F, message = FALSE}
 library(raster)
 library(maps)
 

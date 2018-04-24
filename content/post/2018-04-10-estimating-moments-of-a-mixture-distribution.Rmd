@@ -41,16 +41,16 @@ weight.2 = (1/Gaussian.2.sd^2)/((1/Gaussian.1.sd^2)+(1/Gaussian.2.sd^2))
 weight.1
 weight.2
 
-Combined.mean <- weight.1*Gaussian.1.mean + weight.2*Gaussian.2.mean
-Combined.sd <- sqrt(weight.1*Gaussian.1.sd^2 + weight.2*Gaussian.2.sd^2 + weight.1*weight.2*(Gaussian.1.mean-Gaussian.2.mean)^2) 
+Mixture.mean <- weight.1*Gaussian.1.mean + weight.2*Gaussian.2.mean
+Mixture.sd <- sqrt(weight.1*Gaussian.1.sd^2 + weight.2*Gaussian.2.sd^2 + weight.1*weight.2*(Gaussian.1.mean-Gaussian.2.mean)^2) 
 
 
-Gaussian.combined <- dnorm(x, mean = Combined.mean, sd = Combined.sd)
+Mixture <- Gaussian.1 * weight.1 + Gaussian.2 * weight.2 
 
 plot(x, Gaussian.1, col=2, type="l",  xlab = "", ylab="Density", lwd=2)
 lines(x, Gaussian.2, col=3, lwd=2)
-lines(x, Gaussian.combined, col=1, lwd=2)
-legend("toprigh", bty="n", col=c(2,3,1), c("Gaussian 1", "Gaussian 2", "Gaussian comb."), lty=1, lwd=2)
+lines(x, Mixture, col=1, lwd=2)
+legend("toprigh", bty="n", col=c(2,3,1), c("Gaussian 1", "Gaussian 2", "Mixture"), lty=1, lwd=2)
 ```
 
 
@@ -68,22 +68,18 @@ for (sd in seq(10,30,10)){
   Gaussian.1 <- dnorm(x, mean = Gaussian.1.mean, sd = Gaussian.1.sd)
   Gaussian.2 <- dnorm(x, mean = Gaussian.2.mean, sd = Gaussian.2.sd)
   
-  
   weight.1 = (1/Gaussian.1.sd^2)/((1/Gaussian.1.sd^2)+(1/Gaussian.2.sd^2))
   weight.2 = (1/Gaussian.2.sd^2)/((1/Gaussian.1.sd^2)+(1/Gaussian.2.sd^2))
-  weight.1
-  weight.2
   
-  Combined.mean <- weight.1*Gaussian.1.mean + weight.2*Gaussian.2.mean
-  Combined.sd <- sqrt(weight.1*Gaussian.1.sd^2 + weight.2*Gaussian.2.sd^2 + weight.1*weight.2*(Gaussian.1.mean-Gaussian.2.mean)^2) 
+  Mixture.mean <- weight.1*Gaussian.1.mean + weight.2*Gaussian.2.mean
+  Mixture.sd <- sqrt(weight.1*Gaussian.1.sd^2 + weight.2*Gaussian.2.sd^2 + weight.1*weight.2*(Gaussian.1.mean-Gaussian.2.mean)^2) 
   
-  
-  Gaussian.combined <- dnorm(x, mean = Combined.mean, sd = Combined.sd)
+  Mixture <- Gaussian.1 * weight.1 + Gaussian.2 * weight.2 
   
   plot(x, Gaussian.1, col=2, type="l",  xlab = "", ylab="Density", lwd=2, main=paste0("G1 mean= 40, G2 mean=60, sd=",sd))
   lines(x, Gaussian.2, col=3, lwd=2)
-  lines(x, Gaussian.combined, col=1, lwd=2)
-  legend("toprigh", bty="n", col=c(2,3,1), c("Gaussian 1", "Gaussian 2", "Gaussian comb."), lty=1, lwd=2)
+  lines(x, Mixture, col=1, lwd=2)
+  legend("toprigh", bty="n", col=c(2,3,1), c("Gaussian 1", "Gaussian 2", "Mixture"), lty=1, lwd=2)
 }
 ```
 
@@ -98,22 +94,18 @@ for (i in seq(10,30,10)){
   Gaussian.1 <- dnorm(x, mean = Gaussian.1.mean, sd = Gaussian.1.sd)
   Gaussian.2 <- dnorm(x, mean = Gaussian.2.mean, sd = Gaussian.2.sd)
   
-  
   weight.1 = (1/Gaussian.1.sd^2)/((1/Gaussian.1.sd^2)+(1/Gaussian.2.sd^2))
   weight.2 = (1/Gaussian.2.sd^2)/((1/Gaussian.1.sd^2)+(1/Gaussian.2.sd^2))
-  weight.1
-  weight.2
   
-  Combined.mean <- weight.1*Gaussian.1.mean + weight.2*Gaussian.2.mean
-  Combined.sd <- sqrt(weight.1*Gaussian.1.sd^2 + weight.2*Gaussian.2.sd^2 + weight.1*weight.2*(Gaussian.1.mean-Gaussian.2.mean)^2) 
+  Mixture.mean <- weight.1*Gaussian.1.mean + weight.2*Gaussian.2.mean
+  Mixture.sd <- sqrt(weight.1*Gaussian.1.sd^2 + weight.2*Gaussian.2.sd^2 + weight.1*weight.2*(Gaussian.1.mean-Gaussian.2.mean)^2) 
   
-  
-  Gaussian.combined <- dnorm(x, mean = Combined.mean, sd = Combined.sd)
+  Mixture <- Gaussian.1 * weight.1 + Gaussian.2 * weight.2 
   
   plot(x, Gaussian.1, type="l", col=2,  xlab = "", ylab="Density", lwd=2, main=paste0("G1 mean=",50-i, ", G2 mean=",50+i, ", sd=10"))
   lines(x, Gaussian.2, col=3, lwd=2)
-  lines(x, Gaussian.combined, col=1, lwd=2)
-  legend("toprigh", bty="n", col=c(2,3,1), c("Gaussian 1", "Gaussian 2", "Gaussian comb."), lty=1, lwd=2)
+  lines(x, Mixture, col=1, lwd=2)
+  legend("toprigh", bty="n", col=c(2,3,1), c("Gaussian 1", "Gaussian 2", "Mixture"), lty=1, lwd=2)
 }
 ```
 
@@ -128,21 +120,19 @@ for (i in seq(0,15,5)){
   Gaussian.1 <- dnorm(x, mean = Gaussian.1.mean, sd = Gaussian.1.sd)
   Gaussian.2 <- dnorm(x, mean = Gaussian.2.mean, sd = Gaussian.2.sd)
   
-  
   weight.1 = (1/Gaussian.1.sd^2)/((1/Gaussian.1.sd^2)+(1/Gaussian.2.sd^2))
   weight.2 = (1/Gaussian.2.sd^2)/((1/Gaussian.1.sd^2)+(1/Gaussian.2.sd^2))
 
-  Combined.mean <- weight.1*Gaussian.1.mean + weight.2*Gaussian.2.mean
-  Combined.sd <- sqrt(weight.1*Gaussian.1.sd^2 + weight.2*Gaussian.2.sd^2 + weight.1*weight.2*(Gaussian.1.mean-Gaussian.2.mean)^2) 
+  Mixture.mean <- weight.1*Gaussian.1.mean + weight.2*Gaussian.2.mean
+  Mixture.sd <- sqrt(weight.1*Gaussian.1.sd^2 + weight.2*Gaussian.2.sd^2 + weight.1*weight.2*(Gaussian.1.mean-Gaussian.2.mean)^2) 
   
-  
-  Gaussian.combined <- dnorm(x, mean = Combined.mean, sd = Combined.sd)
+  Mixture <- Gaussian.1 * weight.1 + Gaussian.2 * weight.2 
   
   plot(x, Gaussian.1, col=2, type="l",  xlab = "", ylab="Density", lwd=2, main=paste0("G1 mean=",Gaussian.1.mean, ", G2 mean=",Gaussian.2.mean, ", G1 sd=",Gaussian.1.sd,", G2 sd=",Gaussian.2.sd ))
   lines(x, Gaussian.2, col=3, lwd=2)
-  lines(x, Gaussian.combined, col=1, lwd=2)
-  legend("toprigh", bty="n", col=c(2,3,1), c("Gaussian 1", "Gaussian 2", "Gaussian comb."), lty=1, lwd=2)
-  legend("topleft", paste0("combined sd ", round(Combined.sd,2)), bty="n")
+  lines(x, Mixture, col=1, lwd=2)
+  legend("toprigh", bty="n", col=c(2,3,1), c("Gaussian 1", "Gaussian 2", "Mixture"), lty=1, lwd=2)
+  legend("topleft", paste0("mixture sd ", round(Mixture.sd,2)), bty="n")
 }
 ```
 ```{r}
@@ -158,16 +148,14 @@ Gaussian.2 <- dnorm(x, mean = Gaussian.2.mean, sd = Gaussian.2.sd)
 weight.1 = (1/Gaussian.1.sd^2)/((1/Gaussian.1.sd^2)+(1/Gaussian.2.sd^2))
 weight.2 = (1/Gaussian.2.sd^2)/((1/Gaussian.1.sd^2)+(1/Gaussian.2.sd^2))
 
+Mixture.mean <- weight.1*Gaussian.1.mean + weight.2*Gaussian.2.mean
+Mixture.sd <- sqrt(weight.1*Gaussian.1.sd^2 + weight.2*Gaussian.2.sd^2 + weight.1*weight.2*(Gaussian.1.mean-Gaussian.2.mean)^2) 
 
-Combined.mean <- weight.1*Gaussian.1.mean + weight.2*Gaussian.2.mean
-Combined.sd <- sqrt(weight.1*Gaussian.1.sd^2 + weight.2*Gaussian.2.sd^2 + weight.1*weight.2*(Gaussian.1.mean-Gaussian.2.mean)^2) 
-
-
-Gaussian.combined <- dnorm(x, mean = Combined.mean, sd = Combined.sd)
+Mixture <- Gaussian.1 * weight.1 + Gaussian.2 * weight.2 
 
 plot(x, Gaussian.1, col=2, type="l",  xlab = "", ylab="Density", lwd=2, main=paste0("G1 mean=",Gaussian.1.mean, ", G2 mean=",Gaussian.2.mean, ", G1 sd=",Gaussian.1.sd,", G2 sd=",Gaussian.2.sd ))
 lines(x, Gaussian.2, col=3, lwd=2)
-lines(x, Gaussian.combined, col=1, lwd=2)
-legend("toprigh", bty="n", col=c(2,3,1), c("Gaussian 1", "Gaussian 2", "Gaussian comb."), lty=1, lwd=2)
-legend("topleft", paste0("combined sd ", round(Combined.sd,2)), bty="n")
+lines(x, Mixture, col=1, lwd=2)
+legend("toprigh", bty="n", col=c(2,3,1), c("Gaussian 1", "Gaussian 2", "Mixture"), lty=1, lwd=2)
+legend("topleft", paste0("mixture sd ", round(Mixture.sd,2)), bty="n")
 ```
