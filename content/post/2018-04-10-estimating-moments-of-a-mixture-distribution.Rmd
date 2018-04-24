@@ -51,6 +51,7 @@ plot(x, Gaussian.1, col=2, type="l",  xlab = "", ylab="Density", lwd=2)
 lines(x, Gaussian.2, col=3, lwd=2)
 lines(x, Mixture, col=1, lwd=2)
 legend("toprigh", bty="n", col=c(2,3,1), c("Gaussian 1", "Gaussian 2", "Mixture"), lty=1, lwd=2)
+legend("topleft", paste0("mixture sd=", round(Mixture.sd,2),"\nmixture mean=", round(Mixture.mean, 2)), bty="n")
 ```
 
 
@@ -80,6 +81,7 @@ for (sd in seq(10,30,10)){
   lines(x, Gaussian.2, col=3, lwd=2)
   lines(x, Mixture, col=1, lwd=2)
   legend("toprigh", bty="n", col=c(2,3,1), c("Gaussian 1", "Gaussian 2", "Mixture"), lty=1, lwd=2)
+  legend("topleft", paste0("mixture sd=", round(Mixture.sd,2),"\nmixture mean=", round(Mixture.mean, 2)), bty="n")
 }
 ```
 
@@ -106,6 +108,7 @@ for (i in seq(10,30,10)){
   lines(x, Gaussian.2, col=3, lwd=2)
   lines(x, Mixture, col=1, lwd=2)
   legend("toprigh", bty="n", col=c(2,3,1), c("Gaussian 1", "Gaussian 2", "Mixture"), lty=1, lwd=2)
+  legend("topleft", paste0("mixture sd=", round(Mixture.sd,2),"\nmixture mean=", round(Mixture.mean, 2)), bty="n")
 }
 ```
 
@@ -132,7 +135,7 @@ for (i in seq(0,15,5)){
   lines(x, Gaussian.2, col=3, lwd=2)
   lines(x, Mixture, col=1, lwd=2)
   legend("toprigh", bty="n", col=c(2,3,1), c("Gaussian 1", "Gaussian 2", "Mixture"), lty=1, lwd=2)
-  legend("topleft", paste0("mixture sd ", round(Mixture.sd,2)), bty="n")
+  legend("topleft", paste0("mixture sd=", round(Mixture.sd,2),"\nmixture mean=", round(Mixture.mean, 2)), bty="n")
 }
 ```
 ```{r}
@@ -157,5 +160,5 @@ plot(x, Gaussian.1, col=2, type="l",  xlab = "", ylab="Density", lwd=2, main=pas
 lines(x, Gaussian.2, col=3, lwd=2)
 lines(x, Mixture, col=1, lwd=2)
 legend("toprigh", bty="n", col=c(2,3,1), c("Gaussian 1", "Gaussian 2", "Mixture"), lty=1, lwd=2)
-legend("topleft", paste0("mixture sd ", round(Mixture.sd,2)), bty="n")
+legend("topleft", paste0("mixture sd=", round(Mixture.sd,2),"\nmixture mean=", round(Mixture.mean, 2)), bty="n")
 ```
