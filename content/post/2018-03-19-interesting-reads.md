@@ -23,6 +23,24 @@ An up to date bibtex file of my scientific bibliography (created with Jabref) ca
 4. [Privacy / Ethics](#privacy)
 5. [Urban Planning](#urban)
 
+
+<a name="astronomy"></a> 
+## Astronomy
+
+### [Gaia creates richest star map of our Galaxy – and beyond](http://sci.esa.int/gaia/60192-gaia-creates-richest-star-map-of-our-galaxy-and-beyond/)
+
+**ESA, 2018**.
+
+>  A multitude of discoveries are on the horizon after this much awaited release, which is based on 22 months of charting the sky. The new data includes positions, distance indicators and motions of more than one billion stars, along with high-precision measurements of asteroids within our Solar System and stars beyond our own Milky Way Galaxy..
+
+> Preliminary analysis of this phenomenal data reveals fine details about the make-up of the Milky Way's stellar population and about how stars move, essential information for investigating the formation and evolution of our home Galaxy.
+
+> "The observations collected by Gaia are redefining the foundations of astronomy," says Günther Hasinger, ESA Director of Science.
+
+![GAIA-ESA](/img/bibliography/ESA2018.jpg)
+
+
+
 <a name="history"></a> 
 ## History / Archaeology
 
