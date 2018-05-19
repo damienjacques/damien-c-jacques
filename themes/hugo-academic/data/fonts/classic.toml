@@ -2,12 +2,12 @@
 name = "Classic"
 
 # Optional Google font URL
-google_fonts = "Lato:400,700|Merriweather|Roboto+Mono|Montserrat|Raleway|Ubuntu|Muli"
+google_fonts = "Lato:400,700|Merriweather|Roboto+Mono|Montserrat|Raleway|Ubuntu|Muli|Open Sans"
 
 # Font families
 heading_font = "Muli"
-body_font = "Ubuntu"
-nav_font = "Ubuntu"
+body_font = "Open Sans"
+nav_font = "Open Sans"
 mono_font = "Roboto Mono"
 
 # Font size
