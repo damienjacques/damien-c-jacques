@@ -6,8 +6,8 @@ google_fonts = "Lato:400,700|Merriweather|Roboto+Mono|Montserrat|Raleway|Ubuntu|
 
 # Font families
 heading_font = "Muli"
-body_font = "Open Sans"
-nav_font = "Open Sans"
+body_font = "Ubuntu"
+nav_font = "Ubuntu"
 mono_font = "Roboto Mono"
 
 # Font size
