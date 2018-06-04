@@ -47,7 +47,7 @@ url_pdf = "https://www.dropbox.com/s/nqivbj9nbvy0tyj/phd-damien-jacques-final.pd
 
 # Custom links (optional).
 #   Uncomment line below to enable. For multiple links, use the form `[{...}, {...}, {...}]`.
-# url_custom = [{name = "Publisher Full Text", url = "https://www.sciencedirect.com/science/article/pii/S0034425714002764"}]
+url_custom = [{name = "Presentation", url = "https://slides.com/damienjacques/deck/"}]
 
 # Does the content use math formatting?
 math = true
