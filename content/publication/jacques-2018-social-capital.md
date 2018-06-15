@@ -3,7 +3,7 @@ title = "Social capital and transaction costs in millet markets"
 date = "2018-01-12"
 
 # Authors. Comma separated list, e.g. `["Bob Smith", "David Jones"]`.
-authors = ["Damien Christophe Jacques", "Eduardo Marinho", "Raphaël d’Andrimont",
+authors = ["Damien C. Jacques", "Eduardo Marinho", "Raphaël d’Andrimont",
 "François Waldner", "Julien Radoux", "Frédéric Gaspart", "Pierre Defourny"]
 
 # Publication type.
