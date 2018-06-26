@@ -16,9 +16,9 @@ output:
 
 This Notebook details the steps of the data analysis carried out for the Smartpop project -- Dynamic Population WP.
 
-## Data Cleaning
+# Data Cleaning
 
-### Data Loading
+## Data Loading
 
 ```{r, eval = F, message = F}
 library(data.table)
@@ -37,10 +37,8 @@ Mobile_Phone
 ```
 
 
-
-### Antenna
-
-How many antennas in the database?
+## Antennas
+### How many antennas / base transceiver station in the database?
 
 ```{r}
 unique_antenna <- unique(Mobile_Phone[, c("CELL_BTS_XCOORD_NUM" ,"CELL_BTS_YCOORD_NUM")])
@@ -48,22 +46,25 @@ unique_antenna <- unique(Mobile_Phone[, c("CELL_BTS_XCOORD_NUM" ,"CELL_BTS_YCOOR
 nrow(unique_antenna)
 ```
 
-Where are they located? 
+### Where are they located? 
 
 ```{r, message = FALSE}
 library(rgdal)
 
 # An ID field is added and will serve as reference for the rest of the analysis
-antenna_shp <- SpatialPointsDataFrame(unique_antenna[ , 1:2], data.frame(ID = 1:nrow(unique_antenna)))
+antenna_shp <- SpatialPointsDataFrame(unique_antenna[ , 1:2], data.frame(ID = 1:nrow(unique_antenna),
+                                                                         X = unique_antenna$CELL_BTS_XCOORD_NUM,
+                                                                         Y = unique_antenna$CELL_BTS_YCOORD_NUM))
 
 plot(antenna_shp, pch = "*")
+
+# We merge the ID field with the full db
+colnames(Mobile_Phone)[2:3] <- c("X", "Y")
+Mobile_Phone <- plyr::join(Mobile_Phone, antenna_shp@data, by = c("X", "Y"))
+Mobile_Phone <- Mobile_Phone[, -(2:3)]
 ```
 
-Two antennas are mislocated, we will discard them. We have now 5259 antennas.
-
-{{% alert warning %}}
-First Assumption: 2
-{{% /alert %}}
+Two antennas are mislocated (located beyond the Belgium border). The number of active SIMs for these antennas represent less than 0.001% of the total active SIM. The (2415660,	181728, ID:4877) antenna is very poorly active while the (0, 0, ID:4635) antenna is more active than 25% of the antennas. Therefore, removing these antennas could lead to some local wrong estimates.
 
 ```{r, message = FALSE}
 library(raster)
@@ -76,34 +77,73 @@ belgium <- spTransform(belgium, crs(antenna_shp))
 belgium <- gBuffer(belgium, width = 5000)  # Buffer to get all antennas close to belgium border
 
 antenna_discarded <- antenna_shp[which(!gIntersects(antenna_shp, belgium, byid=TRUE)), ]
-antenna_shp <- antenna_shp[which(gIntersects(antenna_shp, belgium, byid=TRUE)), ]
-
-plot(antenna_shp, pch= "*") +
-plot(antenna_discarded, add=T, col="red", pch = "*")  # to be sure the buffer was large enough
-
-nrow(antenna_shp@data)
 ```
 
-Comparison with the cadastre (from [Walloon Region](http://geoapps.wallonie.be/antennes/#BBOX=-45890.77766488868,367190.77766488865,-12341.35551604438,197672.0853441707)) shows that several antennas from cadaster are not in the db and the other way around. 
+```{r, message = FALSE, eval = FALSE}
+Mobile_Phone_discarded <- Mobile_Phone[Mobile_Phone$ID %in% antenna_discarded$ID,]
+
+sum(Mobile_Phone_discarded$NBR_SIM_BE)*100/sum(as.numeric(Mobile_Phone$NBR_SIM_BE))
+
+#[1] 0.0060622
+
+library(dplyr)
+
+SIMsByAntenna <- Mobile_Phone %>%
+  group_by(ID) %>%
+  summarise(SUM_BE = sum(NBR_SIM_BE))
+
+quantile(SIMsByAntenna$SUM_BE, seq(0, 1 , 0.05))
+
+#      0%       5%      10%      15%      20%      25%      30%      35%      40%      45%      50%      55%      60% 
+#       1    36504    93109   169562   275694   399682   522712   642580   757973   877016   999955  1139617  1283522 
+#     65%      70%      75%      80%      85%      90%      95%     100% 
+# 1466811  1663672  1878538  2139007  2489182  2949323  3669699 10393655 
+
+Mobile_Phone_discarded %>%
+  group_by(ID) %>%
+  summarise(SUM_BE = sum(NBR_SIM_BE))
+
+## A tibble: 2 x 2
+#     ID SUM_BE
+#  <int>  <int>
+#1  4635   6122
+#2  4877 412115
+```
+The 2 mislocated antennas are discarded. 5259 antennas remain in the database.
+
+{{% alert warning %}}
+Assumption 1: removing the 2 mislocated antennas has no significant impact on the relationship between population and SIMs.
+{{% /alert %}}
+
 
 ```{r, message = FALSE}
+antenna_shp <- antenna_shp[which(gIntersects(antenna_shp, belgium, byid=TRUE)), ]
+
+plot(antenna_shp, pch = "*") +
+plot(antenna_discarded, add = T, col ="red", pch = "*")  # to be sure the buffer was large enough
+
+nrow(antenna_shp@data)
+
+Mobile_Phone <- Mobile_Phone[-which(Mobile_Phone$ID %in% antenna_discarded$ID),]
+```
+
+### Are they correctly located?
+
+Comparison with the cadastre (from [Walloon Region](http://geoapps.wallonie.be/antennes/#BBOX=-45890.77766488868,367190.77766488865,-12341.35551604438,197672.0853441707)) shows that several antennas from cadastre are not in the db and vice versa. 
+
+```{r, message = FALSE, warning = FALSE}
 cadastre_antenna <- readOGR("/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Cadastre_antenna/antenna_orange_cadastre_31370.shp")
 crs(cadastre_antenna) <- CRS("+init=epsg:31370")
 cadastre_antenna <- spTransform(cadastre_antenna, crs(antenna_shp))
 
-belgium <- getData('GADM', country='BE', level=4)
-liege <- belgium[belgium$NAME_4=="Liège",]
+belgium <- getData('GADM', country = 'BE', level=4)
+liege <- belgium[belgium$NAME_4 == "Liège",]
 liege <- spTransform(liege, crs(antenna_shp))
 
-plot(liege, main = "antennas from cadastre + database") +
-plot(cadastre_antenna, pch="*", col="red", add=T) +
-plot(antenna_shp, pch="*", add=T)
-
-# plot(liege, main = "antennas from cadastre") +
-# plot(cadastre_antenna, pch="*", col="red", add=T)
-
-# plot(liege, main = "antennas from database") +
-# plot(antenna_shp, pch="*", add=T)
+plot(liege, main = "zoom on Liège/Luik") +
+plot(cadastre_antenna, pch = "*", col="red", add = T) +
+plot(antenna_shp, pch = "*", add = T)
+legend("bottomright", c("antennas from cadastre", "antennas from db"), col = c("red", "black"), pch = "*")
 ```
 
 Leaflet plot for dynamic exploration.
@@ -113,10 +153,10 @@ library(leaflet)
 library(widgetframe)
 
 antenna_latlon <- spTransform(antenna_shp, CRS("+init=epsg:4326"))
-antenna_latlon <- data.frame(lat=coordinates(antenna_latlon)[ , 2], lon=coordinates(antenna_latlon)[ , 1])
+antenna_latlon <- data.frame(lat = coordinates(antenna_latlon)[ , 2], lon = coordinates(antenna_latlon)[ , 1])
 
 cadastre_latlon <- spTransform(cadastre_antenna, CRS("+init=epsg:4326"))
-cadastre_latlon <- data.frame(lat=coordinates(cadastre_latlon)[ , 2], lon=coordinates(cadastre_latlon)[ , 1])
+cadastre_latlon <- data.frame(lat = coordinates(cadastre_latlon)[ , 2], lon = coordinates(cadastre_latlon)[ , 1])
 
 l <- leaflet() %>%
   setView(lng = 5.578661, lat = 50.633766,, zoom = 12) %>%
@@ -138,7 +178,9 @@ l <- leaflet() %>%
 frameWidget(l)
 ```
 
-After exploration some cluster of very close antenna exist. Let's further investigate this point.
+### Interantenna distance
+
+After exploration some clusters of very close antenna exist. Let's further investigate this point.
 
 First, we compute the distance matrix between each antenna.
 
@@ -150,43 +192,55 @@ dt <- expand.grid.df(antenna_latlon[, c("lon", "lat")], antenna_latlon[, c("lon"
 names(dt)[3:4] <- c("lon_dest", "lat_dest")
 dt$dist <- distGeo(matrix(c(dt$lon, dt$lat), ncol = 2), 
                    matrix(c(dt$lon_dest, dt$lat_dest), ncol = 2))
-save(dt, file = "/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/WorkingDataBase/antenna_distance", compress = T)
 
 dt.cad <- expand.grid.df(cadastre_latlon[, c("lon", "lat")], cadastre_latlon[, c("lon", "lat")])
 names(dt.cad)[3:4] <- c("lon_dest", "lat_dest")
 dt.cad$dist <- distGeo(matrix(c(dt.cad$lon, dt.cad$lat), ncol = 2), 
                    matrix(c(dt.cad$lon_dest, dt.cad$lat_dest), ncol = 2))
+```
+```{r, eval = FALSE, echo = FALSE}
+save(dt, file = "/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/WorkingDataBase/antenna_distance", compress = T)
 save(dt.cad, file = "/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/WorkingDataBase/cadastre_distance", compress = T)
 ```
-
-
-Then, we explore the histogram of distances between antennas from the cadastre:
+```{r, echo = FALSE}
+load("/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/WorkingDataBase/cadastre_distance")
+```
+The lowest distance between two antennas from the cadastre is 3.6 m. Less than 0.1 % of the antenna are closer than 1 km.
 
 ```{r}
-load("/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/WorkingDataBase/cadastre_distance")
-
 range(dt.cad$dist[dt.cad$dist > 0])
-hist(dt.cad$dist[dt.cad$dist > 0 & dt.cad$dist < 50], xlab = "Distance between points", main = "")
 
-length(dt.cad$dist[dt.cad$dist > 0 & dt.cad$dist < 50])/length(dt.cad$dist[dt.cad$dist > 0])
+hist(dt.cad$dist[dt.cad$dist > 0]/1000, xlab = "Distance between points (km)", main = "", breaks = 100)
+hist(dt.cad$dist[dt.cad$dist > 0 & dt.cad$dist < 1000], xlab = "Distance between points (m)", main = "", breaks = 100)
+
+quantile(dt.cad$dist[dt.cad$dist > 0], c(0.001))
 ```
 
+1735 antennas are closer than 2 m. There are probably antennas from the same BTS and other points correspond to all antennas of one BTS.
 
-
-
-```{r, eval = FALSE, echo = FALSE}
+```{r}
 load("/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/WorkingDataBase/antenna_distance")
 
-hist(dt$dist, xlab = "Distance between points", main = "")
-hist(dt$dist[dt$dist < 50 & dt$dist < 50], xlab = "Distance between points", main = "",  breaks = -0.5:50.5)
+hist(dt$dist/1000, xlab = "Distance between points (km)", main = "",  breaks = 100)
+hist(dt$dist[dt$dist > 0 & dt$dist < 1000], xlab = "Distance between points (m)", main = "",  breaks = 100)
 
+CloseAntenna <- dt[dt$dist > 0 & dt$dist < 2,]
+length(unique(c(paste(CloseAntenna$lon, CloseAntenna$lat), paste(CloseAntenna$lon_dest, CloseAntenna$lat_dest))))
 
-dt <- dt[dt$dist > 0 & dt$dist < 2, ]
-dt <- dt[apply(which(all(x[1:2] == x[3:4]) & all(x[3:4] == x[1:2])),]
--which(dt[, 1:2] == dt[, 3:4] & dt[, 3:4] == dt[, 1:2])
-
-unique(dt$dist[dt$dist < 3])
+quantile(dt$dist[dt$dist > 1], c(0.001))
 ```
+
+{{% alert warning %}}
+Assumption 2: Very close antennas are antennas from the same BTS OR the same BTS but active at different time of the year. Therefore very close antenna will be merged. Close antennas (> 2 m, < 1 km) will also be merged but according to . Other points correspond to all antennas of one BTS.
+{{% /alert %}}
+
+### Buffer analysis
+
+```{r}
+
+```
+
+[...]
 
 Now, let's plot the number of antennas over time.
 

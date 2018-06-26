@@ -22,16 +22,22 @@ output:
 <ul>
 <li><a href="#data-cleaning">Data Cleaning</a><ul>
 <li><a href="#data-loading">Data Loading</a></li>
-<li><a href="#antenna">Antenna</a></li>
+<li><a href="#antennas">Antennas</a><ul>
+<li><a href="#how-many-antennas-base-transceiver-station-in-the-database">How many antennas / base transceiver station in the database?</a></li>
+<li><a href="#where-are-they-located">Where are they located?</a></li>
+<li><a href="#are-they-correctly-located">Are they correctly located?</a></li>
+<li><a href="#interantenna-distance">Interantenna distance</a></li>
+<li><a href="#buffer-analysis">Buffer analysis</a></li>
+</ul></li>
 </ul></li>
 </ul>
 </div>
 
 <p>This Notebook details the steps of the data analysis carried out for the Smartpop project – Dynamic Population WP.</p>
-<div id="data-cleaning" class="section level2">
-<h2>Data Cleaning</h2>
-<div id="data-loading" class="section level3">
-<h3>Data Loading</h3>
+<div id="data-cleaning" class="section level1">
+<h1>Data Cleaning</h1>
+<div id="data-loading" class="section level2">
+<h2>Data Loading</h2>
 <pre class="r"><code>library(data.table)
 
 Mobile_Phone &lt;- fread(&quot;/mobile_phone.csv&quot;,  showProgress = F)
@@ -62,23 +68,31 @@ Mobile_Phone</code></pre>
 ## 40194139:               3             0                  9
 ## 40194140:               8           144                 20</code></pre>
 </div>
-<div id="antenna" class="section level3">
-<h3>Antenna</h3>
-<p>How many antennas in the database?</p>
+<div id="antennas" class="section level2">
+<h2>Antennas</h2>
+<div id="how-many-antennas-base-transceiver-station-in-the-database" class="section level3">
+<h3>How many antennas / base transceiver station in the database?</h3>
 <pre class="r"><code>unique_antenna &lt;- unique(Mobile_Phone[, c(&quot;CELL_BTS_XCOORD_NUM&quot; ,&quot;CELL_BTS_YCOORD_NUM&quot;)])
 
 nrow(unique_antenna)</code></pre>
 <pre><code>## [1] 5261</code></pre>
-<p>Where are they located?</p>
+</div>
+<div id="where-are-they-located" class="section level3">
+<h3>Where are they located?</h3>
 <pre class="r"><code>library(rgdal)
 
 # An ID field is added and will serve as reference for the rest of the analysis
-antenna_shp &lt;- SpatialPointsDataFrame(unique_antenna[ , 1:2], data.frame(ID = 1:nrow(unique_antenna)))
+antenna_shp &lt;- SpatialPointsDataFrame(unique_antenna[ , 1:2], data.frame(ID = 1:nrow(unique_antenna),
+                                                                         X = unique_antenna$CELL_BTS_XCOORD_NUM,
+                                                                         Y = unique_antenna$CELL_BTS_YCOORD_NUM))
 
 plot(antenna_shp, pch = &quot;*&quot;)</code></pre>
 <p><img src="/post/2018-03-27-smartpop-dynamic-population-mapping_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
-<p>Two antennas are mislocated, we will discard them. We have now 5259 antennas.</p>
-<p>{{% alert warning %}} First Assumption: 2 {{% /alert %}}</p>
+<pre class="r"><code># We merge the ID field with the full db
+colnames(Mobile_Phone)[2:3] &lt;- c(&quot;X&quot;, &quot;Y&quot;)
+Mobile_Phone &lt;- plyr::join(Mobile_Phone, antenna_shp@data, by = c(&quot;X&quot;, &quot;Y&quot;))
+Mobile_Phone &lt;- Mobile_Phone[, -(2:3)]</code></pre>
+<p>Two antennas are mislocated (located beyond the Belgium border). The number of active SIMs for these antennas represent less than 0.001% of the total active SIM. The (2415660, 181728, ID:4877) antenna is very poorly active while the (0, 0, ID:4635) antenna is more active than 25% of the antennas. Therefore, removing these antennas could lead to some local wrong estimates.</p>
 <pre class="r"><code>library(raster)
 library(rgeos)
 
@@ -88,16 +102,50 @@ belgium &lt;- getData(&#39;GADM&#39;, country = &#39;BE&#39;, level = 0)
 belgium &lt;- spTransform(belgium, crs(antenna_shp))
 belgium &lt;- gBuffer(belgium, width = 5000)  # Buffer to get all antennas close to belgium border
 
-antenna_discarded &lt;- antenna_shp[which(!gIntersects(antenna_shp, belgium, byid=TRUE)), ]
-antenna_shp &lt;- antenna_shp[which(gIntersects(antenna_shp, belgium, byid=TRUE)), ]
+antenna_discarded &lt;- antenna_shp[which(!gIntersects(antenna_shp, belgium, byid=TRUE)), ]</code></pre>
+<pre class="r"><code>Mobile_Phone_discarded &lt;- Mobile_Phone[Mobile_Phone$ID %in% antenna_discarded$ID,]
 
-plot(antenna_shp, pch= &quot;*&quot;) +
-plot(antenna_discarded, add=T, col=&quot;red&quot;, pch = &quot;*&quot;)  # to be sure the buffer was large enough</code></pre>
-<p><img src="/post/2018-03-27-smartpop-dynamic-population-mapping_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+sum(Mobile_Phone_discarded$NBR_SIM_BE)*100/sum(as.numeric(Mobile_Phone$NBR_SIM_BE))
+
+#[1] 0.0060622
+
+library(dplyr)
+
+SIMsByAntenna &lt;- Mobile_Phone %&gt;%
+  group_by(ID) %&gt;%
+  summarise(SUM_BE = sum(NBR_SIM_BE))
+
+quantile(SIMsByAntenna$SUM_BE, seq(0, 1 , 0.05))
+
+#      0%       5%      10%      15%      20%      25%      30%      35%      40%      45%      50%      55%      60% 
+#       1    36504    93109   169562   275694   399682   522712   642580   757973   877016   999955  1139617  1283522 
+#     65%      70%      75%      80%      85%      90%      95%     100% 
+# 1466811  1663672  1878538  2139007  2489182  2949323  3669699 10393655 
+
+Mobile_Phone_discarded %&gt;%
+  group_by(ID) %&gt;%
+  summarise(SUM_BE = sum(NBR_SIM_BE))
+
+## A tibble: 2 x 2
+#     ID SUM_BE
+#  &lt;int&gt;  &lt;int&gt;
+#1  4635   6122
+#2  4877 412115</code></pre>
+<p>The 2 mislocated antennas are discarded. 5259 antennas remain in the database.</p>
+<p>{{% alert warning %}} Assumption 1: removing the 2 mislocated antennas has no significant impact on the relationship between population and SIMs. {{% /alert %}}</p>
+<pre class="r"><code>antenna_shp &lt;- antenna_shp[which(gIntersects(antenna_shp, belgium, byid=TRUE)), ]
+
+plot(antenna_shp, pch = &quot;*&quot;) +
+plot(antenna_discarded, add = T, col =&quot;red&quot;, pch = &quot;*&quot;)  # to be sure the buffer was large enough</code></pre>
+<p><img src="/post/2018-03-27-smartpop-dynamic-population-mapping_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
 <pre><code>## integer(0)</code></pre>
 <pre class="r"><code>nrow(antenna_shp@data)</code></pre>
 <pre><code>## [1] 5259</code></pre>
-<p>Comparison with the cadastre (from <a href="http://geoapps.wallonie.be/antennes/#BBOX=-45890.77766488868,367190.77766488865,-12341.35551604438,197672.0853441707">Walloon Region</a>) shows that several antennas from cadaster are not in the db and the other way around.</p>
+<pre class="r"><code>Mobile_Phone &lt;- Mobile_Phone[-which(Mobile_Phone$ID %in% antenna_discarded$ID),]</code></pre>
+</div>
+<div id="are-they-correctly-located" class="section level3">
+<h3>Are they correctly located?</h3>
+<p>Comparison with the cadastre (from <a href="http://geoapps.wallonie.be/antennes/#BBOX=-45890.77766488868,367190.77766488865,-12341.35551604438,197672.0853441707">Walloon Region</a>) shows that several antennas from cadastre are not in the db and vice versa.</p>
 <pre class="r"><code>cadastre_antenna &lt;- readOGR(&quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Cadastre_antenna/antenna_orange_cadastre_31370.shp&quot;)</code></pre>
 <pre><code>## OGR data source with driver: ESRI Shapefile 
 ## Source: &quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Cadastre_antenna/antenna_orange_cadastre_31370.shp&quot;, layer: &quot;antenna_orange_cadastre_31370&quot;
@@ -106,29 +154,25 @@ plot(antenna_discarded, add=T, col=&quot;red&quot;, pch = &quot;*&quot;)  # to b
 <pre class="r"><code>crs(cadastre_antenna) &lt;- CRS(&quot;+init=epsg:31370&quot;)
 cadastre_antenna &lt;- spTransform(cadastre_antenna, crs(antenna_shp))
 
-belgium &lt;- getData(&#39;GADM&#39;, country=&#39;BE&#39;, level=4)
-liege &lt;- belgium[belgium$NAME_4==&quot;Liège&quot;,]
+belgium &lt;- getData(&#39;GADM&#39;, country = &#39;BE&#39;, level=4)
+liege &lt;- belgium[belgium$NAME_4 == &quot;Liège&quot;,]
 liege &lt;- spTransform(liege, crs(antenna_shp))
 
-plot(liege, main = &quot;antennas from cadastre + database&quot;) +
-plot(cadastre_antenna, pch=&quot;*&quot;, col=&quot;red&quot;, add=T) +
-plot(antenna_shp, pch=&quot;*&quot;, add=T)</code></pre>
-<p><img src="/post/2018-03-27-smartpop-dynamic-population-mapping_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+plot(liege, main = &quot;zoom on Liège/Luik&quot;) +
+plot(cadastre_antenna, pch = &quot;*&quot;, col=&quot;red&quot;, add = T) +
+plot(antenna_shp, pch = &quot;*&quot;, add = T)</code></pre>
 <pre><code>## integer(0)</code></pre>
-<pre class="r"><code># plot(liege, main = &quot;antennas from cadastre&quot;) +
-# plot(cadastre_antenna, pch=&quot;*&quot;, col=&quot;red&quot;, add=T)
-
-# plot(liege, main = &quot;antennas from database&quot;) +
-# plot(antenna_shp, pch=&quot;*&quot;, add=T)</code></pre>
+<pre class="r"><code>legend(&quot;bottomright&quot;, c(&quot;antennas from cadastre&quot;, &quot;antennas from db&quot;), col = c(&quot;red&quot;, &quot;black&quot;), pch = &quot;*&quot;)</code></pre>
+<p><img src="/post/2018-03-27-smartpop-dynamic-population-mapping_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
 <p>Leaflet plot for dynamic exploration.</p>
 <pre class="r"><code>library(leaflet)
 library(widgetframe)
 
 antenna_latlon &lt;- spTransform(antenna_shp, CRS(&quot;+init=epsg:4326&quot;))
-antenna_latlon &lt;- data.frame(lat=coordinates(antenna_latlon)[ , 2], lon=coordinates(antenna_latlon)[ , 1])
+antenna_latlon &lt;- data.frame(lat = coordinates(antenna_latlon)[ , 2], lon = coordinates(antenna_latlon)[ , 1])
 
 cadastre_latlon &lt;- spTransform(cadastre_antenna, CRS(&quot;+init=epsg:4326&quot;))
-cadastre_latlon &lt;- data.frame(lat=coordinates(cadastre_latlon)[ , 2], lon=coordinates(cadastre_latlon)[ , 1])
+cadastre_latlon &lt;- data.frame(lat = coordinates(cadastre_latlon)[ , 2], lon = coordinates(cadastre_latlon)[ , 1])
 
 l &lt;- leaflet() %&gt;%
   setView(lng = 5.578661, lat = 50.633766,, zoom = 12) %&gt;%
@@ -149,8 +193,11 @@ l &lt;- leaflet() %&gt;%
   )
 frameWidget(l)</code></pre>
 <div id="htmlwidget-1" style="width:100%;height:480px;" class="widgetframe html-widget"></div>
-<script type="application/json" data-for="htmlwidget-1">{"x":{"url":"/post/2018-03-27-smartpop-dynamic-population-mapping_files/figure-html//widgets/widget_unnamed-chunk-7.html","options":{"xdomain":"*","allowfullscreen":false,"lazyload":false}},"evals":[],"jsHooks":[]}</script>
-<p>After exploration some cluster of very close antenna exist. Let’s further investigate this point.</p>
+<script type="application/json" data-for="htmlwidget-1">{"x":{"url":"/post/2018-03-27-smartpop-dynamic-population-mapping_files/figure-html//widgets/widget_unnamed-chunk-9.html","options":{"xdomain":"*","allowfullscreen":false,"lazyload":false}},"evals":[],"jsHooks":[]}</script>
+</div>
+<div id="interantenna-distance" class="section level3">
+<h3>Interantenna distance</h3>
+<p>After exploration some clusters of very close antenna exist. Let’s further investigate this point.</p>
 <p>First, we compute the distance matrix between each antenna.</p>
 <pre class="r"><code>library(geosphere)
 library(reshape)
@@ -159,22 +206,40 @@ dt &lt;- expand.grid.df(antenna_latlon[, c(&quot;lon&quot;, &quot;lat&quot;)], a
 names(dt)[3:4] &lt;- c(&quot;lon_dest&quot;, &quot;lat_dest&quot;)
 dt$dist &lt;- distGeo(matrix(c(dt$lon, dt$lat), ncol = 2), 
                    matrix(c(dt$lon_dest, dt$lat_dest), ncol = 2))
-save(dt, file = &quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/WorkingDataBase/antenna_distance&quot;, compress = T)
 
 dt.cad &lt;- expand.grid.df(cadastre_latlon[, c(&quot;lon&quot;, &quot;lat&quot;)], cadastre_latlon[, c(&quot;lon&quot;, &quot;lat&quot;)])
 names(dt.cad)[3:4] &lt;- c(&quot;lon_dest&quot;, &quot;lat_dest&quot;)
 dt.cad$dist &lt;- distGeo(matrix(c(dt.cad$lon, dt.cad$lat), ncol = 2), 
-                   matrix(c(dt.cad$lon_dest, dt.cad$lat_dest), ncol = 2))
-save(dt.cad, file = &quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/WorkingDataBase/cadastre_distance&quot;, compress = T)</code></pre>
-<p>Then, we explore the histogram of distances between antennas from the cadastre:</p>
-<pre class="r"><code>load(&quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/WorkingDataBase/cadastre_distance&quot;)
-
-range(dt.cad$dist[dt.cad$dist &gt; 0])</code></pre>
+                   matrix(c(dt.cad$lon_dest, dt.cad$lat_dest), ncol = 2))</code></pre>
+<p>The lowest distance between two antennas from the cadastre is 3.6 m. Less than 0.1 % of the antenna are closer than 1 km.</p>
+<pre class="r"><code>range(dt.cad$dist[dt.cad$dist &gt; 0])</code></pre>
 <pre><code>## [1] 3.605757e+00 2.489118e+05</code></pre>
-<pre class="r"><code>hist(dt.cad$dist[dt.cad$dist &gt; 0 &amp; dt.cad$dist &lt; 50], xlab = &quot;Distance between points&quot;, main = &quot;&quot;)</code></pre>
-<p><img src="/post/2018-03-27-smartpop-dynamic-population-mapping_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
-<pre class="r"><code>length(dt.cad$dist[dt.cad$dist &gt; 0 &amp; dt.cad$dist &lt; 50])/length(dt.cad$dist[dt.cad$dist &gt; 0])</code></pre>
-<pre><code>## [1] 8.28331e-06</code></pre>
+<pre class="r"><code>hist(dt.cad$dist[dt.cad$dist &gt; 0]/1000, xlab = &quot;Distance between points (km)&quot;, main = &quot;&quot;, breaks = 100)</code></pre>
+<p><img src="/post/2018-03-27-smartpop-dynamic-population-mapping_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
+<pre class="r"><code>hist(dt.cad$dist[dt.cad$dist &gt; 0 &amp; dt.cad$dist &lt; 1000], xlab = &quot;Distance between points (m)&quot;, main = &quot;&quot;, breaks = 100)</code></pre>
+<p><img src="/post/2018-03-27-smartpop-dynamic-population-mapping_files/figure-html/unnamed-chunk-13-2.png" width="672" /></p>
+<pre class="r"><code>quantile(dt.cad$dist[dt.cad$dist &gt; 0], c(0.001))</code></pre>
+<pre><code>##     0.1% 
+## 1007.321</code></pre>
+<p>1735 antennas are closer than 2 m. There are probably antennas from the same BTS and other points correspond to all antennas of one BTS.</p>
+<pre class="r"><code>load(&quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/WorkingDataBase/antenna_distance&quot;)
+
+hist(dt$dist/1000, xlab = &quot;Distance between points (km)&quot;, main = &quot;&quot;,  breaks = 100)</code></pre>
+<p><img src="/post/2018-03-27-smartpop-dynamic-population-mapping_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
+<pre class="r"><code>hist(dt$dist[dt$dist &gt; 0 &amp; dt$dist &lt; 1000], xlab = &quot;Distance between points (m)&quot;, main = &quot;&quot;,  breaks = 100)</code></pre>
+<p><img src="/post/2018-03-27-smartpop-dynamic-population-mapping_files/figure-html/unnamed-chunk-14-2.png" width="672" /></p>
+<pre class="r"><code>CloseAntenna &lt;- dt[dt$dist &gt; 0 &amp; dt$dist &lt; 2,]
+length(unique(c(paste(CloseAntenna$lon, CloseAntenna$lat), paste(CloseAntenna$lon_dest, CloseAntenna$lat_dest))))</code></pre>
+<pre><code>## [1] 1735</code></pre>
+<pre class="r"><code>quantile(dt$dist[dt$dist &gt; 1], c(0.001))</code></pre>
+<pre><code>##     0.1% 
+## 958.3147</code></pre>
+<p>{{% alert warning %}} Assumption 2: Very close antennas are antennas from the same BTS OR the same BTS but active at different time of the year. Therefore very close antenna will be merged. Close antennas (&gt; 2 m, &lt; 1 km) will also be merged but according to . Other points correspond to all antennas of one BTS. {{% /alert %}}</p>
+</div>
+<div id="buffer-analysis" class="section level3">
+<h3>Buffer analysis</h3>
+<p>[…]</p>
 <p>Now, let’s plot the number of antennas over time.</p>
+</div>
 </div>
 </div>
