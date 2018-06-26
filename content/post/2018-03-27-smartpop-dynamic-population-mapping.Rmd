@@ -20,6 +20,11 @@ This Notebook details the steps of the data analysis carried out for the Smartpo
 
 ## Data Loading
 
+```{r global_options, include = FALSE}
+knitr::opts_chunk$set(warning = FALSE, 
+                      messages = FALSE)
+```
+
 ```{r, eval = F, message = F}
 library(data.table)
 
@@ -55,7 +60,7 @@ library(rgdal)
 antenna_shp <- SpatialPointsDataFrame(unique_antenna[ , 1:2], data.frame(ID = 1:nrow(unique_antenna),
                                                                          X = unique_antenna$CELL_BTS_XCOORD_NUM,
                                                                          Y = unique_antenna$CELL_BTS_YCOORD_NUM))
-
+par(mar = c(0, 0, 0, 0))
 plot(antenna_shp, pch = "*")
 
 # We merge the ID field with the full db
@@ -119,6 +124,7 @@ Assumption 1: removing the 2 mislocated antennas has no significant impact on th
 ```{r, message = FALSE}
 antenna_shp <- antenna_shp[which(gIntersects(antenna_shp, belgium, byid=TRUE)), ]
 
+par(mar = c(0, 0, 0, 0))
 plot(antenna_shp, pch = "*") +
 plot(antenna_discarded, add = T, col ="red", pch = "*")  # to be sure the buffer was large enough
 
@@ -178,7 +184,7 @@ l <- leaflet() %>%
 frameWidget(l)
 ```
 
-### Interantenna distance
+### Inter-antenna distance
 
 After exploration some clusters of very close antenna exist. Let's further investigate this point.
 
@@ -230,17 +236,69 @@ length(unique(c(paste(CloseAntenna$lon, CloseAntenna$lat), paste(CloseAntenna$lo
 quantile(dt$dist[dt$dist > 1], c(0.001))
 ```
 
+```{r, include=FALSE}
+rm(dt, dt.cad, antenna_discarded, belgium, liege, cadastre_antenna, CloseAntenna, SIMsByAntenna, Mobile_Phone_discarded, unique_antenna)
+gc()
+```
+
 {{% alert warning %}}
 Assumption 2: Very close antennas are antennas from the same BTS OR the same BTS but active at different time of the year. Therefore very close antenna will be merged. Close antennas (> 2 m, < 1 km) will also be merged but according to . Other points correspond to all antennas of one BTS.
 {{% /alert %}}
 
 ### Buffer analysis
 
-```{r}
+Buffer of 2 m around antennas are used to merge the IDs of very close antenna.
+
+```{r, warning = F, message = F}
+library(rgeos)
+library(sp)
+
+# create buffer of 2 m around antennas
+buffer1m <- gBuffer(antenna_shp, width = 2)
+
+# find points that falls within the buffers
+buffer1mOver  <- over(disaggregate(buffer1m), antenna_shp, returnList = T)
+
+# extract only buffer covered by more than 1 antenna
+l <- sapply(buffer1mOver, nrow)
+buffer1mOver <- buffer1mOver[which(l > 1)]
+
+# build lookup table to merge close antennas
+transposed_buffer1mOver <- lapply(buffer1mOver, function(x) t(x[, 1]))
+l <- sapply(transposed_buffer1mOver, length)
+transposed_buffer1mOver_3 <-  do.call(rbind, transposed_buffer1mOver[which(l > 2)])
+transposed_buffer1mOver_3 <- rbind(transposed_buffer1mOver_3[, 1:2], transposed_buffer1mOver_3[, 3:2])
+lookUp <- do.call(rbind, transposed_buffer1mOver[-which(l > 2)])
+lookUp <- rbind(lookUp, transposed_buffer1mOver_3)
+lookUp <- data.frame(lookUp)
+colnames(lookUp) <- c("OldID", "NewID")
+
+# Replace IDs in the full db and antenna shapefile
+Mobile_Phone$ID[Mobile_Phone$ID %in% lookUp$OldID]  <- lookUp$NewID[na.omit(match(Mobile_Phone$ID, lookUp$OldID))]
+antenna_shp  <- antenna_shp[-which(antenna_shp$ID %in% lookUp$OldID), ] 
+
+# Merge alls identical id (summarise)
+library(dplyr)
+Mobile_Phone <- Mobile_Phone %>%
+                group_by(DATE_HOUR, ID) %>%
+                summarise(NBR_SIM_BE = sum(NBR_SIM_BE),
+                          NBR_SIM_ROAMERS = sum(NBR_SIM_ROAMERS),
+                          NBR_EVENTS_BE = sum(NBR_EVENTS_BE),
+                          NBR_EVENTS_ROAMERS = sum(NBR_EVENTS_ROAMERS))
 
 ```
 
-[...]
+The remaining antennas in the database are 4375.
+
+```{r}
+nrow(antenna_shp)
+```
+
+```{r, include=FALSE}
+rm(buffer1m, buffer1mOver, lookUp, transposed_buffer1mOver, transposed_buffer1mOver3, transposed_buffer1mOver_3, l)
+gc()
+```
+### Number of antennas over time
 
 Now, let's plot the number of antennas over time.
 

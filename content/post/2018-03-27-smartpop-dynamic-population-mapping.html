@@ -26,8 +26,9 @@ output:
 <li><a href="#how-many-antennas-base-transceiver-station-in-the-database">How many antennas / base transceiver station in the database?</a></li>
 <li><a href="#where-are-they-located">Where are they located?</a></li>
 <li><a href="#are-they-correctly-located">Are they correctly located?</a></li>
-<li><a href="#interantenna-distance">Interantenna distance</a></li>
+<li><a href="#inter-antenna-distance">Inter-antenna distance</a></li>
 <li><a href="#buffer-analysis">Buffer analysis</a></li>
+<li><a href="#number-of-antennas-over-time">Number of antennas over time</a></li>
 </ul></li>
 </ul></li>
 </ul>
@@ -85,7 +86,7 @@ nrow(unique_antenna)</code></pre>
 antenna_shp &lt;- SpatialPointsDataFrame(unique_antenna[ , 1:2], data.frame(ID = 1:nrow(unique_antenna),
                                                                          X = unique_antenna$CELL_BTS_XCOORD_NUM,
                                                                          Y = unique_antenna$CELL_BTS_YCOORD_NUM))
-
+par(mar = c(0, 0, 0, 0))
 plot(antenna_shp, pch = &quot;*&quot;)</code></pre>
 <p><img src="/post/2018-03-27-smartpop-dynamic-population-mapping_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
 <pre class="r"><code># We merge the ID field with the full db
@@ -135,6 +136,7 @@ Mobile_Phone_discarded %&gt;%
 <p>{{% alert warning %}} Assumption 1: removing the 2 mislocated antennas has no significant impact on the relationship between population and SIMs. {{% /alert %}}</p>
 <pre class="r"><code>antenna_shp &lt;- antenna_shp[which(gIntersects(antenna_shp, belgium, byid=TRUE)), ]
 
+par(mar = c(0, 0, 0, 0))
 plot(antenna_shp, pch = &quot;*&quot;) +
 plot(antenna_discarded, add = T, col =&quot;red&quot;, pch = &quot;*&quot;)  # to be sure the buffer was large enough</code></pre>
 <p><img src="/post/2018-03-27-smartpop-dynamic-population-mapping_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
@@ -195,8 +197,8 @@ frameWidget(l)</code></pre>
 <div id="htmlwidget-1" style="width:100%;height:480px;" class="widgetframe html-widget"></div>
 <script type="application/json" data-for="htmlwidget-1">{"x":{"url":"/post/2018-03-27-smartpop-dynamic-population-mapping_files/figure-html//widgets/widget_unnamed-chunk-9.html","options":{"xdomain":"*","allowfullscreen":false,"lazyload":false}},"evals":[],"jsHooks":[]}</script>
 </div>
-<div id="interantenna-distance" class="section level3">
-<h3>Interantenna distance</h3>
+<div id="inter-antenna-distance" class="section level3">
+<h3>Inter-antenna distance</h3>
 <p>After exploration some clusters of very close antenna exist. Let’s further investigate this point.</p>
 <p>First, we compute the distance matrix between each antenna.</p>
 <pre class="r"><code>library(geosphere)
@@ -238,7 +240,48 @@ length(unique(c(paste(CloseAntenna$lon, CloseAntenna$lat), paste(CloseAntenna$lo
 </div>
 <div id="buffer-analysis" class="section level3">
 <h3>Buffer analysis</h3>
-<p>[…]</p>
+<p>Buffer of 2 m around antennas are used to merge the IDs of very close antenna.</p>
+<pre class="r"><code>library(rgeos)
+library(sp)
+
+# create buffer of 2 m around antennas
+buffer1m &lt;- gBuffer(antenna_shp, width = 2)
+
+# find points that falls within the buffers
+buffer1mOver  &lt;- over(disaggregate(buffer1m), antenna_shp, returnList = T)
+
+# extract only buffer covered by more than 1 antenna
+l &lt;- sapply(buffer1mOver, nrow)
+buffer1mOver &lt;- buffer1mOver[which(l &gt; 1)]
+
+# build lookup table to merge close antennas
+transposed_buffer1mOver &lt;- lapply(buffer1mOver, function(x) t(x[, 1]))
+l &lt;- sapply(transposed_buffer1mOver, length)
+transposed_buffer1mOver_3 &lt;-  do.call(rbind, transposed_buffer1mOver[which(l &gt; 2)])
+transposed_buffer1mOver_3 &lt;- rbind(transposed_buffer1mOver_3[, 1:2], transposed_buffer1mOver_3[, 3:2])
+lookUp &lt;- do.call(rbind, transposed_buffer1mOver[-which(l &gt; 2)])
+lookUp &lt;- rbind(lookUp, transposed_buffer1mOver_3)
+lookUp &lt;- data.frame(lookUp)
+colnames(lookUp) &lt;- c(&quot;OldID&quot;, &quot;NewID&quot;)
+
+# Replace IDs in the full db and antenna shapefile
+Mobile_Phone$ID[Mobile_Phone$ID %in% lookUp$OldID]  &lt;- lookUp$NewID[na.omit(match(Mobile_Phone$ID, lookUp$OldID))]
+antenna_shp  &lt;- antenna_shp[-which(antenna_shp$ID %in% lookUp$OldID), ] 
+
+# Merge alls identical id (summarise)
+library(dplyr)
+Mobile_Phone &lt;- Mobile_Phone %&gt;%
+                group_by(DATE_HOUR, ID) %&gt;%
+                summarise(NBR_SIM_BE = sum(NBR_SIM_BE),
+                          NBR_SIM_ROAMERS = sum(NBR_SIM_ROAMERS),
+                          NBR_EVENTS_BE = sum(NBR_EVENTS_BE),
+                          NBR_EVENTS_ROAMERS = sum(NBR_EVENTS_ROAMERS))</code></pre>
+<p>The remaining antennas in the database are 4375.</p>
+<pre class="r"><code>nrow(antenna_shp)</code></pre>
+<pre><code>## [1] 4375</code></pre>
+</div>
+<div id="number-of-antennas-over-time" class="section level3">
+<h3>Number of antennas over time</h3>
 <p>Now, let’s plot the number of antennas over time.</p>
 </div>
 </div>
