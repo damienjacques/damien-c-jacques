@@ -1,0 +1,73 @@
+---
+title: Dynamic Population Mapping (Smartpop) - Part 2
+author: Damien C. Jacques
+date: '2018-07-02'
+slug: dynamic-population-mapping-smartpop-part-2
+categories:
+  - R
+summary: "This Notebook details the steps of the data analysis carried out for the Smartpop project -- Dynamic Population WP (part 2)."
+tags:
+  - mobile phone data
+  - population
+---
+
+```{r global_options, include = FALSE}
+knitr::opts_chunk$set(warning = FALSE, 
+                      message = FALSE,
+                      eval = FALSE)
+```
+
+```{r, echo = F}
+library(data.table)
+
+Mobile_Phone <- fread("/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/CleanData/MobilePhone.csv")
+antenna_shp <- readOGR("/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/CleanData/antenna_shp.shp")
+```
+
+## Antenna coverage
+
+```{r, eval=F}
+
+# extract all unique combination of antenna per
+
+# compute Voronoi polygons of selected antennas
+library(SDraw)
+
+belgium <- getData('GADM', country = 'BE', level = 4)
+belgium <- spTransform(belgium, crs(antenna_shp_select))
+
+voro <- voronoi.polygons(antenna_shp_select, belgium)
+
+par(mar = c(0, 0, 0, 0))
+plot(voro)
+colnames(voro@data)[1:2] <- c("X", "Y")
+voro@data <- plyr::join(voro@data, antenna_shp_select@data, by = c("X", "Y"))
+
+# find discarded points that falls within the voronoi
+antennaDiscardInVoro  <- over(antenna_shp_discard, voro)
+lookUp <- data.frame(OldID = row.names(antennaDiscardInVoro), NewID = antennaDiscardInVoro$ID)
+
+# Replace IDs in the full db and antenna shapefile
+Mobile_Phone$ID[Mobile_Phone$ID %in% lookUp$OldID]  <- lookUp$NewID[na.omit(match(Mobile_Phone$ID, lookUp$OldID))]
+antenna_shp  <- antenna_shp[-which(antenna_shp$ID %in% lookUp$OldID), ] 
+
+# Merge alls identical id (summarise)
+library(dplyr)
+Mobile_Phone <- Mobile_Phone %>%
+                group_by(DATE_HOUR, ID) %>%
+                summarise(NBR_SIM_BE = sum(NBR_SIM_BE),
+                          NBR_SIM_ROAMERS = sum(NBR_SIM_ROAMERS),
+                          NBR_EVENTS_BE = sum(NBR_EVENTS_BE),
+                          NBR_EVENTS_ROAMERS = sum(NBR_EVENTS_ROAMERS))
+```
+```{r, eval=F}
+
+UniqueByDay <- Mobile_Phone %>%                   
+                 group_by(substr(DATE_HOUR, 1, 10)) %>%          
+                 summarise(Unique_Elements = n_distinct(ID))
+
+plot(1:nrow(UniqueByDay), 
+     UniqueByDay$Unique_Elements, 
+     type = "l", 
+     xlab = "day", ylab = "Unique antenna")
+```

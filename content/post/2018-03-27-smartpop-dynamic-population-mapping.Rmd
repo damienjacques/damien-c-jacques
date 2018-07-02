@@ -22,7 +22,7 @@ This Notebook details the steps of the data analysis carried out for the Smartpo
 
 ```{r global_options, include = FALSE}
 knitr::opts_chunk$set(warning = FALSE, 
-                      messages = FALSE)
+                      message = FALSE)
 ```
 
 ```{r, eval = F, message = F}
@@ -83,7 +83,7 @@ belgium <- getData('GADM', country = 'BE', level = 0)
 belgium <- spTransform(belgium, crs(antenna_shp))
 belgium <- gBuffer(belgium, width = 5000)  # Buffer to get all antennas close to belgium border
 
-antenna_discarded <- antenna_shp[which(!gIntersects(antenna_shp, belgium, byid=TRUE)), ]
+antenna_discarded <- antenna_shp[which(!gIntersects(antenna_shp, belgium, byid = TRUE)), ]
 ```
 
 ```{r, message = FALSE, eval = FALSE}
@@ -124,11 +124,11 @@ Assumption 1: removing the 2 mislocated antennas has no significant impact on th
 
 
 ```{r, message = FALSE}
-antenna_shp <- antenna_shp[which(gIntersects(antenna_shp, belgium, byid=TRUE)), ]
+antenna_shp <- antenna_shp[which(gIntersects(antenna_shp, belgium, byid = TRUE)), ]
 
 par(mar = c(0, 0, 0, 0))
 plot(antenna_shp, pch = "*") +
-plot(antenna_discarded, add = T, col ="red", pch = "*")  # to be sure the buffer was large enough
+plot(antenna_discarded, add = T, col = "red", pch = "*")  # to be sure the buffer was large enough
 
 nrow(antenna_shp@data)
 
@@ -149,7 +149,7 @@ liege <- belgium[belgium$NAME_4 == "Liège",]
 liege <- spTransform(liege, crs(antenna_shp))
 
 plot(liege, main = "zoom on Liège/Luik") +
-plot(cadastre_antenna, pch = "*", col="red", add = T) +
+plot(cadastre_antenna, pch = "*", col ="red", add = T) +
 plot(antenna_shp, pch = "*", add = T)
 legend("bottomright", c("antennas from cadastre", "antennas from db"), 
        col = c("red", "black"), pch = "*")
@@ -177,9 +177,9 @@ l <- leaflet() %>%
   addProviderTiles(providers$Esri.WorldImagery, group = "ESRI World Imagery") %>%
   # Overlay groups
   addCircles(data = antenna_latlon, ~lon, ~lat,  weight = 5,
-             color="blue", fillOpacity = 0.9, group = "antenna db") %>%
+             color ="blue", fillOpacity = 0.9, group = "antenna db") %>%
   addCircles(data = cadastre_latlon, ~lon, ~lat,  weight = 5,
-             color="red", fillOpacity = 0.9, group = "antenna cadastre") %>%
+             color ="red", fillOpacity = 0.9, group = "antenna cadastre") %>%
   # Layers control
   addLayersControl(
     baseGroups = c("Toner", "OSM (default)", "ESRI World Imagery"),
@@ -318,27 +318,64 @@ gc()
 Now, let's plot the number of antennas over time.
 
 ```{r}
-UniqueByDate <- Mobile_Phone %>%                   
+x <- Mobile_Phone %>%                   
                  group_by(DATE_HOUR) %>%          
                  summarise(Unique_Elements = n_distinct(ID))  
 
-plot(1:nrow(UniqueByDate), 
-     UniqueByDate$Unique_Elements, 
+plot(1:nrow(x), 
+     x$Unique_Elements, 
      type = "l", 
      xlab = "time (hour)", ylab = "Unique antenna")
 
-UniqueByDay <- Mobile_Phone %>%                   
+x <- Mobile_Phone %>%                   
                  group_by(substr(DATE_HOUR, 1, 10)) %>%          
                  summarise(Unique_Elements = n_distinct(ID))
 
-plot(1:nrow(UniqueByDay), 
-     UniqueByDay$Unique_Elements, 
+plot(lubridate::ymd(x$`substr(DATE_HOUR, 1, 10)`), 
+     x$Unique_Elements, 
      type = "l", 
      xlab = "day", ylab = "Unique antenna")
 
+x <- Mobile_Phone %>%                   
+                 group_by(substr(DATE_HOUR, 1, 10)) %>%          
+                 summarise(sum_SIM = sum(NBR_SIM_BE))
+
+plot(lubridate::ymd(x$`substr(DATE_HOUR, 1, 10)`), 
+     x$sum_SIM, 
+     type = "l", 
+     xlab = "day", ylab = "N SIM BE")
+
+x <- Mobile_Phone %>%                   
+                 group_by(substr(DATE_HOUR, 1, 10)) %>%          
+                 summarise(sum_SIM = sum(NBR_EVENTS_BE))
+
+plot(lubridate::ymd(x$`substr(DATE_HOUR, 1, 10)`), 
+     x$sum_SIM, 
+     type = "l", 
+     xlab = "day", ylab = "N EVENTS BE")
+
+
+x <- Mobile_Phone %>%                   
+                 group_by(substr(DATE_HOUR, 1, 10)) %>%          
+                 summarise(sum_SIM = sum(NBR_SIM_ROAMERS))
+
+plot(lubridate::ymd(x$`substr(DATE_HOUR, 1, 10)`), 
+     x$sum_SIM, 
+     type = "l", 
+     xlab = "day", ylab = "N SIM ROAMERS")
+
+x <- Mobile_Phone %>%                   
+                 group_by(substr(DATE_HOUR, 1, 10)) %>%          
+                 summarise(sum_SIM = sum(NBR_EVENTS_ROAMERS))
+
+plot(lubridate::ymd(x$`substr(DATE_HOUR, 1, 10)`), 
+     x$sum_SIM, 
+     type = "l", 
+     xlab = "day", ylab = "N EVENTS ROAMERS")
+
 ```
 
-The number of antenna increase over time (trend) with a daily pattern (day / night). For the trend, there is three different periods: before 100 first days (around the beginning of August), then from 100 to 315 (mid of March) and the rest. We will take the max number of antenna during the first period as reference and merge the new antenna that appear after with their closest antenna. The result is a loss in spatial resolution.
+The number of antenna increase over time (trend) with a daily pattern (day / night). For the trend, there is three different periods: before 100 first days (around the beginning of August), then from 100 to 315 (mid of March) and the rest. 
 
 ```{r}
 # aggregate SIM activity per day
@@ -350,12 +387,19 @@ Mobile_Phone_ByDay <- Mobile_Phone %>%
 frequencyAntenna <- table(Mobile_Phone_ByDay$ID)
 # select antenna active < 365 days in the db
 AntennaNotActivetheWholeYear <- names(frequencyAntenna)[frequencyAntenna < 365]
+length(AntennaNotActivetheWholeYear)
+
 # subset shapefile into 2 sets of antennas based on AntennaNotActivetheWholeYear
 antenna_shp_discard <- antenna_shp[which(antenna_shp$ID %in% AntennaNotActivetheWholeYear), ]
 antenna_shp_select <- antenna_shp[-which(antenna_shp$ID %in% AntennaNotActivetheWholeYear), ]
 ```
 
-A shiny application is developped to check each antenna with less than 365 active days, one by one and create a lookup table to merge the antennas depending on their time series.
+```{r, echo = F}
+rm(Mobile_Phone_ByDay, antenna_latlon, antenna_shp_discard, antenna_shp_select, cadastre_latlon, x, AntennaNotActivetheWholeYear, frequencyAntenna)
+gc()
+```
+
+A [shiny app](https://smartpop.shinyapps.io/ExploreAntenna/) is developped to check each antenna with less than 365 active days (609), one by one and create a lookup table to merge the antennas depending on their time series.
 
 ```{r, message = F, eval = F}
 library(leaflet)
@@ -472,27 +516,36 @@ shinyApp(ui = ui, server = server)
   });
 </script>
 
-```{r, eval=F}
-# compute Voronoi polygons of selected antennas
-library(SDraw)
+### Type of antennas
 
-belgium <- getData('GADM', country = 'BE', level = 4)
-belgium <- spTransform(belgium, crs(antenna_shp_select))
+After visual exploration several types of antenna can be identified:
 
-voro <- voronoi.polygons(antenna_shp_select, belgium)
+* **Type 1**: antennas active all days with a regular pattern without apparent anomalies.
+* **Type 2**: antennas active all days with an irregular pattern and potential anomalies. 
+* **Type 3**: antennas that are set up for special events, active for a couple of days (for the duration of the event) with a peak in SIM numbers (summer festivals...).
+* **Type 4**: antennas covering commercial area. Most probably inside the building as they show lower SIM numbers than antenna around.
+* **Type 5**: antennas that complete each other time series without overlap. They look like the same antenna but with different location points.
+* **Type 5 bis**: same as type 5 but with overlap in time.
+* **Type 6**: antennas that have a regular patterns and appear at some point in time. They look like new antennas. With the new antenna, the number of SIM active in the antennas decrease as the users can connect to more antennas.
+* **Type 7**: same as type 5 but without changed in activity of antennas around. It looks like an area that was previously poorly covered by the network and new users can access the network thanks to the new antenna. It concerns only few users otherwise some trends should be visible on the time series of total SIM over time.
+* **Type 8**: antennas in events area/buildings (such as national stadium, spiroudome, Bruxelles expo) with high peak during irregular events.
+* **Type 9**: antennas with SIM very close to 0 for each active days.
 
-par(mar = c(0, 0, 0, 0))
-plot(voro)
-colnames(voro@data)[1:2] <- c("X", "Y")
-voro@data <- plyr::join(voro@data, antenna_shp_select@data, by = c("X", "Y"))
+The lookup table build tahnks to the shiny app is used to merge the antennas.
+```{r}
+## Delete antenna with 0 activity
 
-# find discarded points that falls within the voronoi
-antennaDiscardInVoro  <- over(antenna_shp_discard, voro)
-lookUp <- data.frame(OldID = row.names(antennaDiscardInVoro), NewID = antennaDiscardInVoro$ID)
+# Load lookup table
+lookUp <- fread("/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Shiny/ExploreAntenna/antenna_discard_latlon.csv")
+
+# Remove antenna with low activity visually identified
+Mobile_Phone <- Mobile_Phone[-which(Mobile_Phone$ID %in% na.omit(lookUp$`Antenne 0 (delete)`)),]
 
 # Replace IDs in the full db and antenna shapefile
 Mobile_Phone$ID[Mobile_Phone$ID %in% lookUp$OldID]  <- lookUp$NewID[na.omit(match(Mobile_Phone$ID, lookUp$OldID))]
-antenna_shp  <- antenna_shp[-which(antenna_shp$ID %in% lookUp$OldID), ] 
+
+lookUp2 <- lookUp[-which(lookUp$OldID == lookUp$NewID),]
+antenna_shp  <- antenna_shp[-which(antenna_shp$ID %in% lookUp2$OldID), ] 
 
 # Merge alls identical id (summarise)
 library(dplyr)
@@ -503,16 +556,29 @@ Mobile_Phone <- Mobile_Phone %>%
                           NBR_EVENTS_BE = sum(NBR_EVENTS_BE),
                           NBR_EVENTS_ROAMERS = sum(NBR_EVENTS_ROAMERS))
 ```
-```{r, eval=F}
 
-UniqueByDay <- Mobile_Phone %>%                   
-                 group_by(substr(DATE_HOUR, 1, 10)) %>%          
-                 summarise(Unique_Elements = n_distinct(ID))
+The final database is almost ready. Zero values are added to antenna with < 365 days of activity and located in event areas (e.g. Bruxelles expo) identified during the visual exloration using the shiny app.
 
-plot(1:nrow(UniqueByDay), 
-     UniqueByDay$Unique_Elements, 
-     type = "l", 
-     xlab = "day", ylab = "Unique antenna")
+```{r}
+for (id in na.omit(lookUp$`event area (add 0)`)) {
+  dates <- unique(Mobile_Phone$DATE_HOUR)[-which(unique(Mobile_Phone$DATE_HOUR) %in% Mobile_Phone$DATE_HOUR[Mobile_Phone$ID == id])]
+  df <- data.frame(DATE_HOUR = dates,
+                   ID = id,
+                   NBR_SIM_BE = rep(0, length(dates)),
+                   NBR_SIM_ROAMERS = rep(0, length(dates)),
+                   NBR_EVENTS_BE = rep(0, length(dates)),
+                   NBR_EVENTS_ROAMERS = rep(0, length(dates)))
+  Mobile_Phone <- rbind.data.frame(Mobile_Phone, df)
+}
 ```
 
+{{% alert warning %}}
+Assumption 3: there is *nobody* in areas covered by antennas located in "event areas"" (e.g. Bruxelles Expo) when these antenna are not active.
+{{% /alert %}}
 
+```{r, eval = F, echo = F}
+fwrite(Mobile_Phone, file = "/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/CleanData/MobilePhone.csv")
+writeOGR(antenna_shp, "/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/CleanData/antenna_shp.shp", layer = "antenna_shp", driver = "ESRI Shapefile")
+```
+
+The remainder of the analysis can be found [here](https://damien-c-jacques.rbind.io/post/dynamic-population-mapping-smartpop-part-2/).
