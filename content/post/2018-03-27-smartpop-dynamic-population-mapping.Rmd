@@ -22,6 +22,7 @@ This Notebook details the steps of the data analysis carried out for the Smartpo
 
 ```{r global_options, include = FALSE}
 knitr::opts_chunk$set(warning = FALSE, 
+                      eval = FALSE,
                       message = FALSE)
 ```
 
@@ -540,6 +541,7 @@ lookUp <- fread("/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Shiny/ExploreAn
 
 # Remove antenna with low activity visually identified
 Mobile_Phone <- Mobile_Phone[-which(Mobile_Phone$ID %in% na.omit(lookUp$`Antenne 0 (delete)`)),]
+antenna_shp  <- antenna_shp[-which(antenna_shp$ID %in% na.omit(lookUp$`Antenne 0 (delete)`)), ] 
 
 # Replace IDs in the full db and antenna shapefile
 Mobile_Phone$ID[Mobile_Phone$ID %in% lookUp$OldID]  <- lookUp$NewID[na.omit(match(Mobile_Phone$ID, lookUp$OldID))]

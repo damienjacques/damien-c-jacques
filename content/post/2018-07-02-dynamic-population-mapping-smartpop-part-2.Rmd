@@ -11,63 +11,180 @@ tags:
   - population
 ---
 
+DRAFT
+The next step is to build a grid of reference that will be use to classify the land use and estimate the population. The drawback is that the antenna are not active each hour.
+
+{{% alert warning %}}
+Assumption 4: when an antenna is desactivated during the day, it means that its area is covered by the other close antennas (i.e. some voronoi polygons become larger when an antenna is not active). 
+{{% /alert %}}
+
+1) Grid reference (rasterized voronoi for each hour, intersect with reference grid, recomputing of the db)
+2) trend / seasonal / remainder
+3) 
+4)
+
 ```{r global_options, include = FALSE}
 knitr::opts_chunk$set(warning = FALSE, 
                       message = FALSE,
                       eval = FALSE)
 ```
 
-```{r, echo = F}
+```{r, eval = F}
+library(maptools)
+library(rgdal)
+library(SDraw)
 library(data.table)
+library(dplyr)
+library(foreach)
+library(doMC)
+library(raster)
+library(sp)
 
 Mobile_Phone <- fread("/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/CleanData/MobilePhone.csv")
+
+dates <- unique(Mobile_Phone$DATE_HOUR)
+
+IDbyHOUR <- Mobile_Phone %>%
+  group_by(DATE_HOUR) %>%
+  summarise(IDs = list(ID))
+
 antenna_shp <- readOGR("/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/CleanData/antenna_shp.shp")
-```
-
-## Antenna coverage
-
-```{r, eval=F}
-
-# extract all unique combination of antenna per
-
-# compute Voronoi polygons of selected antennas
-library(SDraw)
 
 belgium <- getData('GADM', country = 'BE', level = 4)
-belgium <- spTransform(belgium, crs(antenna_shp_select))
-
-voro <- voronoi.polygons(antenna_shp_select, belgium)
-
-par(mar = c(0, 0, 0, 0))
-plot(voro)
-colnames(voro@data)[1:2] <- c("X", "Y")
-voro@data <- plyr::join(voro@data, antenna_shp_select@data, by = c("X", "Y"))
-
-# find discarded points that falls within the voronoi
-antennaDiscardInVoro  <- over(antenna_shp_discard, voro)
-lookUp <- data.frame(OldID = row.names(antennaDiscardInVoro), NewID = antennaDiscardInVoro$ID)
-
-# Replace IDs in the full db and antenna shapefile
-Mobile_Phone$ID[Mobile_Phone$ID %in% lookUp$OldID]  <- lookUp$NewID[na.omit(match(Mobile_Phone$ID, lookUp$OldID))]
-antenna_shp  <- antenna_shp[-which(antenna_shp$ID %in% lookUp$OldID), ] 
-
-# Merge alls identical id (summarise)
-library(dplyr)
-Mobile_Phone <- Mobile_Phone %>%
-                group_by(DATE_HOUR, ID) %>%
-                summarise(NBR_SIM_BE = sum(NBR_SIM_BE),
-                          NBR_SIM_ROAMERS = sum(NBR_SIM_ROAMERS),
-                          NBR_EVENTS_BE = sum(NBR_EVENTS_BE),
-                          NBR_EVENTS_ROAMERS = sum(NBR_EVENTS_ROAMERS))
+belgium <- spTransform(belgium, crs(antenna_shp))
 ```
-```{r, eval=F}
 
-UniqueByDay <- Mobile_Phone %>%                   
-                 group_by(substr(DATE_HOUR, 1, 10)) %>%          
-                 summarise(Unique_Elements = n_distinct(ID))
+### Reference grid
 
-plot(1:nrow(UniqueByDay), 
-     UniqueByDay$Unique_Elements, 
-     type = "l", 
-     xlab = "day", ylab = "Unique antenna")
+A reference grid (shapefile of voronoi polygons) is defined to have a spatially consistent database with values for each hour in each polygon of reference. All antennas remaining in the db are used to define this grid. 
+
+```{r, eval = F}
+# Voronoi Polygons
+all.antenna_sub <- antenna_shp
+voro.sub <- voronoi.polygons(all.antenna_sub, belgium)
+voro.sub@data <- cbind(voro.sub@data, all.antenna_sub@data$ID)
+colnames(voro.sub@data)[4] <- "ID"
+writeOGR(voro.sub, "/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.shp", layer = "zone_50m", driver = "ESRI Shapefile")
+
+# Rasterize Shapefile
+path.in <- "/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.shp"
+path.out <- "/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.tif"
+ext <- "5000 21000 295200 245000"
+ext <- "23052 21125 295247 243827"
+res <- c("50 50")
+attribute <- 'ID'
+
+command <- 'gdal_rasterize'
+command <- paste(command, "--config COMPRESS LZW") 
+command <- paste(command, "-a", attribute) 
+command <- paste(command, "-te", ext) 
+command <- paste(command, "-tr", res) 
+command <- paste(command, "-ot Int16")
+command <- paste(command, path.in)
+command <- paste(command, path.out)
+
+system(command)
 ```
+
+### Compute voronoi polygons for each hour
+
+```{r, eval = F}
+sequence <- seq(0, length(dates), 16)
+
+for (k in 1:length(sequence)) {
+  print(k)
+  registerDoMC(8)
+  test <- foreach(i = (sequence[k] + 1):sequence[k + 1]) %dopar% {
+    DATE <- dates[i]
+    print(DATE)
+    all.antenna_sub <- antenna_shp[antenna_shp$ID %in% unlist(IDbyHOUR$IDs[IDbyHOUR$DATE_HOUR == DATE]),]
+    voro.sub <- voronoi.polygons(all.antenna_sub, belgium)
+    voro.sub@data <- cbind(voro.sub@data, all.antenna_sub@data$ID)
+    colnames(voro.sub@data)[4] <- "ID"
+    voro.sub$area <- round(voro.sub$area)
+    return(voro.sub)
+  }
+  names(test) <- gsub(" ", "_", dates[(sequence[k] + 1):sequence[k + 1]])
+  lapply(seq_along(test), 
+         function(i) {writeOGR(test[[i]], 
+                      paste0("/media/ubuntu/DATA/Data/Smartpop/Voro/", 
+                             names(test)[i], ".shp"),
+                      layer = names(test[[i]]), 
+                      driver = "ESRI Shapefile")})
+}
+```
+
+### Rasterize polygons
+
+```{r, eval = F}
+filenames <- list.files("/media/ubuntu/DATA/Data/Smartpop/Voro/", pattern = ".shp$")
+attribute <- 'ID'
+
+ext <- "23052 21125 295247 243827"
+res <- c("50 50")
+
+library(foreach)
+library(doMC)
+registerDoMC(8)
+
+foreach(i = 1:length(filenames)) %dopar% {
+  filename <- filenames[i]
+  path.in <- paste0('/media/ubuntu/DATA/Data/Smartpop/Voro/', filename)
+  path.out <- paste0('/media/ubuntu/DATA/Data/Smartpop/VoroRaster/', tools::file_path_sans_ext(filename),'_50m.tif')
+  
+  command <- 'gdal_rasterize'
+  command <- paste(command, "--config COMPRESS LZW") 
+  command <- paste(command, "-a", attribute) 
+  command <- paste(command, "-te", ext) 
+  command <- paste(command, "-tr", res) 
+  command <- paste(command, "-ot Int16")
+  command <- paste(command, path.in)
+  command <- paste(command, path.out)
+  
+  system(command)
+}
+```
+
+### Zonal stats (tabulate area)
+
+The intersection between each 'hourly voronoi' and the reference grid is computed.
+
+```{r, eval = F}
+library(raster)
+
+myZonal <- function(r, z, digits = 0, na.rm = TRUE) { 
+  vals <- getValues(r) 
+  zones <- round(getValues(z), digits = digits)
+  rDT <- data.table(vals, z = zones)
+  plyr::count(rDT) 
+}
+
+z <- raster("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.tif")
+filenames <- list.files("/media/ubuntu/DATA/Data/Smartpop/VoroRaster/", pattern = "50m.tif$")
+sequence <- seq(0, length(filenames), 4)
+
+for (k in 1:length(sequence)) {
+  print(k)
+  registerDoMC(4)
+  r <- stack(paste0("/media/ubuntu/DATA/Data/Smartpop/VoroRaster/", filenames[(sequence[k] + 1):sequence[k + 1]]))
+  
+  test <- foreach(i = 1:4) %dopar% {
+    Zstat <- myZonal(r = r[[i]], z = z)
+    output <- dcast(data = Zstat, z ~ vals, value.var = "freq")
+    output[, 2:ncol(output)] <- apply(output[, 2:ncol(output)], 2, function(i) i/sum(i, na.rm = T))
+    return(output)
+  }
+
+  names(test) <- gsub(" ", "_", dates[(sequence[k] + 1):sequence[k + 1]])
+  lapply(seq_along(test), 
+         function(i) {fwrite(test[[i]], 
+                               paste0("/media/ubuntu/DATA/Data/Smartpop/TabArea/TabArea_", 
+                                      names(test)[i], ".csv")
+                             )})
+}
+```
+
+
+
+
+

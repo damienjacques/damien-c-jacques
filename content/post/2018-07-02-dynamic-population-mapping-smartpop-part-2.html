@@ -13,45 +13,153 @@ tags:
 
 
 
-<div id="antenna-coverage" class="section level2">
-<h2>Antenna coverage</h2>
-<pre class="r"><code># extract all unique combination of antenna per
-
-# compute Voronoi polygons of selected antennas
+<p>DRAFT The next step is to build a grid of reference that will be use to classify the land use and estimate the population. The drawback is that the antenna are not active each hour.</p>
+<p>{{% alert warning %}} Assumption 4: when an antenna is desactivated during the day, it means that its area is covered by the other close antennas (i.e. some voronoi polygons become larger when an antenna is not active). {{% /alert %}}</p>
+<ol style="list-style-type: decimal">
+<li>Grid reference (rasterized voronoi for each hour, intersect with reference grid, recomputing of the db)</li>
+<li>trend / seasonal / remainder</li>
+<li></li>
+<li></li>
+</ol>
+<pre class="r"><code>library(maptools)
+library(rgdal)
 library(SDraw)
+library(data.table)
+library(dplyr)
+library(foreach)
+library(doMC)
+library(raster)
+library(sp)
+
+Mobile_Phone &lt;- fread(&quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/CleanData/MobilePhone.csv&quot;)
+
+dates &lt;- unique(Mobile_Phone$DATE_HOUR)
+
+IDbyHOUR &lt;- Mobile_Phone %&gt;%
+  group_by(DATE_HOUR) %&gt;%
+  summarise(IDs = list(ID))
+
+antenna_shp &lt;- readOGR(&quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/CleanData/antenna_shp.shp&quot;)
 
 belgium &lt;- getData(&#39;GADM&#39;, country = &#39;BE&#39;, level = 4)
-belgium &lt;- spTransform(belgium, crs(antenna_shp_select))
+belgium &lt;- spTransform(belgium, crs(antenna_shp))</code></pre>
+<div id="reference-grid" class="section level3">
+<h3>Reference grid</h3>
+<p>A reference grid (shapefile of voronoi polygons) is defined to have a spatially consistent database with values for each hour in each polygon of reference. All antennas remaining in the db are used to define this grid.</p>
+<pre class="r"><code># Voronoi Polygons
+all.antenna_sub &lt;- antenna_shp
+voro.sub &lt;- voronoi.polygons(all.antenna_sub, belgium)
+voro.sub@data &lt;- cbind(voro.sub@data, all.antenna_sub@data$ID)
+colnames(voro.sub@data)[4] &lt;- &quot;ID&quot;
+writeOGR(voro.sub, &quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.shp&quot;, layer = &quot;zone_50m&quot;, driver = &quot;ESRI Shapefile&quot;)
 
-voro &lt;- voronoi.polygons(antenna_shp_select, belgium)
+# Rasterize Shapefile
+path.in &lt;- &quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.shp&quot;
+path.out &lt;- &quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.tif&quot;
+ext &lt;- &quot;5000 21000 295200 245000&quot;
+ext &lt;- &quot;23052 21125 295247 243827&quot;
+res &lt;- c(&quot;50 50&quot;)
+attribute &lt;- &#39;ID&#39;
 
-par(mar = c(0, 0, 0, 0))
-plot(voro)
-colnames(voro@data)[1:2] &lt;- c(&quot;X&quot;, &quot;Y&quot;)
-voro@data &lt;- plyr::join(voro@data, antenna_shp_select@data, by = c(&quot;X&quot;, &quot;Y&quot;))
+command &lt;- &#39;gdal_rasterize&#39;
+command &lt;- paste(command, &quot;--config COMPRESS LZW&quot;) 
+command &lt;- paste(command, &quot;-a&quot;, attribute) 
+command &lt;- paste(command, &quot;-te&quot;, ext) 
+command &lt;- paste(command, &quot;-tr&quot;, res) 
+command &lt;- paste(command, &quot;-ot Int16&quot;)
+command &lt;- paste(command, path.in)
+command &lt;- paste(command, path.out)
 
-# find discarded points that falls within the voronoi
-antennaDiscardInVoro  &lt;- over(antenna_shp_discard, voro)
-lookUp &lt;- data.frame(OldID = row.names(antennaDiscardInVoro), NewID = antennaDiscardInVoro$ID)
+system(command)</code></pre>
+</div>
+<div id="compute-voronoi-polygons-for-each-hour" class="section level3">
+<h3>Compute voronoi polygons for each hour</h3>
+<pre class="r"><code>sequence &lt;- seq(0, length(dates), 16)
 
-# Replace IDs in the full db and antenna shapefile
-Mobile_Phone$ID[Mobile_Phone$ID %in% lookUp$OldID]  &lt;- lookUp$NewID[na.omit(match(Mobile_Phone$ID, lookUp$OldID))]
-antenna_shp  &lt;- antenna_shp[-which(antenna_shp$ID %in% lookUp$OldID), ] 
+for (k in 1:length(sequence)) {
+  print(k)
+  registerDoMC(8)
+  test &lt;- foreach(i = (sequence[k] + 1):sequence[k + 1]) %dopar% {
+    DATE &lt;- dates[i]
+    print(DATE)
+    all.antenna_sub &lt;- antenna_shp[antenna_shp$ID %in% unlist(IDbyHOUR$IDs[IDbyHOUR$DATE_HOUR == DATE]),]
+    voro.sub &lt;- voronoi.polygons(all.antenna_sub, belgium)
+    voro.sub@data &lt;- cbind(voro.sub@data, all.antenna_sub@data$ID)
+    colnames(voro.sub@data)[4] &lt;- &quot;ID&quot;
+    voro.sub$area &lt;- round(voro.sub$area)
+    return(voro.sub)
+  }
+  names(test) &lt;- gsub(&quot; &quot;, &quot;_&quot;, dates[(sequence[k] + 1):sequence[k + 1]])
+  lapply(seq_along(test), 
+         function(i) {writeOGR(test[[i]], 
+                      paste0(&quot;/media/ubuntu/DATA/Data/Smartpop/Voro/&quot;, 
+                             names(test)[i], &quot;.shp&quot;),
+                      layer = names(test[[i]]), 
+                      driver = &quot;ESRI Shapefile&quot;)})
+}</code></pre>
+</div>
+<div id="rasterize-polygons" class="section level3">
+<h3>Rasterize polygons</h3>
+<pre class="r"><code>filenames &lt;- list.files(&quot;/media/ubuntu/DATA/Data/Smartpop/Voro/&quot;, pattern = &quot;.shp$&quot;)
+attribute &lt;- &#39;ID&#39;
 
-# Merge alls identical id (summarise)
-library(dplyr)
-Mobile_Phone &lt;- Mobile_Phone %&gt;%
-                group_by(DATE_HOUR, ID) %&gt;%
-                summarise(NBR_SIM_BE = sum(NBR_SIM_BE),
-                          NBR_SIM_ROAMERS = sum(NBR_SIM_ROAMERS),
-                          NBR_EVENTS_BE = sum(NBR_EVENTS_BE),
-                          NBR_EVENTS_ROAMERS = sum(NBR_EVENTS_ROAMERS))</code></pre>
-<pre class="r"><code>UniqueByDay &lt;- Mobile_Phone %&gt;%                   
-                 group_by(substr(DATE_HOUR, 1, 10)) %&gt;%          
-                 summarise(Unique_Elements = n_distinct(ID))
+ext &lt;- &quot;23052 21125 295247 243827&quot;
+res &lt;- c(&quot;50 50&quot;)
 
-plot(1:nrow(UniqueByDay), 
-     UniqueByDay$Unique_Elements, 
-     type = &quot;l&quot;, 
-     xlab = &quot;day&quot;, ylab = &quot;Unique antenna&quot;)</code></pre>
+library(foreach)
+library(doMC)
+registerDoMC(8)
+
+foreach(i = 1:length(filenames)) %dopar% {
+  filename &lt;- filenames[i]
+  path.in &lt;- paste0(&#39;/media/ubuntu/DATA/Data/Smartpop/Voro/&#39;, filename)
+  path.out &lt;- paste0(&#39;/media/ubuntu/DATA/Data/Smartpop/VoroRaster/&#39;, tools::file_path_sans_ext(filename),&#39;_50m.tif&#39;)
+  
+  command &lt;- &#39;gdal_rasterize&#39;
+  command &lt;- paste(command, &quot;--config COMPRESS LZW&quot;) 
+  command &lt;- paste(command, &quot;-a&quot;, attribute) 
+  command &lt;- paste(command, &quot;-te&quot;, ext) 
+  command &lt;- paste(command, &quot;-tr&quot;, res) 
+  command &lt;- paste(command, &quot;-ot Int16&quot;)
+  command &lt;- paste(command, path.in)
+  command &lt;- paste(command, path.out)
+  
+  system(command)
+}</code></pre>
+</div>
+<div id="zonal-stats-tabulate-area" class="section level3">
+<h3>Zonal stats (tabulate area)</h3>
+<p>The intersection between each ‘hourly voronoi’ and the reference grid is computed.</p>
+<pre class="r"><code>library(raster)
+
+myZonal &lt;- function(r, z, digits = 0, na.rm = TRUE) { 
+  vals &lt;- getValues(r) 
+  zones &lt;- round(getValues(z), digits = digits)
+  rDT &lt;- data.table(vals, z = zones)
+  plyr::count(rDT) 
+}
+
+z &lt;- raster(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.tif&quot;)
+filenames &lt;- list.files(&quot;/media/ubuntu/DATA/Data/Smartpop/VoroRaster/&quot;, pattern = &quot;50m.tif$&quot;)
+sequence &lt;- seq(0, length(filenames), 4)
+
+for (k in 1:length(sequence)) {
+  print(k)
+  registerDoMC(4)
+  r &lt;- stack(paste0(&quot;/media/ubuntu/DATA/Data/Smartpop/VoroRaster/&quot;, filenames[(sequence[k] + 1):sequence[k + 1]]))
+  
+  test &lt;- foreach(i = 1:4) %dopar% {
+    Zstat &lt;- myZonal(r = r[[i]], z = z)
+    output &lt;- dcast(data = Zstat, z ~ vals, value.var = &quot;freq&quot;)
+    output[, 2:ncol(output)] &lt;- apply(output[, 2:ncol(output)], 2, function(i) i/sum(i, na.rm = T))
+    return(output)
+  }
+
+  names(test) &lt;- gsub(&quot; &quot;, &quot;_&quot;, dates[(sequence[k] + 1):sequence[k + 1]])
+  lapply(seq_along(test), 
+         function(i) {fwrite(test[[i]], 
+                               paste0(&quot;/media/ubuntu/DATA/Data/Smartpop/TabArea/TabArea_&quot;, 
+                                      names(test)[i], &quot;.csv&quot;)
+                             )})
+}</code></pre>
 </div>
