@@ -22,7 +22,6 @@ This Notebook details the steps of the data analysis carried out for the Smartpo
 
 ```{r global_options, include = FALSE}
 knitr::opts_chunk$set(warning = FALSE, 
-                      eval = FALSE,
                       message = FALSE)
 ```
 
@@ -44,7 +43,7 @@ Mobile_Phone
 
 
 ## Antennas
-### How many antennas / base transceiver station in the database?
+### How many antennas / base transceiver station in the database ?
 
 ```{r}
 unique_antenna <- unique(Mobile_Phone[, c("CELL_BTS_XCOORD_NUM" ,"CELL_BTS_YCOORD_NUM")])
@@ -538,6 +537,7 @@ The lookup table build tahnks to the shiny app is used to merge the antennas.
 
 # Load lookup table
 lookUp <- fread("/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Shiny/ExploreAntenna/antenna_discard_latlon.csv")
+lookUp$NewID[lookUp$OldID == 938] <- 938 #Due to small error in the remaining of the analysis
 
 # Remove antenna with low activity visually identified
 Mobile_Phone <- Mobile_Phone[-which(Mobile_Phone$ID %in% na.omit(lookUp$`Antenne 0 (delete)`)),]
@@ -579,8 +579,8 @@ Assumption 3: there is *nobody* in areas covered by antennas located in "event a
 {{% /alert %}}
 
 ```{r, eval = F, echo = F}
-fwrite(Mobile_Phone, file = "/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/CleanData/MobilePhone.csv")
-writeOGR(antenna_shp, "/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/CleanData/antenna_shp.shp", layer = "antenna_shp", driver = "ESRI Shapefile")
+fwrite(Mobile_Phone, file = "/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/CleanData/Mobile_Phone.csv")
+writeOGR(antenna_shp, "/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/CleanData/antenna.shp", layer = "antenna", driver = "ESRI Shapefile")
 ```
 
 The remainder of the analysis can be found [here](https://damien-c-jacques.rbind.io/post/dynamic-population-mapping-smartpop-part-2/).

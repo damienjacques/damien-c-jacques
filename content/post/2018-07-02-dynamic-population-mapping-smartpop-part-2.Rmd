@@ -69,7 +69,6 @@ writeOGR(voro.sub, "/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.shp", layer =
 # Rasterize Shapefile
 path.in <- "/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.shp"
 path.out <- "/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.tif"
-ext <- "5000 21000 295200 245000"
 ext <- "23052 21125 295247 243827"
 res <- c("50 50")
 attribute <- 'ID'
@@ -184,7 +183,16 @@ for (k in 1:length(sequence)) {
 }
 ```
 
+### Merge files to get final database
 
+```{r}
+filenames <- list.files("/media/ubuntu/DATA/Data/Smartpop/DB_new/", full.names = T)
 
+dt <- lapply(filenames, function(x){fread(x)})
+db <- rbindlist(dt)
+rm(dt)
+gc()
 
+fwrite(db, "/media/ubuntu/DATA/Data/Smartpop/FinalDB/FinalDB.csv")
+```
 

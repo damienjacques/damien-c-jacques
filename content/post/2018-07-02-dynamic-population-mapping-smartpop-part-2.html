@@ -56,7 +56,6 @@ writeOGR(voro.sub, &quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.shp&quot
 # Rasterize Shapefile
 path.in &lt;- &quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.shp&quot;
 path.out &lt;- &quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.tif&quot;
-ext &lt;- &quot;5000 21000 295200 245000&quot;
 ext &lt;- &quot;23052 21125 295247 243827&quot;
 res &lt;- c(&quot;50 50&quot;)
 attribute &lt;- &#39;ID&#39;
@@ -162,4 +161,15 @@ for (k in 1:length(sequence)) {
                                       names(test)[i], &quot;.csv&quot;)
                              )})
 }</code></pre>
+</div>
+<div id="merge-files-to-get-final-database" class="section level3">
+<h3>Merge files to get final database</h3>
+<pre class="r"><code>filenames &lt;- list.files(&quot;/media/ubuntu/DATA/Data/Smartpop/DB_new/&quot;, full.names = T)
+
+dt &lt;- lapply(filenames, function(x){fread(x)})
+db &lt;- rbindlist(dt)
+rm(dt)
+gc()
+
+fwrite(db, &quot;/media/ubuntu/DATA/Data/Smartpop/FinalDB/FinalDB.csv&quot;)</code></pre>
 </div>

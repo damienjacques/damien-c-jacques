@@ -14,13 +14,16 @@ output:
     toc: yes
 ---
 
+<script src="/rmarkdown-libs/htmlwidgets/htmlwidgets.js"></script>
+<script src="/rmarkdown-libs/pymjs/pym.v1.js"></script>
+<script src="/rmarkdown-libs/widgetframe-binding/widgetframe.js"></script>
 
 <div id="TOC">
 <ul>
 <li><a href="#data-cleaning">Data Cleaning</a><ul>
 <li><a href="#data-loading">Data Loading</a></li>
 <li><a href="#antennas">Antennas</a><ul>
-<li><a href="#how-many-antennas-base-transceiver-station-in-the-database">How many antennas / base transceiver station in the database?</a></li>
+<li><a href="#how-many-antennas-base-transceiver-station-in-the-database">How many antennas / base transceiver station in the database ?</a></li>
 <li><a href="#where-are-they-located">Where are they located?</a></li>
 <li><a href="#are-they-correctly-located">Are they correctly located?</a></li>
 <li><a href="#inter-antenna-distance">Inter-antenna distance</a></li>
@@ -42,14 +45,39 @@ output:
 Mobile_Phone &lt;- fread(&quot;/mobile_phone.csv&quot;,  showProgress = F)
 
 Mobile_Phone</code></pre>
+<pre><code>##               DATE_HOUR CELL_BTS_XCOORD_NUM CELL_BTS_YCOORD_NUM NBR_SIM_BE
+##        1: 2014-05-01 00               24625              200309         22
+##        2: 2014-05-01 00               24626              200309         32
+##        3: 2014-05-01 00               25332              200658         33
+##        4: 2014-05-01 00               25333              200658         48
+##        5: 2014-05-01 00               26040              198822         10
+##       ---                                                                 
+## 40194136: 2015-04-30 23              279799              124673         81
+## 40194137: 2015-04-30 23              280464              134506          9
+## 40194138: 2015-04-30 23              283963              124090         24
+## 40194139: 2015-04-30 23              285244              109939          0
+## 40194140: 2015-04-30 23              286300              126350         56
+##           NBR_SIM_ROAMERS NBR_EVENTS_BE NBR_EVENTS_ROAMERS
+##        1:               2            77                  3
+##        2:               6            50                 23
+##        3:               3            71                 12
+##        4:               3           117                  7
+##        5:               0            34                  0
+##       ---                                                 
+## 40194136:               7           199                 24
+## 40194137:              13            19                 45
+## 40194138:               1           108                  2
+## 40194139:               3             0                  9
+## 40194140:               8           144                 20</code></pre>
 </div>
 <div id="antennas" class="section level2">
 <h2>Antennas</h2>
 <div id="how-many-antennas-base-transceiver-station-in-the-database" class="section level3">
-<h3>How many antennas / base transceiver station in the database?</h3>
+<h3>How many antennas / base transceiver station in the database ?</h3>
 <pre class="r"><code>unique_antenna &lt;- unique(Mobile_Phone[, c(&quot;CELL_BTS_XCOORD_NUM&quot; ,&quot;CELL_BTS_YCOORD_NUM&quot;)])
 
 nrow(unique_antenna)</code></pre>
+<pre><code>## [1] 5261</code></pre>
 </div>
 <div id="where-are-they-located" class="section level3">
 <h3>Where are they located?</h3>
@@ -62,9 +90,9 @@ antenna_shp &lt;- SpatialPointsDataFrame(unique_antenna[ , 1:2],
                                                  Y = unique_antenna$CELL_BTS_YCOORD_NUM))
 
 par(mar = c(0, 0, 0, 0))
-plot(antenna_shp, pch = &quot;*&quot;)
-
-# We merge the ID field with the full db
+plot(antenna_shp, pch = &quot;*&quot;)</code></pre>
+<p><img src="/post/2018-03-27-smartpop-dynamic-population-mapping_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<pre class="r"><code># We merge the ID field with the full db
 colnames(Mobile_Phone)[2:3] &lt;- c(&quot;X&quot;, &quot;Y&quot;)
 Mobile_Phone &lt;- plyr::join(Mobile_Phone, antenna_shp@data, by = c(&quot;X&quot;, &quot;Y&quot;))
 Mobile_Phone &lt;- Mobile_Phone[, -(2:3)]</code></pre>
@@ -113,17 +141,22 @@ Mobile_Phone_discarded %&gt;%
 
 par(mar = c(0, 0, 0, 0))
 plot(antenna_shp, pch = &quot;*&quot;) +
-plot(antenna_discarded, add = T, col = &quot;red&quot;, pch = &quot;*&quot;)  # to be sure the buffer was large enough
-
-nrow(antenna_shp@data)
-
-Mobile_Phone &lt;- Mobile_Phone[-which(Mobile_Phone$ID %in% antenna_discarded$ID),]</code></pre>
+plot(antenna_discarded, add = T, col = &quot;red&quot;, pch = &quot;*&quot;)  # to be sure the buffer was large enough</code></pre>
+<p><img src="/post/2018-03-27-smartpop-dynamic-population-mapping_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<pre><code>## integer(0)</code></pre>
+<pre class="r"><code>nrow(antenna_shp@data)</code></pre>
+<pre><code>## [1] 5259</code></pre>
+<pre class="r"><code>Mobile_Phone &lt;- Mobile_Phone[-which(Mobile_Phone$ID %in% antenna_discarded$ID),]</code></pre>
 </div>
 <div id="are-they-correctly-located" class="section level3">
 <h3>Are they correctly located?</h3>
 <p>Comparison with the cadastre (from <a href="http://geoapps.wallonie.be/antennes/#BBOX=-45890.77766488868,367190.77766488865,-12341.35551604438,197672.0853441707">Walloon Region</a>) shows that several antennas from cadastre are not in the db and vice versa.</p>
-<pre class="r"><code>cadastre_antenna &lt;- readOGR(&quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Cadastre_antenna/antenna_orange_cadastre_31370.shp&quot;)
-crs(cadastre_antenna) &lt;- CRS(&quot;+init=epsg:31370&quot;)
+<pre class="r"><code>cadastre_antenna &lt;- readOGR(&quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Cadastre_antenna/antenna_orange_cadastre_31370.shp&quot;)</code></pre>
+<pre><code>## OGR data source with driver: ESRI Shapefile 
+## Source: &quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Cadastre_antenna/antenna_orange_cadastre_31370.shp&quot;, layer: &quot;antenna_orange_cadastre_31370&quot;
+## with 1966 features
+## It has 17 fields</code></pre>
+<pre class="r"><code>crs(cadastre_antenna) &lt;- CRS(&quot;+init=epsg:31370&quot;)
 cadastre_antenna &lt;- spTransform(cadastre_antenna, crs(antenna_shp))
 
 belgium &lt;- getData(&#39;GADM&#39;, country = &#39;BE&#39;, level = 4)
@@ -132,9 +165,11 @@ liege &lt;- spTransform(liege, crs(antenna_shp))
 
 plot(liege, main = &quot;zoom on Liège/Luik&quot;) +
 plot(cadastre_antenna, pch = &quot;*&quot;, col =&quot;red&quot;, add = T) +
-plot(antenna_shp, pch = &quot;*&quot;, add = T)
-legend(&quot;bottomright&quot;, c(&quot;antennas from cadastre&quot;, &quot;antennas from db&quot;), 
+plot(antenna_shp, pch = &quot;*&quot;, add = T)</code></pre>
+<pre><code>## integer(0)</code></pre>
+<pre class="r"><code>legend(&quot;bottomright&quot;, c(&quot;antennas from cadastre&quot;, &quot;antennas from db&quot;), 
        col = c(&quot;red&quot;, &quot;black&quot;), pch = &quot;*&quot;)</code></pre>
+<p><img src="/post/2018-03-27-smartpop-dynamic-population-mapping_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
 <p>Leaflet plot for dynamic exploration.</p>
 <pre class="r"><code>library(leaflet)
 library(widgetframe)
@@ -165,6 +200,8 @@ l &lt;- leaflet() %&gt;%
     options = layersControlOptions(collapsed = FALSE)
   )
 frameWidget(l)</code></pre>
+<div id="htmlwidget-1" style="width:100%;height:480px;" class="widgetframe html-widget"></div>
+<script type="application/json" data-for="htmlwidget-1">{"x":{"url":"/post/2018-03-27-smartpop-dynamic-population-mapping_files/figure-html//widgets/widget_unnamed-chunk-9.html","options":{"xdomain":"*","allowfullscreen":false,"lazyload":false}},"evals":[],"jsHooks":[]}</script>
 </div>
 <div id="inter-antenna-distance" class="section level3">
 <h3>Inter-antenna distance</h3>
@@ -185,30 +222,36 @@ names(dt.cad)[3:4] &lt;- c(&quot;lon_dest&quot;, &quot;lat_dest&quot;)
 dt.cad$dist &lt;- distGeo(matrix(c(dt.cad$lon, dt.cad$lat), ncol = 2), 
                    matrix(c(dt.cad$lon_dest, dt.cad$lat_dest), ncol = 2))</code></pre>
 <p>The lowest distance between two antennas from the cadastre is 3.6 m. Less than 0.1 % of the antenna are closer than 1 km.</p>
-<pre class="r"><code>range(dt.cad$dist[dt.cad$dist &gt; 0])
-
-hist(dt.cad$dist[dt.cad$dist &gt; 0]/1000, 
+<pre class="r"><code>range(dt.cad$dist[dt.cad$dist &gt; 0])</code></pre>
+<pre><code>## [1] 3.605757e+00 2.489118e+05</code></pre>
+<pre class="r"><code>hist(dt.cad$dist[dt.cad$dist &gt; 0]/1000, 
      xlab = &quot;Distance between points (km)&quot;, 
-     main = &quot;&quot;, breaks = 100)
-hist(dt.cad$dist[dt.cad$dist &gt; 0 &amp; dt.cad$dist &lt; 1000], 
+     main = &quot;&quot;, breaks = 100)</code></pre>
+<p><img src="/post/2018-03-27-smartpop-dynamic-population-mapping_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
+<pre class="r"><code>hist(dt.cad$dist[dt.cad$dist &gt; 0 &amp; dt.cad$dist &lt; 1000], 
      xlab = &quot;Distance between points (m)&quot;, 
-     main = &quot;&quot;, breaks = 100)
-
-quantile(dt.cad$dist[dt.cad$dist &gt; 0], c(0.001))</code></pre>
+     main = &quot;&quot;, breaks = 100)</code></pre>
+<p><img src="/post/2018-03-27-smartpop-dynamic-population-mapping_files/figure-html/unnamed-chunk-13-2.png" width="672" /></p>
+<pre class="r"><code>quantile(dt.cad$dist[dt.cad$dist &gt; 0], c(0.001))</code></pre>
+<pre><code>##     0.1% 
+## 1007.321</code></pre>
 <p>1735 antennas are closer than 2 m. There are probably antennas from the same BTS and other points correspond to all antennas of one BTS.</p>
 <pre class="r"><code>load(&quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/WorkingDataBase/antenna_distance&quot;)
 
 hist(dt$dist/1000, 
      xlab = &quot;Distance between points (km)&quot;, 
-     main = &quot;&quot;,  breaks = 100)
-hist(dt$dist[dt$dist &gt; 0 &amp; dt$dist &lt; 1000], 
+     main = &quot;&quot;,  breaks = 100)</code></pre>
+<p><img src="/post/2018-03-27-smartpop-dynamic-population-mapping_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
+<pre class="r"><code>hist(dt$dist[dt$dist &gt; 0 &amp; dt$dist &lt; 1000], 
      xlab = &quot;Distance between points (m)&quot;, 
-     main = &quot;&quot;,  breaks = 100)
-
-CloseAntenna &lt;- dt[dt$dist &gt; 0 &amp; dt$dist &lt; 2,]
-length(unique(c(paste(CloseAntenna$lon, CloseAntenna$lat), paste(CloseAntenna$lon_dest, CloseAntenna$lat_dest))))
-
-quantile(dt$dist[dt$dist &gt; 1], c(0.001))</code></pre>
+     main = &quot;&quot;,  breaks = 100)</code></pre>
+<p><img src="/post/2018-03-27-smartpop-dynamic-population-mapping_files/figure-html/unnamed-chunk-14-2.png" width="672" /></p>
+<pre class="r"><code>CloseAntenna &lt;- dt[dt$dist &gt; 0 &amp; dt$dist &lt; 2,]
+length(unique(c(paste(CloseAntenna$lon, CloseAntenna$lat), paste(CloseAntenna$lon_dest, CloseAntenna$lat_dest))))</code></pre>
+<pre><code>## [1] 1735</code></pre>
+<pre class="r"><code>quantile(dt$dist[dt$dist &gt; 1], c(0.001))</code></pre>
+<pre><code>##     0.1% 
+## 958.3147</code></pre>
 <p>{{% alert warning %}} Assumption 2: Very close antennas are antennas from the same BTS OR the same BTS but active at different time of the year. These antennas will be merged. Close antennas (&gt; 2 m, &lt; 1 km) will also be merged but in a further step. Other points correspond to all antennas of one BTS. {{% /alert %}}</p>
 </div>
 <div id="buffer-analysis" class="section level3">
@@ -251,6 +294,7 @@ Mobile_Phone &lt;- Mobile_Phone %&gt;%
                           NBR_EVENTS_ROAMERS = sum(NBR_EVENTS_ROAMERS))</code></pre>
 <p>The remaining antennas in the database are 4375.</p>
 <pre class="r"><code>nrow(antenna_shp)</code></pre>
+<pre><code>## [1] 4375</code></pre>
 </div>
 <div id="number-of-antennas-over-time" class="section level3">
 <h3>Number of antennas over time</h3>
@@ -262,46 +306,45 @@ Mobile_Phone &lt;- Mobile_Phone %&gt;%
 plot(1:nrow(x), 
      x$Unique_Elements, 
      type = &quot;l&quot;, 
-     xlab = &quot;time (hour)&quot;, ylab = &quot;Unique antenna&quot;)
-
-x &lt;- Mobile_Phone %&gt;%                   
+     xlab = &quot;time (hour)&quot;, ylab = &quot;Unique antenna&quot;)</code></pre>
+<p><img src="/post/2018-03-27-smartpop-dynamic-population-mapping_files/figure-html/unnamed-chunk-19-1.png" width="672" /></p>
+<pre class="r"><code>x &lt;- Mobile_Phone %&gt;%                   
                  group_by(substr(DATE_HOUR, 1, 10)) %&gt;%          
                  summarise(Unique_Elements = n_distinct(ID))
 
 plot(lubridate::ymd(x$`substr(DATE_HOUR, 1, 10)`), 
      x$Unique_Elements, 
      type = &quot;l&quot;, 
-     xlab = &quot;day&quot;, ylab = &quot;Unique antenna&quot;)
-
-x &lt;- Mobile_Phone %&gt;%                   
+     xlab = &quot;day&quot;, ylab = &quot;Unique antenna&quot;)</code></pre>
+<p><img src="/post/2018-03-27-smartpop-dynamic-population-mapping_files/figure-html/unnamed-chunk-19-2.png" width="672" /></p>
+<pre class="r"><code>x &lt;- Mobile_Phone %&gt;%                   
                  group_by(substr(DATE_HOUR, 1, 10)) %&gt;%          
                  summarise(sum_SIM = sum(NBR_SIM_BE))
 
 plot(lubridate::ymd(x$`substr(DATE_HOUR, 1, 10)`), 
      x$sum_SIM, 
      type = &quot;l&quot;, 
-     xlab = &quot;day&quot;, ylab = &quot;N SIM BE&quot;)
-
-x &lt;- Mobile_Phone %&gt;%                   
+     xlab = &quot;day&quot;, ylab = &quot;N SIM BE&quot;)</code></pre>
+<p><img src="/post/2018-03-27-smartpop-dynamic-population-mapping_files/figure-html/unnamed-chunk-19-3.png" width="672" /></p>
+<pre class="r"><code>x &lt;- Mobile_Phone %&gt;%                   
                  group_by(substr(DATE_HOUR, 1, 10)) %&gt;%          
                  summarise(sum_SIM = sum(NBR_EVENTS_BE))
 
 plot(lubridate::ymd(x$`substr(DATE_HOUR, 1, 10)`), 
      x$sum_SIM, 
      type = &quot;l&quot;, 
-     xlab = &quot;day&quot;, ylab = &quot;N EVENTS BE&quot;)
-
-
-x &lt;- Mobile_Phone %&gt;%                   
+     xlab = &quot;day&quot;, ylab = &quot;N EVENTS BE&quot;)</code></pre>
+<p><img src="/post/2018-03-27-smartpop-dynamic-population-mapping_files/figure-html/unnamed-chunk-19-4.png" width="672" /></p>
+<pre class="r"><code>x &lt;- Mobile_Phone %&gt;%                   
                  group_by(substr(DATE_HOUR, 1, 10)) %&gt;%          
                  summarise(sum_SIM = sum(NBR_SIM_ROAMERS))
 
 plot(lubridate::ymd(x$`substr(DATE_HOUR, 1, 10)`), 
      x$sum_SIM, 
      type = &quot;l&quot;, 
-     xlab = &quot;day&quot;, ylab = &quot;N SIM ROAMERS&quot;)
-
-x &lt;- Mobile_Phone %&gt;%                   
+     xlab = &quot;day&quot;, ylab = &quot;N SIM ROAMERS&quot;)</code></pre>
+<p><img src="/post/2018-03-27-smartpop-dynamic-population-mapping_files/figure-html/unnamed-chunk-19-5.png" width="672" /></p>
+<pre class="r"><code>x &lt;- Mobile_Phone %&gt;%                   
                  group_by(substr(DATE_HOUR, 1, 10)) %&gt;%          
                  summarise(sum_SIM = sum(NBR_EVENTS_ROAMERS))
 
@@ -309,6 +352,7 @@ plot(lubridate::ymd(x$`substr(DATE_HOUR, 1, 10)`),
      x$sum_SIM, 
      type = &quot;l&quot;, 
      xlab = &quot;day&quot;, ylab = &quot;N EVENTS ROAMERS&quot;)</code></pre>
+<p><img src="/post/2018-03-27-smartpop-dynamic-population-mapping_files/figure-html/unnamed-chunk-19-6.png" width="672" /></p>
 <p>The number of antenna increase over time (trend) with a daily pattern (day / night). For the trend, there is three different periods: before 100 first days (around the beginning of August), then from 100 to 315 (mid of March) and the rest.</p>
 <pre class="r"><code># aggregate SIM activity per day
 Mobile_Phone_ByDay &lt;- Mobile_Phone %&gt;%                   
@@ -319,11 +363,14 @@ Mobile_Phone_ByDay &lt;- Mobile_Phone %&gt;%
 frequencyAntenna &lt;- table(Mobile_Phone_ByDay$ID)
 # select antenna active &lt; 365 days in the db
 AntennaNotActivetheWholeYear &lt;- names(frequencyAntenna)[frequencyAntenna &lt; 365]
-length(AntennaNotActivetheWholeYear)
-
-# subset shapefile into 2 sets of antennas based on AntennaNotActivetheWholeYear
+length(AntennaNotActivetheWholeYear)</code></pre>
+<pre><code>## [1] 609</code></pre>
+<pre class="r"><code># subset shapefile into 2 sets of antennas based on AntennaNotActivetheWholeYear
 antenna_shp_discard &lt;- antenna_shp[which(antenna_shp$ID %in% AntennaNotActivetheWholeYear), ]
 antenna_shp_select &lt;- antenna_shp[-which(antenna_shp$ID %in% AntennaNotActivetheWholeYear), ]</code></pre>
+<pre><code>##             used   (Mb) gc trigger   (Mb)   max used   (Mb)
+## Ncells   1552771   83.0   29688859 1585.6   46388843 2477.5
+## Vcells 176721636 1348.3  515184586 3930.6 1240442919 9463.9</code></pre>
 <p>A <a href="https://smartpop.shinyapps.io/ExploreAntenna/">shiny app</a> is developped to check each antenna with less than 365 active days (609), one by one and create a lookup table to merge the antennas depending on their time series.</p>
 <pre class="r"><code>library(leaflet)
 
@@ -458,6 +505,7 @@ shinyApp(ui = ui, server = server)</code></pre>
 
 # Load lookup table
 lookUp &lt;- fread(&quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Shiny/ExploreAntenna/antenna_discard_latlon.csv&quot;)
+lookUp$NewID[lookUp$OldID == 938] &lt;- 938 #Due to small error in the remaining of the analysis
 
 # Remove antenna with low activity visually identified
 Mobile_Phone &lt;- Mobile_Phone[-which(Mobile_Phone$ID %in% na.omit(lookUp$`Antenne 0 (delete)`)),]
