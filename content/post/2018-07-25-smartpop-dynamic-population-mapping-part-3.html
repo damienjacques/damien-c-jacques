@@ -1,0 +1,94 @@
+---
+title: Smartpop Dynamic Population Mapping (Part 3)
+author: Damien C. Jacques
+date: '2018-07-25'
+slug: smartpop-dynamic-population-mapping-part-3
+categories:
+  - R
+summary: "This Notebook details the steps of the data analysis carried out for the Smartpop project -- Dynamic Population WP (part 3)."
+tags:
+  - mobile phone data
+  - population
+  - R
+  - statistics
+output:
+  blogdown::html_page:
+    toc: yes
+---
+
+
+<div id="TOC">
+<ul>
+<li><a href="#decompose-time-series">Decompose time series</a></li>
+</ul>
+</div>
+
+<div id="decompose-time-series" class="section level3">
+<h3>Decompose time series</h3>
+<pre class="r"><code>library(data.table)
+library(foreach)
+library(doMC)
+
+db &lt;- fread(&quot;/media/ubuntu/DATA/Data/Smartpop/FinalDB/FinalDB.csv&quot;)
+
+registerDoMC(4)
+resultdb &lt;- foreach(i = 1:4, .combine = rbind) %dopar% {
+                      ID_Grid &lt;- unique(db$ID_Grid)[i]
+                      ID.ts &lt;- ts(db$NBR_SIM_BE[db$ID_Grid == ID_Grid], frequency = 24*7)
+                      fit &lt;- stl(ID.ts, s.window = &quot;periodic&quot;)
+                      data.frame(ID_Grid = rep(ID_Grid, 8759),
+                                 seasonnal = as.numeric(fit$time.series[,1] + abs(min(fit$time.series[,1]))),
+                                 trend = as.numeric(fit$time.series[,2]),
+                                 remainder = as.numeric(fit$time.series[,3]),
+                                 DATE_HOUR = unique(db$DATE_HOUR))
+}
+
+resultdb$DATE_HOUR &lt;- rep(unique(db$DATE_HOUR, 4044))
+
+fwrite(resultdb, &quot;/media/ubuntu/DATA/Data/Smartpop/FinalDB/FinalDB_BE_ts.csv&quot;)</code></pre>
+<pre class="r"><code>library(data.table)
+library(DescTools)
+library(dplyr)
+
+resultdb &lt;- fread(&quot;/media/ubuntu/DATA/Data/Smartpop/FinalDB/FinalDB_BE_ts.csv&quot;)
+
+Mat_BE &lt;- xtabs(seasonnal ~  ID_Grid + DATE_HOUR, data = resultdb)
+Mat_BE &lt;- as.matrix(Mat_BE)[, 97:264]
+Mat_BE &lt;- scale(Mat_BE)
+
+save(Mat_BE, file = &quot;/media/ubuntu/DATA/Data/Smartpop/Matrix/Mat_BE_seasonnal_scale_center.Rda&quot;)
+
+cl &lt;- kmeans(Mat_BE, 10)
+cl &lt;- cl$cluster
+
+save(cl, file = &quot;/media/ubuntu/DATA/Data/Smartpop/Clustering/cl.Rda&quot;)
+
+for (i in 1:10) {
+  cl1 &lt;- colMeans(Mat_BE[which(cl$cluster == i), ])
+  plot(cl1, type = &quot;l&quot;, ylim = c(-1,1))
+  abline(v = seq(1, 24*7, 24))
+  abline(v = seq(13, 24*7, 24), lty = 2)
+}
+
+plot()
+plot(Mat_BE[which(cl$cluster == 8), ][1,])</code></pre>
+<pre class="r"><code>PC &lt;- prcomp(Mat_BE)</code></pre>
+<pre class="r"><code>for (ID_Grid in unique(db$ID_Grid)) {
+  print(ID_Grid)
+  ID.ts &lt;- ts(db$NBR_SIM_BE[db$ID_Grid == ID_Grid], frequency = 24*7)
+  fit &lt;- stl(ID.ts, s.window = &quot;periodic&quot;)
+  db$seasonnal[db$ID_Grid == ID_Grid] &lt;- fit$time.series[,1] + abs(min(fit$time.series[,1]))
+  db$trend[db$ID_Grid == ID_Grid] &lt;- fit$time.series[,2]
+  db$remainder[db$ID_Grid == ID_Grid] &lt;- fit$time.series[,3]
+}
+
+
+db$seasonnal &lt;- NA
+db$trend &lt;- NA
+db$remainder &lt;- NA
+
+fwrite(db, &quot;/media/ubuntu/DATA/Data/Smartpop/FinalDB/FinalDB_BE_ts.csv&quot;)</code></pre>
+<pre class="r"><code>head(db)
+
+Mat_BE &lt;- xtabs(NBR_SIM_BE ~ DATE_HOUR + ID_Grid, data = db)</code></pre>
+</div>

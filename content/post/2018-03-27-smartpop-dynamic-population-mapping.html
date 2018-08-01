@@ -369,9 +369,9 @@ length(AntennaNotActivetheWholeYear)</code></pre>
 antenna_shp_discard &lt;- antenna_shp[which(antenna_shp$ID %in% AntennaNotActivetheWholeYear), ]
 antenna_shp_select &lt;- antenna_shp[-which(antenna_shp$ID %in% AntennaNotActivetheWholeYear), ]</code></pre>
 <pre><code>##             used   (Mb) gc trigger   (Mb)   max used   (Mb)
-## Ncells   1552771   83.0   29688859 1585.6   46388843 2477.5
-## Vcells 176721636 1348.3  515184586 3930.6 1240442919 9463.9</code></pre>
-<p>A <a href="https://smartpop.shinyapps.io/ExploreAntenna/">shiny app</a> is developped to check each antenna with less than 365 active days (609), one by one and create a lookup table to merge the antennas depending on their time series.</p>
+## Ncells   1552790   83.0   29688859 1585.6   46388843 2477.5
+## Vcells 176721636 1348.3  515184586 3930.6 1240442911 9463.9</code></pre>
+<p>A <a href="https://smartpop.shinyapps.io/ExploreAntenna/">shiny app</a> was developped to check each antenna with less than 365 active days (609), one by one and create a lookup table to merge the antennas depending on their time series.</p>
 <pre class="r"><code>library(leaflet)
 
 # make shapefile readable in leaflet

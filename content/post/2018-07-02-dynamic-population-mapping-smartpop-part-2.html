@@ -9,18 +9,28 @@ summary: "This Notebook details the steps of the data analysis carried out for t
 tags:
   - mobile phone data
   - population
+output:
+  blogdown::html_page:
+    toc: yes
 ---
 
 
+<div id="TOC">
+<ul>
+<li><a href="#data-and-packages-loading">Data and packages loading</a></li>
+<li><a href="#reference-grid">Reference grid</a></li>
+<li><a href="#compute-voronoi-polygons-for-each-hour">Compute voronoi polygons for each hour</a></li>
+<li><a href="#rasterize-polygons">Rasterize polygons</a></li>
+<li><a href="#zonal-stats-tabulate-area">Zonal stats (tabulate area)</a></li>
+<li><a href="#transform-database-based-on-tabulate-area">Transform database based on tabulate area</a></li>
+<li><a href="#merge-files-to-get-final-database">Merge files to get final database</a></li>
+</ul>
+</div>
 
-<p>DRAFT The next step is to build a grid of reference that will be use to classify the land use and estimate the population. The drawback is that the antenna are not active each hour.</p>
-<p>{{% alert warning %}} Assumption 4: when an antenna is desactivated during the day, it means that its area is covered by the other close antennas (i.e. some voronoi polygons become larger when an antenna is not active). {{% /alert %}}</p>
-<ol style="list-style-type: decimal">
-<li>Grid reference (rasterized voronoi for each hour, intersect with reference grid, recomputing of the db)</li>
-<li>trend / seasonal / remainder</li>
-<li></li>
-<li></li>
-</ol>
+<p>The next step is to build a grid of reference that will be used to classify the land use and estimate the population. To do that, a new assumption is required.</p>
+<p>{{% alert warning %}} Assumption 4: when an antenna is not active during the day, it means that during this period, its area is covered by the neighboring antennas (i.e. some voronoi polygons become larger when an antenna is not active). {{% /alert %}}</p>
+<div id="data-and-packages-loading" class="section level3">
+<h3>Data and packages loading</h3>
 <pre class="r"><code>library(maptools)
 library(rgdal)
 library(SDraw)
@@ -43,9 +53,10 @@ antenna_shp &lt;- readOGR(&quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/
 
 belgium &lt;- getData(&#39;GADM&#39;, country = &#39;BE&#39;, level = 4)
 belgium &lt;- spTransform(belgium, crs(antenna_shp))</code></pre>
+</div>
 <div id="reference-grid" class="section level3">
 <h3>Reference grid</h3>
-<p>A reference grid (shapefile of voronoi polygons) is defined to have a spatially consistent database with values for each hour in each polygon of reference. All antennas remaining in the db are used to define this grid.</p>
+<p>A reference grid (shapefile of voronoi polygons) is defined to have a spatially consistent database with values for each hour in each polygon of reference. All antennas remaining in the database are used to define this grid.</p>
 <pre class="r"><code># Voronoi Polygons
 all.antenna_sub &lt;- antenna_shp
 voro.sub &lt;- voronoi.polygons(all.antenna_sub, belgium)
@@ -73,6 +84,7 @@ system(command)</code></pre>
 </div>
 <div id="compute-voronoi-polygons-for-each-hour" class="section level3">
 <h3>Compute voronoi polygons for each hour</h3>
+<p>We need to disaggregate the value of each hour in this grid. First let’s compute the gride of each hour.</p>
 <pre class="r"><code>sequence &lt;- seq(0, length(dates), 16)
 
 for (k in 1:length(sequence)) {
@@ -162,6 +174,42 @@ for (k in 1:length(sequence)) {
                              )})
 }</code></pre>
 </div>
+<div id="transform-database-based-on-tabulate-area" class="section level3">
+<h3>Transform database based on tabulate area</h3>
+<pre class="r"><code>library(data.table)
+library(raster)
+
+dates &lt;- unique(Mobile_Phone$DATE_HOUR)
+
+for(i in 1:length(dates)) {
+  date &lt;- dates[i]
+  print(date)
+  tabulate &lt;- data.frame(fread(paste0(&quot;/media/ubuntu/DATA/Data/Smartpop/TabArea/TabArea_&quot;, 
+                                      gsub(&quot; &quot;, &quot;_&quot;, date), 
+                                      &quot;.csv&quot;)))
+  names(tabulate)[2:ncol(tabulate)] &lt;- substring(names(tabulate)[2:ncol(tabulate)], 2)
+  tabulate &lt;- tabulate[-which(tabulate[1, ] == 0), -which(names(tabulate) == 0)]
+  Mobile_Phone_Sub &lt;- Mobile_Phone[Mobile_Phone$DATE_HOUR == date, ]
+  
+  tabulate_copy &lt;- tabulate
+  tabulate[ , 2:ncol(tabulate)] &lt;- sweep(tabulate[ , 2:ncol(tabulate)], 
+                                         MARGIN = 2, 
+                                         Mobile_Phone_Sub$NBR_SIM_BE[order(Mobile_Phone_Sub$ID)],`*`)
+
+  output &lt;- cbind.data.frame(tabulate[, 1], 
+                             rowSums(tabulate[, 2:ncol(tabulate)], na.rm = T)) 
+  colnames(output) &lt;- c(&quot;ID_Grid&quot;, &quot;NBR_SIM_BE&quot;)
+  
+  tabulate_copy[ , 2:ncol(tabulate_copy)] &lt;- sweep(tabulate_copy[ , 2:ncol(tabulate_copy)], 
+                                         MARGIN = 2, 
+                                         Mobile_Phone_Sub$NBR_SIM_ROAMERS[order(Mobile_Phone_Sub$ID)],`*`)
+  output$NBR_SIM_ROAMERS &lt;- rowSums(tabulate_copy[, 2:ncol(tabulate_copy)], na.rm = T)
+  
+  output$DATE_HOUR &lt;- date
+  
+  fwrite(output, paste0(&quot;/media/ubuntu/DATA/Data/Smartpop/DB_new/&quot;, gsub(&quot; &quot;, &quot;_&quot;, date), &#39;.csv&#39;))
+}  </code></pre>
+</div>
 <div id="merge-files-to-get-final-database" class="section level3">
 <h3>Merge files to get final database</h3>
 <pre class="r"><code>filenames &lt;- list.files(&quot;/media/ubuntu/DATA/Data/Smartpop/DB_new/&quot;, full.names = T)
@@ -170,6 +218,7 @@ dt &lt;- lapply(filenames, function(x){fread(x)})
 db &lt;- rbindlist(dt)
 rm(dt)
 gc()
+db &lt;- db[4045:nrow(db), ]
 
 fwrite(db, &quot;/media/ubuntu/DATA/Data/Smartpop/FinalDB/FinalDB.csv&quot;)</code></pre>
 </div>

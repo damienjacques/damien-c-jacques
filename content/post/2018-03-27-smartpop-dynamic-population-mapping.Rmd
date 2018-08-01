@@ -399,7 +399,7 @@ rm(Mobile_Phone_ByDay, antenna_latlon, antenna_shp_discard, antenna_shp_select, 
 gc()
 ```
 
-A [shiny app](https://smartpop.shinyapps.io/ExploreAntenna/) is developped to check each antenna with less than 365 active days (609), one by one and create a lookup table to merge the antennas depending on their time series.
+A [shiny app](https://smartpop.shinyapps.io/ExploreAntenna/) was developped to check each antenna with less than 365 active days (609), one by one and create a lookup table to merge the antennas depending on their time series.
 
 ```{r, message = F, eval = F}
 library(leaflet)

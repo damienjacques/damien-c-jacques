@@ -9,25 +9,25 @@ summary: "This Notebook details the steps of the data analysis carried out for t
 tags:
   - mobile phone data
   - population
+output:
+  blogdown::html_page:
+    toc: yes
 ---
 
-DRAFT
-The next step is to build a grid of reference that will be use to classify the land use and estimate the population. The drawback is that the antenna are not active each hour.
+The next step is to build a grid of reference that will be used to classify the land use and estimate the population. To do that, a new assumption is required. 
 
 {{% alert warning %}}
-Assumption 4: when an antenna is desactivated during the day, it means that its area is covered by the other close antennas (i.e. some voronoi polygons become larger when an antenna is not active). 
+Assumption 4: when an antenna is not active during the day, it means that during this period, its area is covered by the neighboring antennas (i.e. some voronoi polygons become larger when an antenna is not active). 
 {{% /alert %}}
 
-1) Grid reference (rasterized voronoi for each hour, intersect with reference grid, recomputing of the db)
-2) trend / seasonal / remainder
-3) 
-4)
 
 ```{r global_options, include = FALSE}
 knitr::opts_chunk$set(warning = FALSE, 
                       message = FALSE,
                       eval = FALSE)
 ```
+
+### Data and packages loading
 
 ```{r, eval = F}
 library(maptools)
@@ -56,7 +56,7 @@ belgium <- spTransform(belgium, crs(antenna_shp))
 
 ### Reference grid
 
-A reference grid (shapefile of voronoi polygons) is defined to have a spatially consistent database with values for each hour in each polygon of reference. All antennas remaining in the db are used to define this grid. 
+A reference grid (shapefile of voronoi polygons) is defined to have a spatially consistent database with values for each hour in each polygon of reference. All antennas remaining in the database are used to define this grid. 
 
 ```{r, eval = F}
 # Voronoi Polygons
@@ -86,6 +86,8 @@ system(command)
 ```
 
 ### Compute voronoi polygons for each hour
+
+We need to disaggregate the value of each hour in this grid. First let's compute the gride of each hour.
 
 ```{r, eval = F}
 sequence <- seq(0, length(dates), 16)
@@ -183,6 +185,47 @@ for (k in 1:length(sequence)) {
 }
 ```
 
+### Transform database based on tabulate area
+
+```{r}
+
+library(data.table)
+library(raster)
+
+dates <- unique(Mobile_Phone$DATE_HOUR)
+
+for(i in 1:length(dates)) {
+  date <- dates[i]
+  print(date)
+  tabulate <- data.frame(fread(paste0("/media/ubuntu/DATA/Data/Smartpop/TabArea/TabArea_", 
+                                      gsub(" ", "_", date), 
+                                      ".csv")))
+  names(tabulate)[2:ncol(tabulate)] <- substring(names(tabulate)[2:ncol(tabulate)], 2)
+  tabulate <- tabulate[-which(tabulate[1, ] == 0), -which(names(tabulate) == 0)]
+  Mobile_Phone_Sub <- Mobile_Phone[Mobile_Phone$DATE_HOUR == date, ]
+  
+  tabulate_copy <- tabulate
+  tabulate[ , 2:ncol(tabulate)] <- sweep(tabulate[ , 2:ncol(tabulate)], 
+                                         MARGIN = 2, 
+                                         Mobile_Phone_Sub$NBR_SIM_BE[order(Mobile_Phone_Sub$ID)],`*`)
+
+  output <- cbind.data.frame(tabulate[, 1], 
+                             rowSums(tabulate[, 2:ncol(tabulate)], na.rm = T)) 
+  colnames(output) <- c("ID_Grid", "NBR_SIM_BE")
+  
+  tabulate_copy[ , 2:ncol(tabulate_copy)] <- sweep(tabulate_copy[ , 2:ncol(tabulate_copy)], 
+                                         MARGIN = 2, 
+                                         Mobile_Phone_Sub$NBR_SIM_ROAMERS[order(Mobile_Phone_Sub$ID)],`*`)
+  output$NBR_SIM_ROAMERS <- rowSums(tabulate_copy[, 2:ncol(tabulate_copy)], na.rm = T)
+  
+  output$DATE_HOUR <- date
+  
+  fwrite(output, paste0("/media/ubuntu/DATA/Data/Smartpop/DB_new/", gsub(" ", "_", date), '.csv'))
+}  
+
+
+```
+
 ### Merge files to get final database
 
 ```{r}
@@ -192,6 +235,7 @@ dt <- lapply(filenames, function(x){fread(x)})
 db <- rbindlist(dt)
 rm(dt)
 gc()
+db <- db[4045:nrow(db), ]
 
 fwrite(db, "/media/ubuntu/DATA/Data/Smartpop/FinalDB/FinalDB.csv")
 ```
