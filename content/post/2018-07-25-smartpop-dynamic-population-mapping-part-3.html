@@ -20,11 +20,22 @@ output:
 <div id="TOC">
 <ul>
 <li><a href="#decompose-time-series">Decompose time series</a></li>
+<li><a href="#compute-validation-dataset-for-population-estimation.">Compute validation dataset for population estimation.</a></li>
+<li><a href="#dissagreggate-population-density-at-voronoi-cell">Dissagreggate population density at voronoi cell</a></li>
+<li><a href="#population-modeling-using-sim-users">Population modeling using SIM users</a><ul>
+<li><a href="#population-model-with-ols-regression-simple-linear-regression">Population model with OLS regression (simple linear regression)</a></li>
+<li><a href="#population-model-with-ols-regression-linear-regression-with-log-log-transformation">Population model with OLS regression (linear regression with log-log transformation)</a></li>
+<li><a href="#population-model-with-ols-weighted-regression-deville-pnas-paper">Population model with OLS weighted regression (Deville PNAS paper)</a></li>
+<li><a href="#residual-analysis">Residual analysis</a></li>
+</ul></li>
 </ul>
 </div>
 
 <div id="decompose-time-series" class="section level3">
 <h3>Decompose time series</h3>
+<p>We use <code>stl</code> package to decompose the time series of SIM users into a seasonnal, trend and remainder components. The seasonal component is found by taking the mean of the seasonal sub-series. The seasonal values are removed, and the remainder loess smoothed to find the trend (the span (in lags) of the loess window for trend extraction is <code>nextodd(ceiling((1.5*period) / (1-(1.5/s.window))))</code>). The overall level is removed from the seasonal component and added to the trend component. This process is iterated a few times. The remainder component is the residuals from the seasonal plus trend fit.</p>
+<p><strong>Reference</strong></p>
+<p><a href="https://robjhyndman.com/papers/wp13-15.pdf">R. B. Cleveland, W. S. Cleveland, J.E. McRae, and I. Terpenning (1990) STL: A Seasonal-Trend Decomposition Procedure Based on Loess. Journal of Official Statistics, 6, 3–73.</a></p>
 <pre class="r"><code>library(data.table)
 library(foreach)
 library(doMC)
@@ -46,18 +57,481 @@ resultdb &lt;- foreach(i = 1:4, .combine = rbind) %dopar% {
 resultdb$DATE_HOUR &lt;- rep(unique(db$DATE_HOUR, 4044))
 
 fwrite(resultdb, &quot;/media/ubuntu/DATA/Data/Smartpop/FinalDB/FinalDB_BE_ts.csv&quot;)</code></pre>
+<p>Build a usable matrix corresponding to the seasonnal component (one week) of Belgium SIM.</p>
 <pre class="r"><code>library(data.table)
-library(DescTools)
-library(dplyr)
 
 resultdb &lt;- fread(&quot;/media/ubuntu/DATA/Data/Smartpop/FinalDB/FinalDB_BE_ts.csv&quot;)
 
-Mat_BE &lt;- xtabs(seasonnal ~  ID_Grid + DATE_HOUR, data = resultdb)
-Mat_BE &lt;- as.matrix(Mat_BE)[, 97:264]
-Mat_BE &lt;- scale(Mat_BE)
+Mat_BE &lt;- dcast(ID_Grid ~  DATE_HOUR, data = resultdb, value.var = &quot;seasonnal&quot;)
+Mat_BE &lt;- as.matrix(Mat_BE)[, 97:264]</code></pre>
+<p>We also compute a row scaled version (<code>(x - mean)/std</code>) of the matrix for further use (clustering…).</p>
+<pre class="r"><code>library(scrime)
 
-save(Mat_BE, file = &quot;/media/ubuntu/DATA/Data/Smartpop/Matrix/Mat_BE_seasonnal_scale_center.Rda&quot;)
+Mat_BE_scaled &lt;- rowScales(Mat_BE)
+save(Mat_BE_scaled, file = &quot;/media/ubuntu/DATA/Data/Smartpop/Matrix/Mat_BE_seasonnal_scale_center.Rda&quot;)</code></pre>
+</div>
+<div id="compute-validation-dataset-for-population-estimation." class="section level3">
+<h3>Compute validation dataset for population estimation.</h3>
+<p>We first compute the population density by statistical sector.</p>
+<pre class="r"><code>library(rgdal)
 
+# shapefile of precomputed population at statistics sector level
+shp &lt;- readOGR(&quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Secteur_Stat/shp/pop_sectStat_2015.shp&quot;, verbose = FALSE)
+
+# compute population density (&gt; 10 y.)
+shp$pop &lt;- rowSums(shp@data[, 26:44])/shp$ar_sqkm
+
+# histogram population density
+hist(shp$pop, main = &quot;&quot;, xlab = &quot;Population (&gt; 10 y) density (hab/km²)&quot;)</code></pre>
+<p>{{% alert warning %}} Assumption 5: According to <a href="https://www.gsma.com/publicpolicy/wp-content/uploads/2012/03/GSMA_Childrens_use_of_mobile_phones_2014.pdf">(GSMA, 2014)</a>, only 10% of the population (of 15 years old) have reported ownership of first mobile phone under 10 (2014). Therefore, we only considered the population (&gt; 10 y.) {{% /alert %}}</p>
+<div class="figure">
+<img src="/img/ownership_mobile_phone.png" />
+
+</div>
+<p>We then rasterize the shapefile for further use (zonal statistics).</p>
+<pre class="r"><code>library(raster)
+
+zone &lt;- raster(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.tif&quot;)
+shp &lt;- spTransform(shp, crs(zone))
+
+writeOGR(shp, &quot;/media/ubuntu/DATA/Data/Smartpop/Population/pop_10_100.shp&quot;, 
+         layer = &quot;pop_10_100&quot;,
+         driver = &quot;ESRI Shapefile&quot;)
+
+# rasterize shapefile
+ext &lt;- &quot;23052 21125 295247 243827&quot;
+res &lt;- c(&quot;50 50&quot;)
+attribute &lt;- &quot;pop&quot;
+  
+path.in &lt;- &quot;/media/ubuntu/DATA/Data/Smartpop/Population/pop_10_100.shp&quot;
+path.out &lt;- &quot;/media/ubuntu/DATA/Data/Smartpop/Population/pop_10_100.tif&quot;
+
+command &lt;- &#39;gdal_rasterize&#39;
+command &lt;- paste(command, &quot;--config COMPRESS LZW&quot;) 
+command &lt;- paste(command, &quot;-a&quot;, attribute) 
+command &lt;- paste(command, &quot;-te&quot;, ext) 
+command &lt;- paste(command, &quot;-tr&quot;, res) 
+command &lt;- paste(command, &quot;-ot Int16&quot;)
+command &lt;- paste(command, path.in)
+command &lt;- paste(command, path.out)
+system(command)</code></pre>
+<pre class="r"><code>library(raster)
+library(rasterVis)
+library(classInt)
+
+zone &lt;- raster(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.tif&quot;)
+pop &lt;- raster(&quot;/media/ubuntu/DATA/Data/Smartpop/Population/pop_10_100.tif&quot;)
+pop[zone == 0] &lt;- NA
+
+levelplot(pop, col.regions = colorRampPalette(brewer.pal(9, &#39;Blues&#39;)),
+          margin = FALSE, main = &#39;Population density (inhab./m²) -- Normal breaks&#39;)
+
+breaks &lt;- classIntervals(values(pop), n = 20, style = &quot;quantile&quot;)
+
+levelplot(pop, at = c(0, breaks$brks[breaks$brks &gt; 0]), 
+          col.regions = colorRampPalette(brewer.pal(9, &#39;Blues&#39;)),
+          margin = FALSE, main = &#39;Population density (inhab./m²) -- Quantile breaks&#39;)</code></pre>
+<p>Average population density in Belgium (&gt; 10 y) is 322.2 inhab./km².</p>
+<pre class="r"><code>sum(as.numeric(values(pop)), na.rm = T)/sum(!is.na(as.numeric(values(pop))))</code></pre>
+</div>
+<div id="dissagreggate-population-density-at-voronoi-cell" class="section level3">
+<h3>Dissagreggate population density at voronoi cell</h3>
+<pre class="r"><code>popVoro &lt;- zonal(pop, zone, mean)</code></pre>
+<pre class="r"><code>zone &lt;- raster(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.tif&quot;)
+popZone &lt;- reclassify(zone, popVoro)
+
+breaks &lt;- classIntervals(values(popZone), n = 20, style = &quot;quantile&quot;)
+
+levelplot(popZone, at = c(0, breaks$brks[breaks$brks &gt; 0]), 
+          col.regions = colorRampPalette(brewer.pal(9, &#39;Blues&#39;)),
+          margin = FALSE, main = &#39;Population density (inhab./m²) -- Quantile breaks&#39;)</code></pre>
+</div>
+<div id="population-modeling-using-sim-users" class="section level2">
+<h2>Population modeling using SIM users</h2>
+<p>We first need to define training and testing dataset.</p>
+<pre class="r"><code>library(raster)
+
+zone &lt;- readOGR()
+&lt;- centroid()
+
+pointDistance</code></pre>
+<div id="population-model-with-ols-regression-simple-linear-regression" class="section level3">
+<h3>Population model with OLS regression (simple linear regression)</h3>
+<pre class="r"><code>library(rgdal)
+library(Metrics)
+library(data.table)
+
+zoneShp &lt;- readOGR(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.shp&quot;, verbose = FALSE)
+
+df &lt;- data.frame(i = 1:168, 
+                 r = 1:168,
+                 r2 = 1:168,
+                 rmse = 1:168)
+
+
+for (i in 1:168) {
+  y &lt;- as.numeric(popVoro[-1,2])
+  x &lt;- as.numeric(Mat_BE[,i]/zoneShp$area)
+  
+  index &lt;- which(x == 0 | y == 0)
+  y &lt;- y[-index]
+  x &lt;- x[-index]
+
+  data &lt;- data.frame(x = x, y = y)
+  lm.model &lt;- lm(y ~ x, data = data) 
+  lm.model &lt;- lm(y ~ poly(x,10), data = data)
+
+  df$r2[i] &lt;- summary(lm.model)$r.squared
+  df$r[i] &lt;- cor(y, predict(lm.model, newdata = data))
+  df$rmse[i] &lt;- rmse(y, predict(lm.model, newdata = data))
+  # df$coef[i] &lt;- lm.model$coefficients
+}
+
+plot(df$i, df$r, type = &quot;o&quot;, ylab = &quot;pearson correlation&quot;, xlab = &quot;time&quot;, xaxt = &quot;n&quot;, pch = 20) +
+axis(1, at = seq(13, 168, 24), labels = c(&quot;Mon&quot;, &quot;Tue&quot;, &quot;Wed&quot;, &quot;Thu&quot;, &quot;Fri&quot;, &quot;Sat&quot;, &quot;Sun&quot;)) +
+abline(v = seq(1, 168, 24)) 
+
+plot(df$i, df$rmse, type = &quot;o&quot;, ylab = &quot;RMSE (inhab./km²)&quot;, xlab = &quot;time&quot;, xaxt = &quot;n&quot;, pch = 20) +
+axis(1, at = seq(13, 168, 24), labels = c(&quot;Mon&quot;, &quot;Tue&quot;, &quot;Wed&quot;, &quot;Thu&quot;, &quot;Fri&quot;, &quot;Sat&quot;, &quot;Sun&quot;)) +
+abline(v = seq(1, 168, 24)) 
+
+plot(df$i, df$r2, type = &quot;o&quot;, ylab = &quot;r² (of log-log model, not really relevant)&quot;, xlab = &quot;time&quot;, xaxt = &quot;n&quot;, pch = 20) +
+axis(1, at = seq(13, 168, 24), labels = c(&quot;Mon&quot;, &quot;Tue&quot;, &quot;Wed&quot;, &quot;Thu&quot;, &quot;Fri&quot;, &quot;Sat&quot;, &quot;Sun&quot;)) +
+abline(v = seq(1, 168, 24)) </code></pre>
+</div>
+<div id="population-model-with-ols-regression-linear-regression-with-log-log-transformation" class="section level3">
+<h3>Population model with OLS regression (linear regression with log-log transformation)</h3>
+<p>The issue is how to deal with the 0. We choose to ignore them.</p>
+<pre class="r"><code>library(rgdal)
+library(Metrics)
+library(data.table)
+
+zoneShp &lt;- readOGR(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.shp&quot;, verbose = FALSE)
+
+df &lt;- data.frame(i = 1:168, 
+                 r = 1:168,
+                 r2 = 1:168,
+                 rmse = 1:168)
+
+for (i in 1:168) {
+  y &lt;- as.numeric(log(popVoro[-1,2])) 
+  x &lt;- as.numeric(log((Mat_BE[,i])/zoneShp$area))
+  index &lt;- which(x == -Inf | y == -Inf)
+  y &lt;- y[-index]
+  x &lt;- x[-index]
+
+  lm.model &lt;- lm(y ~ x) 
+  
+  df$r2[i] &lt;- summary(lm.model)$r.squared
+  df$r[i] &lt;- cor(exp(y), exp(lm.model$coefficients[1] + lm.model$coefficients[2]*x))
+  df$rmse[i] &lt;- rmse(exp(y), exp(lm.model$coefficients[1] + lm.model$coefficients[2]*x))
+  # df$coef[i] &lt;- lm.model$coefficients
+}
+
+plot(df$i, df$r, type = &quot;o&quot;, ylab = &quot;pearson correlation&quot;, xlab = &quot;time&quot;, xaxt = &quot;n&quot;, pch = 20) +
+axis(1, at = seq(13, 168, 24), labels = c(&quot;Mon&quot;, &quot;Tue&quot;, &quot;Wed&quot;, &quot;Thu&quot;, &quot;Fri&quot;, &quot;Sat&quot;, &quot;Sun&quot;)) +
+abline(v = seq(1, 168, 24)) 
+
+plot(df$i, df$rmse, type = &quot;o&quot;, ylab = &quot;RMSE (inhab./km²)&quot;, xlab = &quot;time&quot;, xaxt = &quot;n&quot;, pch = 20) +
+axis(1, at = seq(13, 168, 24), labels = c(&quot;Mon&quot;, &quot;Tue&quot;, &quot;Wed&quot;, &quot;Thu&quot;, &quot;Fri&quot;, &quot;Sat&quot;, &quot;Sun&quot;)) +
+abline(v = seq(1, 168, 24)) 
+
+plot(df$i, df$r2, type = &quot;o&quot;, ylab = &quot;r² (of log-log model, not really relevant)&quot;, xlab = &quot;time&quot;, xaxt = &quot;n&quot;, pch = 20) +
+axis(1, at = seq(13, 168, 24), labels = c(&quot;Mon&quot;, &quot;Tue&quot;, &quot;Wed&quot;, &quot;Thu&quot;, &quot;Fri&quot;, &quot;Sat&quot;, &quot;Sun&quot;)) +
+abline(v = seq(1, 168, 24)) </code></pre>
+<p>Regarding correlation, we observe:</p>
+<ul>
+<li>in average, a decrease in correlation along the week (monday to saturday), then an increase sunday.</li>
+<li>the lowest correlation at 4 am (from monday to wednesday)</li>
+<li>the highest during late evening (11-12pm during week days)</li>
+<li>a plateau in correlation from 5 am to 5pm (during week days)</li>
+</ul>
+<p>Regarding RMSE, we observe:</p>
+<ul>
+<li>in average, an increase in RMSE along the week (monday to saturday), then an increase sunday.</li>
+<li>the highest correlation at 4 am (week days)</li>
+<li>higher RMSE in working hours</li>
+<li>very high RMSE friday night</li>
+</ul>
+</div>
+<div id="population-model-with-ols-weighted-regression-deville-pnas-paper" class="section level3">
+<h3>Population model with OLS weighted regression (Deville PNAS paper)</h3>
+<p>Weighted regression are used to reduce heteroscedasticity However, if the heteroscedasticity comes from an omitted variable, this approach could be wrong.</p>
+<blockquote>
+<p>Keep in mind that there are different reasons why residuals can have non-constant variance. We tackled one that involved a predictor variable that had a large range of values and was associated with the changing variance. Other reasons for heteroscedasticity can include an incorrect model, such as a missing predictor. Weighted regression is not an appropriate solution if the heteroskedasticity is caused by an omitted variable. So, you really have to use your subject-area knowledge to first determine what is causing the problem and then figure out how to fix it!</p>
+</blockquote>
+<p>From <a href="http://blog.minitab.com/blog/adventures-in-statistics-2/curing-heteroscedasticity-with-weighted-regression-in-minitab-statistical-software">here</a>.</p>
+<pre class="r"><code>library(rgdal)
+library(Metrics)
+
+zoneShp &lt;- readOGR(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.shp&quot;, verbose = FALSE)
+load(&quot;/media/ubuntu/DATA/Data/Smartpop/Matrix/Mat_BE_seasonnal_scale_center.Rda&quot;)
+
+df &lt;- data.frame(i = 1:168, 
+                 r = 1:168,
+                 r2 = 1:168,
+                 rmse = 1:168)
+
+y &lt;- as.numeric(log(popVoro[-1,2])) 
+y[y == -Inf] &lt;- 0
+
+for (i in 1:168) {
+  x &lt;- as.numeric(log((Mat_BE[,i] + abs(min(Mat_BE)) + 0.1) / zoneShp$area))
+  x[x == -Inf] &lt;- 0
+
+  # log-log population weighted regression (weight used to prevent heteroscedasticity)
+  lm.model &lt;- lm(y ~ x, w = popVoro[-1,2] * zoneShp$area) 
+  
+  df$r2[i] &lt;- summary(lm.model)$r.squared
+  df$r[i] &lt;- cor(popVoro[-1,2], exp(lm.model$coefficients[1] + lm.model$coefficients[2]*x))
+  df$rmse[i] &lt;- rmse(popVoro[-1,2], exp(lm.model$coefficients[1] + lm.model$coefficients[2]*x))
+}
+
+plot(df$i, df$r, type = &quot;o&quot;, ylab = &quot;pearson correlation&quot;, xlab = &quot;time&quot;, xaxt = &quot;n&quot;, pch = 20) +
+axis(1, at = seq(13, 168, 24), labels = c(&quot;Mon&quot;, &quot;Tue&quot;, &quot;Wed&quot;, &quot;Thu&quot;, &quot;Fri&quot;, &quot;Sat&quot;, &quot;Sun&quot;)) +
+abline(v = seq(1, 168, 24)) 
+
+plot(df$i, df$rmse, type = &quot;o&quot;, ylab = &quot;RMSE (inhab./km²)&quot;, xlab = &quot;time&quot;, xaxt = &quot;n&quot;, pch = 20) +
+axis(1, at = seq(13, 168, 24), labels = c(&quot;Mon&quot;, &quot;Tue&quot;, &quot;Wed&quot;, &quot;Thu&quot;, &quot;Fri&quot;, &quot;Sat&quot;, &quot;Sun&quot;)) +
+abline(v = seq(1, 168, 24)) 
+
+plot(df$i, df$r2, type = &quot;o&quot;, ylab = &quot;r²&quot;, xlab = &quot;time&quot;, xaxt = &quot;n&quot;, pch = 20) +
+axis(1, at = seq(13, 168, 24), labels = c(&quot;Mon&quot;, &quot;Tue&quot;, &quot;Wed&quot;, &quot;Thu&quot;, &quot;Fri&quot;, &quot;Sat&quot;, &quot;Sun&quot;)) +
+abline(v = seq(1, 168, 24)) </code></pre>
+<p>Compare to unweighted regression, we observe:</p>
+<ul>
+<li>similar correlation lines.</li>
+<li>higher RMSE</li>
+</ul>
+</div>
+<div id="residual-analysis" class="section level3">
+<h3>Residual analysis</h3>
+<pre class="r"><code>i = 24
+
+y &lt;- as.numeric(log(popVoro[-1,2])) 
+y[y == -Inf] &lt;- 0
+
+x &lt;- as.numeric(log((Mat_BE[,i] + abs(min(Mat_BE)) + 0.1) / zoneShp$area))
+x[x == -Inf] &lt;- 0
+
+lm.model &lt;- lm(y ~ x) 
+
+residuals &lt;- popVoro[-1,2] - exp(lm.model$coefficients[1] + lm.model$coefficients[2]*x)
+
+cor(abs(residuals), zoneShp$area)
+cor(abs(residuals), popVoro[-1,2])
+
+plot(zoneShp$area, popVoro[-1,2])
+plot(popVoro[-1,2], abs(residuals)/popVoro[-1,2], ylim=c(0,4))
+plot(popVoro[-1,2], abs(residuals), ylim=c(0,20000))</code></pre>
+<p>We observe higher residuals (positive and negative) in urban areas.</p>
+<pre class="r"><code>library(raster)
+library(rasterVis)
+library(classInt)
+
+# Residuals
+
+zoneShp$residuals &lt;- residuals
+
+my.palette &lt;- brewer.pal(n = 5, name = &quot;Spectral&quot;)
+
+breaks &lt;- classIntervals(residuals, n = 5, style = &quot;quantile&quot;)
+
+spplot(zoneShp, &quot;residuals&quot;, at = breaks$brk,
+       col.regions = my.palette, col = &quot;transparent&quot;, cuts = 8,  usePolypath = FALSE,
+       main = &quot;residuals&quot;)
+
+# writeOGR(zoneShp, &quot;/media/ubuntu/DATA/Data/Smartpop/Residuals/residuals.shp&quot;,
+#          layer = &quot;residuals&quot;, driver = &quot;ESRI Shapefile&quot;)
+
+# Absolute residuals
+
+zoneShp$residuals &lt;- abs(residuals)
+
+my.palette &lt;- brewer.pal(n = 9, name = &quot;Blues&quot;)
+
+breaks &lt;- classIntervals(abs(residuals), n = 9, style = &quot;quantile&quot;)
+
+spplot(zoneShp, &quot;residuals&quot;, at = breaks$brk,
+       col.regions = my.palette, col = &quot;transparent&quot;, cuts = 8,  usePolypath = FALSE,
+       main = &quot;absolute residuals&quot;)</code></pre>
+<p>Dynamic exploration with leaflet.</p>
+<pre class="r"><code>library(leaflet)
+library(widgetframe)
+
+zoneShp_latlon &lt;- spTransform(zoneShp, CRS(&quot;+init=epsg:4326&quot;))
+
+zoneShp_latlon$cl &lt;- as.numeric(cut(residuals, breaks = 9))
+zoneShp_latlon$cl2 &lt;- as.numeric(cut(residuals, 
+                                     breaks = c(quantile(residuals, probs = seq(0, 1, by = 1/9))),
+                                 include.lowest = T))
+
+colors &lt;- brewer.pal(n = 9, name = &quot;Spectral&quot;)
+
+
+l &lt;- leaflet() %&gt;%
+  setView(lng = 5.578661, lat = 50.633766,, zoom = 12) %&gt;%
+  # Base groups
+  addProviderTiles(providers$Stamen.Toner, group = &quot;Toner&quot;) %&gt;%
+  addTiles(group = &quot;OSM (default)&quot;) %&gt;%
+  addProviderTiles(providers$Esri.WorldImagery, group = &quot;ESRI World Imagery&quot;) %&gt;%
+  # Overlay groups
+  addPolygons(data = zoneShp_latlon, color = ~colors[cl], fillOpacity = 0.9, 
+              layerId = ~ID, popup = ~ID,
+              highlightOptions = highlightOptions(color = &quot;black&quot;, 
+                                                  weight = 2
+                                                  ),
+               group = &quot;equal interval&quot;) %&gt;%
+  addPolygons(data = zoneShp_latlon, color = ~colors[cl2], fillOpacity = 0.9, 
+              layerId = ~ID, popup = ~ID,
+              highlightOptions = highlightOptions(color = &quot;black&quot;, 
+                                                  weight = 2),
+               group = c(&quot;quantile&quot;)) %&gt;%
+  # Legends
+  addLegend(&quot;bottomleft&quot;, colors = colors, labels = levels(cut(residuals, breaks = 9)),
+    title = &quot;Residuals&quot;, opacity = 1, group = c(&quot;quantile&quot;)) %&gt;%
+    addLegend(&quot;bottomleft&quot;, colors = colors, labels = levels(cut(residuals, 
+                                     breaks = c(quantile(residuals, probs = seq(0, 1, by = 1/9))))),
+    title = &quot;Residuals&quot;, opacity = 1, group = c(&quot;equal interval&quot;)) %&gt;%
+  # Layers control
+  addLayersControl(
+        baseGroups = c(&quot;Toner&quot;, &quot;OSM (default)&quot;, &quot;ESRI World Imagery&quot;),
+    overlayGroups = c(&quot;equal interval&quot;, &quot;quantile&quot;, &quot;hide&quot;),
+    options = layersControlOptions(collapsed = FALSE)
+  ) %&gt;% 
+  hideGroup(&quot;equal interval&quot;)
+
+frameWidget(l)
+
+
+
+library(shiny)
+# make a copy of Mobile_Phone_ByDay
+Mobile_Phone_ByDay_comp &lt;- Mobile_Phone_ByDay
+# Store all date (using an antenna active the 365 days)
+dates &lt;- lubridate::ymd(Mobile_Phone_ByDay$`substr(DATE_HOUR, 1, 10)`[Mobile_Phone_ByDay$ID==1211])
+
+
+server &lt;- function(input, output) {
+  # Leaflet map with markers
+  output$map &lt;- renderLeaflet({
+    leaflet() %&gt;%
+      setView(lng = 5.578661, lat = 50.633766, zoom = 12) %&gt;%
+      addProviderTiles(providers$Stamen.Toner, group = &quot;Toner&quot;) %&gt;%
+      addCircleMarkers(data = antenna_select_latlon, ~lon, ~lat, layerId= ~ID, popup = ~ID, radius = 4,
+                       color=&quot;blue&quot;, fillOpacity = 0.9,  stroke = TRUE) %&gt;%
+      addCircleMarkers(data = antenna_discard_latlon, ~lon, ~lat, layerId= ~ID, popup = ~ID, radius = 4,
+                       color=&quot;red&quot;, fillOpacity = 0.9,  stroke = TRUE)
+  })
+  
+  # Generate data in reactive for time series 1
+  plot_data &lt;- reactive({
+    ID &lt;- input$map_marker_click$id
+    if(is.null(ID)){ID=800}
+    Mobile_Phone_ByDay[Mobile_Phone_ByDay$ID %in% ID,]
+  })
+  
+  # Generate data in reactive for time series 2
+  plot_data_comp &lt;- reactive({
+    ID_comp &lt;- input$location
+    
+    if(is.null(ID_comp)){ID_comp = 800}
+    Mobile_Phone_ByDay_comp[Mobile_Phone_ByDay_comp$ID %in% ID_comp,]
+  })
+  
+  # Zoom on selected antenna using the drop-down menu
+  observeEvent(input$location, {
+    p2 &lt;- antenna_discard_latlon[antenna_discard_latlon$ID == input$location,]
+    leafletProxy(&quot;map&quot;) %&gt;% 
+      setView(lng=p2$lon, lat=p2$lat, zoom=14) %&gt;% 
+      addCircleMarkers(p2$lon, p2$lat, radius=8, color=&quot;black&quot;, 
+                       fillColor=&quot;red&quot;, fillOpacity=1, opacity=1, 
+                       stroke=TRUE, layerId=&quot;Selected&quot;)
+    
+  })
+  
+  # Make a plot depending on the selected antennas
+  output$plot=renderPlot({
+    plot(dates, rep(NA, 365), ylim = c(0, 15000), ylab = &quot;N SIM BE&quot;)
+    lines(lubridate::ymd(plot_data_comp()$`substr(DATE_HOUR, 1, 10)`),  
+          plot_data_comp()$SIM_BE, 
+          col = &quot;red&quot;)
+    lines(lubridate::ymd(plot_data()$`substr(DATE_HOUR, 1, 10)`),
+          plot_data()$SIM_BE, 
+          col =&quot;black&quot;)
+    legend(&quot;topright&quot;, col = c(&quot;red&quot;, &quot;black&quot;), lty = 1,
+           c(&quot;active &lt; 365 days&quot;, &quot;active &lt;= 365 days&quot;),
+           bty = &quot;n&quot;)
+  })
+  
+  # Generate text with the number of active days for the antenna selected with the drop-down menu
+  output$n_days &lt;- renderText({ 
+    paste(&quot;N active days:&quot;, frequencyAntenna[which(names(frequencyAntenna) == input$location)])
+  })
+}
+
+# Make user interface
+ui &lt;- fluidPage(
+  br(),
+  fluidRow(
+    column(4, h2(&quot;Explore Antennas (SMARTPOP)&quot;), h3(&quot;Click on antenna for comparison (black line)&quot;)),
+    column(4, selectInput(&quot;location&quot;, &quot;Antenna active &lt; 365 days (red line)&quot;, 
+                          c(&quot;&quot;, as.character(antenna_discard_latlon$ID)), 
+                          selected=&quot;&quot;, multiple=F, width=&quot;100%&quot;)),
+    column(4, textOutput(&quot;n_days&quot;))
+  ),
+  fluidRow(
+    column(4, leafletOutput(&quot;map&quot;)),
+    column(8, plotOutput(&quot;plot&quot;))
+  ),
+  br()
+)
+
+# Launch the app
+shinyApp(ui = ui, server = server)</code></pre>
+<pre class="r"><code>cl &lt;- kmeans(Mat_BE, 10) #already scaled
+cl &lt;- cl$cluster
+
+df &lt;- data.frame(residuals = residuals, cl = cl)
+df &lt;- data.frame(residuals = residuals, cl = cut(residuals, breaks = 10))
+df &lt;- data.frame(residuals = residuals, cl = cut(residuals, 
+                                                 breaks = c(quantile(residuals, probs = seq(0, 1, by = 0.1)))))
+
+boxplot(residuals ~ cl, df)
+
+library(lme4)
+
+lmer.model &lt;- lmer(y ~ x + (1 + x | cl), data = df)
+summary(lmer.model)
+plot(exp(y), exp(predict(lmer.model, newdata = df)))
+cor(exp(y), exp(predict(lmer.model, newdata = df)))
+
+lm.model &lt;- lm(y ~ x, data = df)
+summary(lm.model)
+plot(y, predict(lm.model, newdata = df))</code></pre>
+<pre class="r"><code>my.palette &lt;- brewer.pal(n = 5, name = &quot;Spectral&quot;)
+
+colors &lt;- my.palette[as.numeric(cut(residuals, breaks = 5))]
+colors &lt;- my.palette[as.numeric(cut(residuals, breaks=c(quantile(residuals, probs = seq(0, 1, by = 0.1))), include.lowest=TRUE))]
+plot(exp(x), exp(y), pch = 20, col = colors)
+
+plot((x), (y), pch = 20, col = colors)</code></pre>
+<pre class="r"><code># Rasterize Shapefile
+path.in &lt;- &quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.shp&quot;
+path.out &lt;- &quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.tif&quot;
+ext &lt;- &quot;23052 21125 295247 243827&quot;
+res &lt;- c(&quot;50 50&quot;)
+attribute &lt;- &#39;ID&#39;
+
+command &lt;- &#39;gdal_rasterize&#39;
+command &lt;- paste(command, &quot;--config COMPRESS LZW&quot;) 
+command &lt;- paste(command, &quot;-a&quot;, attribute) 
+command &lt;- paste(command, &quot;-te&quot;, ext) 
+command &lt;- paste(command, &quot;-tr&quot;, res) 
+command &lt;- paste(command, &quot;-ot Int16&quot;)
+command &lt;- paste(command, path.in)
+command &lt;- paste(command, path.out)</code></pre>
+<pre class="r"><code>Mat_BE_scale &lt;- t(scale(t(Mat_BE)))
 cl &lt;- kmeans(Mat_BE, 10)
 cl &lt;- cl$cluster
 
@@ -91,4 +565,5 @@ fwrite(db, &quot;/media/ubuntu/DATA/Data/Smartpop/FinalDB/FinalDB_BE_ts.csv&quot
 <pre class="r"><code>head(db)
 
 Mat_BE &lt;- xtabs(NBR_SIM_BE ~ DATE_HOUR + ID_Grid, data = db)</code></pre>
+</div>
 </div>

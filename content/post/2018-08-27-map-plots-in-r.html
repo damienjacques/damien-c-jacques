@@ -1,0 +1,398 @@
+---
+title: Map Plots in R
+author: Damien C. Jacques
+date: '2018-08-27'
+slug: map-plots-in-r
+summary: "Example of map plots in R."
+categories:
+  - R
+tags:
+  - map
+  - R
+  - plot
+  - cartography
+output:
+  blogdown::html_page:
+    toc: yes
+---
+
+
+<div id="TOC">
+<ul>
+<li><a href="#proportional-and-choropleth-symbols-layer">Proportional and Choropleth Symbols Layer</a></li>
+<li><a href="#contiguous-cartogram-gastner-newman-2004">Contiguous cartogram <a href="http://www.pnas.org/content/101/20/7499">(Gastner, Newman 2004)</a></a></li>
+<li><a href="#non-contiguous-cartogram">Non-Contiguous cartogram</a></li>
+<li><a href="#dorling-cartogram">Dorling cartogram</a></li>
+<li><a href="#mix-cartography">Mix Cartography</a></li>
+</ul>
+</div>
+
+<div id="proportional-and-choropleth-symbols-layer" class="section level3">
+<h3>Proportional and Choropleth Symbols Layer</h3>
+<ul>
+<li>Author: <a href="https://cv.archives-ouvertes.fr/timothee-giraud">Timotée Giraud</a></li>
+<li><a href="https://gist.github.com/rCarto/006e547288877d04951d086f86476733">Github</a></li>
+<li><a href="https://rgeomatic.hypotheses.org/1205">Blog</a></li>
+<li>Packages: <code>cartography</code>, <code>sf</code></li>
+</ul>
+<pre class="r"><code># load libraries
+library(sf)
+library(cartography)
+
+## Import
+# get the path to the shapefile embedded in sf package
+shapepath &lt;- system.file(&quot;shape/nc.shp&quot;, package = &quot;sf&quot;)
+# import the shapefile
+nc &lt;- st_read(shapepath, quiet = T)
+# change the projection of the map
+nc &lt;- st_transform(nc, 3857)
+# get a figure ratio adapted to the basemap
+figdim &lt;- getFigDim(x = nc, width = 800, mar = c(0,0,1.2,0), res = 100)
+
+# compute the sudden infant deaths per 1000 births
+nc$share &lt;- 100000 * nc$SID74 / nc$BIR74
+# quantization breaks of the rate
+bks &lt;- getBreaks(v = nc$share, method = &quot;quantile&quot;, nclass = 5)
+# correct the breaks to use the global rate as limit of class 
+global_rate &lt;- sum(nc$SID74) * 100000 / sum(nc$BIR74)
+bks[4] &lt;- global_rate
+# get a color palette
+cols &lt;- carto.pal(pal1 = &quot;green.pal&quot;, n1 = 3, pal2 = &quot;wine.pal&quot;, n2 = 2)
+# set figure margins
+par(mar = c(0,0,1.2,0))
+# display the North Carolina counties
+plot(st_geometry(nc), col = &quot;khaki4&quot;, border = &quot;khaki3&quot;, 
+     bg = &quot;lemonchiffon&quot;)
+# display circles
+propSymbolsChoroLayer(x = nc,var = &quot;BIR74&quot;, inches = 0.2,
+                      var2 = &quot;share&quot;, breaks = bks, col = cols, 
+                      legend.var.title.txt = &quot;N. of live births&quot;, 
+                      legend.var.pos = &#39;bottomleft&#39;, 
+                      legend.var2.values.rnd = 0,
+                      legend.var2.pos = &quot;topleft&quot;, 
+                      legend.var2.title.txt = &quot;Sudden infant death syndrome rate*&quot;)
+# add a title and layout
+layoutLayer(title = &quot;Sudden Infant Death Syndrome in North Carolina, 1974-1978&quot;, 
+            sources = &quot;&quot;, north = TRUE, scale = 50,
+            theme = &quot;sand.pal&quot;, frame = FALSE, 
+            author = &quot;*per 100,000 live births. Source: North Carolina SIDS data set&quot;)</code></pre>
+<p><img src="/post/2018-08-27-map-plots-in-r_files/figure-html/unnamed-chunk-1-1.png" width="672" /></p>
+</div>
+<div id="contiguous-cartogram-gastner-newman-2004" class="section level3">
+<h3>Contiguous cartogram <a href="http://www.pnas.org/content/101/20/7499">(Gastner, Newman 2004)</a></h3>
+<ul>
+<li>Author: <a href="https://cv.archives-ouvertes.fr/timothee-giraud">Timotée Giraud</a></li>
+<li><a href="https://rgeomatic.hypotheses.org/1361">Blog</a></li>
+<li>Packages: <code>cartography</code>, <code>cartogram</code></li>
+</ul>
+<pre class="r"><code>library(sf)
+library(cartography)
+library(cartogram)
+
+# get the path to the shapefile embedded in sf
+# package
+shapepath &lt;- system.file(&quot;shape/nc.shp&quot;, 
+                         package = &quot;sf&quot;)
+# import the shapefile
+nc &lt;- sf::st_read(shapepath, quiet = T)
+# change the projection of the map
+nc &lt;- sf::st_transform(nc, 3857)
+# data preparation
+# compute the sudden infant deaths per 1000 births
+nc$share &lt;- 100000 * nc$SID74 / nc$BIR74
+
+nc &lt;- cartogram_cont(nc, &quot;BIR74&quot;)
+
+# quantization breaks of the rate
+bks &lt;- getBreaks(v = nc$share, method = &quot;quantile&quot;, nclass = 5)
+# correct the breaks to use the global rate as limit of class 
+global_rate &lt;- sum(nc$SID74) * 100000 / sum(nc$BIR74)
+bks[4] &lt;- global_rate
+# get a color palette
+cols &lt;- carto.pal(pal1 = &quot;green.pal&quot;, n1 = 3, 
+                  pal2 = &quot;wine.pal&quot;, n2 = 2)
+## Choropleth layer
+# set figure margins and background color
+par(mar = c(0,0,1.2,0), bg = &quot;lemonchiffon&quot;)
+# display the sudden infant deaths per 1000 births
+choroLayer(x = nc,var = &quot;share&quot;, breaks = bks, col = cols,
+           border = &quot;khaki&quot;, lwd = 0.5, 
+           legend.title.txt = &quot;Sudden infant death syndrome rate*&quot;, 
+           legend.pos = &#39;topleft&#39;, legend.values.rnd = 0)
+# add a title and layout
+layoutLayer(title = &quot;Sudden Infant Death Syndrome in North Carolina, 1974-1978&quot;, 
+            sources = &quot;&quot;, north = TRUE, scale = 50,tabtitle = TRUE,
+            theme = &quot;sand.pal&quot;, frame = FALSE,  
+            author = &quot;*per 100,000 live births. Source: North Carolina SIDS data set&quot;)</code></pre>
+<p><img src="/post/2018-08-27-map-plots-in-r_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
+</div>
+<div id="non-contiguous-cartogram" class="section level3">
+<h3>Non-Contiguous cartogram</h3>
+<ul>
+<li>Author: <a href="https://cv.archives-ouvertes.fr/timothee-giraud">Timotée Giraud</a></li>
+<li><a href="https://rgeomatic.hypotheses.org/1361">Blog</a></li>
+<li>Packages: <code>cartography</code>, <code>cartogram</code>, <code>sf</code></li>
+</ul>
+<pre class="r"><code>library(sf)
+library(cartography)
+library(cartogram)
+
+# get the path to the shapefile embedded in sf
+# package
+shapepath &lt;- system.file(&quot;shape/nc.shp&quot;, 
+                         package = &quot;sf&quot;)
+# import the shapefile
+nc &lt;- sf::st_read(shapepath, quiet = T)
+# change the projection of the map
+nc &lt;- sf::st_transform(nc, 3857)
+# data preparation
+# compute the sudden infant deaths per 1000 births
+nc$share &lt;- 100000 * nc$SID74 / nc$BIR74
+
+nc &lt;- cartogram_ncont(nc, &quot;BIR74&quot;)
+
+# quantization breaks of the rate
+bks &lt;- getBreaks(v = nc$share, method = &quot;quantile&quot;, nclass = 5)
+# correct the breaks to use the global rate as limit of class 
+global_rate &lt;- sum(nc$SID74) * 100000 / sum(nc$BIR74)
+bks[4] &lt;- global_rate
+# get a color palette
+cols &lt;- carto.pal(pal1 = &quot;green.pal&quot;, n1 = 3, 
+                  pal2 = &quot;wine.pal&quot;, n2 = 2)
+## Choropleth layer
+# set figure margins and background color
+par(mar = c(0,0,1.2,0), bg = &quot;lemonchiffon&quot;)
+# display the sudden infant deaths per 1000 births
+choroLayer(x = nc,var = &quot;share&quot;, breaks = bks, col = cols,
+           border = &quot;khaki&quot;, lwd = 0.5, 
+           legend.title.txt = &quot;Sudden infant death syndrome rate*&quot;, 
+           legend.pos = &#39;topleft&#39;, legend.values.rnd = 0)
+# add a title and layout
+layoutLayer(title = &quot;Sudden Infant Death Syndrome in North Carolina, 1974-1978&quot;, 
+            sources = &quot;&quot;, north = TRUE, scale = 50,tabtitle = TRUE,
+            theme = &quot;sand.pal&quot;, frame = FALSE,  
+            author = &quot;*per 100,000 live births. Source: North Carolina SIDS data set&quot;)</code></pre>
+<p><img src="/post/2018-08-27-map-plots-in-r_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+</div>
+<div id="dorling-cartogram" class="section level3">
+<h3>Dorling cartogram</h3>
+<ul>
+<li>Author: <a href="https://cv.archives-ouvertes.fr/timothee-giraud">Timotée Giraud</a></li>
+<li><a href="https://rgeomatic.hypotheses.org/1361">Blog</a></li>
+<li>Packages: <code>cartography</code>, <code>cartogram</code>, <code>sf</code></li>
+</ul>
+<pre class="r"><code>library(sf)
+library(cartography)
+library(cartogram)
+
+# get the path to the shapefile embedded in sf
+# package
+shapepath &lt;- system.file(&quot;shape/nc.shp&quot;, 
+                         package = &quot;sf&quot;)
+# import the shapefile
+nc &lt;- sf::st_read(shapepath, quiet = T)
+# change the projection of the map
+nc &lt;- sf::st_transform(nc, 3857)
+# data preparation
+# compute the sudden infant deaths per 1000 births
+nc$share &lt;- 100000 * nc$SID74 / nc$BIR74
+
+# Circles&#39; movements weights.
+# A weight of 0 prevents any movement. A weight of 1 gives the default movement distance.
+w &lt;- 1 - (nc$BIR74 / max(nc$BIR74)) 
+nc &lt;- cartogram_dorling(nc, &quot;BIR74&quot;,  k = 5, m_weight = w)
+
+# quantization breaks of the rate
+bks &lt;- getBreaks(v = nc$share, method = &quot;quantile&quot;, nclass = 5)
+# correct the breaks to use the global rate as limit of class 
+global_rate &lt;- sum(nc$SID74) * 100000 / sum(nc$BIR74)
+bks[4] &lt;- global_rate
+# get a color palette
+cols &lt;- carto.pal(pal1 = &quot;green.pal&quot;, n1 = 3, 
+                  pal2 = &quot;wine.pal&quot;, n2 = 2)
+## Choropleth layer
+# set figure margins and background color
+par(mar = c(0,0,1.2,0), bg = &quot;lemonchiffon&quot;)
+# display the sudden infant deaths per 1000 births
+choroLayer(x = nc,var = &quot;share&quot;, breaks = bks, col = cols,
+           border = &quot;khaki&quot;, lwd = 0.5, 
+           legend.title.txt = &quot;Sudden infant death syndrome rate*&quot;, 
+           legend.pos = &#39;topleft&#39;, legend.values.rnd = 0)
+# add a title and layout
+layoutLayer(title = &quot;Sudden Infant Death Syndrome in North Carolina, 1974-1978&quot;, 
+            sources = &quot;&quot;, north = TRUE, scale = 50,tabtitle = TRUE,
+            theme = &quot;sand.pal&quot;, frame = FALSE,  
+            author = &quot;*per 100,000 live births. Source: North Carolina SIDS data set&quot;)</code></pre>
+<p><img src="/post/2018-08-27-map-plots-in-r_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+</div>
+<div id="mix-cartography" class="section level1">
+<h1>Mix Cartography</h1>
+<ul>
+<li>Author: <a href="https://cv.archives-ouvertes.fr/timothee-giraud">Timotée Giraud</a></li>
+<li><a href="https://gist.github.com/rCarto/ef52aa4e96a7b628956fbf531143ae68">Github</a></li>
+<li><a href="https://rgeomatic.hypotheses.org/1205">Blog</a></li>
+<li>Packages: <code>cartography</code>, <code>sf</code>, <code>sp</code></li>
+</ul>
+<pre class="r"><code>library(cartography)
+library(sp)
+library(sf)
+
+# Load data
+data(nuts2006)
+
+# Save image
+sizes &lt;- getFigDim(x = nuts0.spdf, width = 700, mar = c(0,0,0,0), res = 100)
+
+# set margins
+opar &lt;- par(mar = c(0,0,0,0))
+
+# Plot basemaps
+plot(nuts0.spdf, border = NA, col = NA, bg = &quot;aliceblue&quot;)
+plot(world.spdf, col  = &quot;#E3DEBF80&quot;, border=NA, add=TRUE)
+plot(nuts0.spdf, border = &quot;white&quot;, col = &quot;#E3DEBF&quot;, lwd= 1.1, add=T)
+
+
+# Plot an OSM Layer
+spdf &lt;- nuts3.spdf[substr(nuts3.spdf$id,1,2) %in% c(&#39;AT&#39;, &#39;CH&#39;, &quot;SI&quot;, &quot;IT&quot;),]
+OSMTILES &lt;- getTiles(x = spdf, type = &quot;osm&quot;, zoom = 5, crop = TRUE)
+tilesLayer(x = OSMTILES, add=TRUE)
+
+
+# Plot a choropleth layer
+spdf &lt;- nuts2.spdf[substr(nuts2.spdf$id,1,2) ==&quot;DE&quot;,]
+nuts2.df$gdppercap &lt;- nuts2.df$gdppps2008 / nuts2.df$pop2008
+choroLayer(spdf = spdf, df = nuts2.df, var = &quot;gdppercap&quot;, border = &quot;white&quot;, 
+           lwd = 0.4, col = carto.pal(pal1 = &quot;sand.pal&quot;, n1 = ),
+           legend.pos = &quot;n&quot;, add= TRUE)
+
+
+# Plot proportional squares
+spdf &lt;- nuts1.spdf[substr(nuts1.spdf$id,1,2) %in% c(&quot;BE&quot;, &quot;NL&quot;, &quot;LU&quot;),]
+propSymbolsLayer(spdf = spdf, df = nuts1.df, var = &quot;pop2008&quot;, 
+                 border = &quot;#7C000C&quot;,
+                 symbols = &quot;square&quot;, inches = 0.2, col = &quot;#ff000080&quot;, 
+                 legend.pos = &quot;n&quot;)
+
+
+# Plot Penciled region
+spdf &lt;- nuts1.spdf[substr(nuts1.spdf$id,1,2) %in% c(&quot;TR&quot;),]
+spdf@data &lt;- nuts1.df[substr(nuts1.df$id,1,2) %in% c(&quot;TR&quot;),]
+spdf &lt;- getPencilLayer(x = st_as_sf(spdf), buffer = 50000, size = 200)
+typoLayer(x = spdf, var = &quot;id&quot;, add=T, col = carto.pal(pal1 = &quot;multi.pal&quot;, 12), 
+          legend.pos =&quot;n&quot;)
+
+
+# Plot a typologie layer
+spdf &lt;- nuts3.spdf[substr(nuts3.spdf$id,1,2) %in% c(&quot;EE&quot;,&quot;LT&quot;,&#39;LV&#39;),]
+typoLayer(spdf = spdf, df = nuts3.df, var = &quot;id&quot;, add=T, legend.pos = &quot;n&quot;)
+
+
+# Plot proportional circles
+spdf &lt;- nuts3.spdf[substr(nuts3.spdf$id,1,2) %in% c(&quot;FI&quot;),]
+propSymbolsLayer(spdf = spdf, df = nuts3.df, var = &quot;pop2008&quot;, 
+                 inches = 0.15, col = &quot;#301551&quot;, legend.pos = &quot;n&quot;, 
+                 border = &quot;white&quot;)
+
+# Create and plot a grid layer (absolute)
+spdf &lt;- nuts3.spdf[substr(nuts3.spdf$id,1,2) %in% c(&quot;FR&quot;),]
+spdf@data &lt;- nuts3.df[match(spdf$id, nuts3.df$id),]
+mygrid &lt;- getGridLayer(x = spdf, cellsize = 50000*50000, var = &quot;pop2008&quot;)
+propSymbolsLayer(x = mygrid, legend.pos = &quot;n&quot;, border = &quot;white&quot;,
+                 var = &quot;pop2008&quot;, inches = 0.1, col=&quot;darkblue&quot;, 
+                 add=TRUE)
+
+
+# Create and plot a grid layer (relative)
+spdf &lt;- nuts3.spdf[substr(nuts3.spdf$id,1,2) %in% c(&quot;ES&quot;, &quot;PT&quot;),]
+spdf@data &lt;- nuts3.df[match(spdf$id, nuts3.df$id),]
+mygrid &lt;- getGridLayer(x = spdf, cellsize = 75000 * 75000, var = &quot;pop2008&quot;)
+mygrid$densitykm &lt;- mygrid$pop2008 * 1000 * 1000 / mygrid$gridarea 
+cols &lt;- carto.pal(pal1 = &quot;wine.pal&quot;, n1 = 6)
+choroLayer(x = mygrid, var = &quot;densitykm&quot;, add=TRUE,
+           border = &quot;grey80&quot;,col=cols,
+           legend.pos = &quot;n&quot;, method = &quot;q6&quot;)
+
+
+# Plot a dot density layer
+spdf &lt;- nuts3.spdf[substr(nuts3.spdf$id,1,2) %in% c(&quot;SE&quot;, &quot;NO&quot;),]
+dotDensityLayer(spdf = spdf, df=nuts3.df,var=&quot;pop2008&quot;, add = TRUE, 
+                col = &quot;grey30&quot;,
+                n = 100000,  pch = 20, cex = 0.5, legend.pos = &quot;n&quot;)
+
+# Plot a proportional links layer
+twincities.df &lt;- twincities.df[substr(twincities.df$i,1,2) %in% c(&quot;IT&quot;) &amp; 
+                                 substr(twincities.df$j,1,2) %in% c(&quot;IT&quot;,&#39;AT&#39;, &quot;SI&quot;, 
+                                                                    &quot;GR&quot;, &quot;CH&quot;), ]
+twincities.sf &lt;- getLinkLayer(x = nuts2.spdf, df = twincities.df[,1:2])
+gradLinkLayer(x = twincities.sf, df = twincities.df,var = &quot;fij&quot;,
+              legend.pos = &quot;n&quot;,
+              breaks = c(1,2,4,10), lwd = c(0.5,4,10),
+              col = &quot;#92000090&quot;, add = TRUE)
+
+
+# Plot a label layer
+spdf &lt;- nuts0.spdf[nuts0.spdf$id %in% c(&quot;IS&quot;, &quot;CY&quot;),]
+df &lt;- data.frame(id = spdf$id, names = c(&quot;Cyprus&quot;, &quot;Iceland&quot;))
+labelLayer(spdf = spdf, df = df, txt =  &quot;names&quot;, font = 2, halo = T)
+
+
+# Plot Discontinuities
+spdf &lt;- nuts3.spdf[substr(nuts3.spdf$id,1,2) %in% c(&quot;PL&quot;, &quot;CZ&quot;, &quot;SK&quot;, &quot;HU&quot;),]
+bord &lt;- getBorders(x = spdf)
+cols &lt;- carto.pal(pal1 = &quot;blue.pal&quot;, n1 = 3, pal2 = &quot;green.pal&quot;, n2 = 3)
+nuts3.df$gdppercap &lt;- nuts3.df$gdppps2008/nuts3.df$pop2008
+choroLayer(spdf = spdf, df = nuts3.df, var = &quot;gdppercap&quot;, method = &quot;q6&quot;,
+           col = cols, add=T, border = NA, legend.pos = F)
+discLayer(x = bord, df = nuts3.df,
+          var = &quot;gdppercap&quot;, col = &quot;red&quot;, nclass = 5,
+          method = &quot;quantile&quot;, threshold = 0.25, sizemin = 1,
+          sizemax = 3, type = &quot;rel&quot;, 
+          legend.pos = &quot;n&quot;, add = TRUE)
+
+
+# Plot a double proportional triangles layer
+spdf &lt;- nuts1.spdf[substr(nuts1.spdf$id,1,2) %in% c(&quot;IE&quot;,&quot;UK&quot;),]
+propTrianglesLayer(spdf = spdf, df = nuts1.df, var1 = &quot;birth_2008&quot;, 
+                   var2 = &quot;death_2008&quot;, legend.pos = &quot;n&quot;, k = 0.075)
+
+
+# Plot a proportional symbols layer + choro
+spdf &lt;- nuts3.spdf[substr(nuts3.spdf$id,1,2) %in% c(&quot;GR&quot;, &quot;BG&quot;, &quot;MK&quot;),]
+propSymbolsChoroLayer(spdf = spdf, df = nuts3.df, var2 = &quot;gdppercap&quot;, 
+                      var = &quot;gdppps2008&quot;,add=T, inches = 0.15,
+                      col = carto.pal(pal1 = &quot;orange.pal&quot;, 8), 
+                      legend.var.pos = &quot;n&quot;, legend.var2.pos = &quot;n&quot;)
+
+# Plot a proportional symbol layer + typo
+spdf &lt;- nuts2.spdf[substr(nuts2.spdf$id,1,2) %in% c(&quot;DK&quot;),]
+nuts2.df$bidon &lt;- 5
+propSymbolsTypoLayer(spdf = spdf, df = nuts2.df, var = &quot;bidon&quot;, var2 = &quot;id&quot;, 
+                     add=T, inches = 0.05, col = carto.pal(pal1 = &quot;multi.pal&quot;, 5),
+                     legend.var.pos = &quot;n&quot;, legend.var2.pos = &quot;n&quot;)
+
+
+# smooth Layer
+spdf &lt;- nuts2.spdf[substr(nuts2.spdf$id,1,2) %in% c(&quot;RO&quot;),]
+smoothLayer(spdf = spdf, df = nuts2.df, var = &quot;pop2008&quot;, legend.pos = &quot;n&quot;,
+            col = carto.pal(pal1 = &quot;wine.pal&quot;, 3, &quot;turquoise.pal&quot;, 3), nclass=6, 
+            typefct = &quot;exponential&quot;, span = 100000, beta = 3, add=T, mask = spdf, 
+            lwd =0.5)
+
+
+
+# Plot a layout (sources, scale, text, etc.)
+layoutLayer(title = &quot;&quot;,
+            sources = &quot;Eurostat - 2008, OpenStreetMap &amp; contributors - 2018&quot;,  
+            author = &quot;T. Giraud &amp; N. Lambert © UMS RIATE - 2018 - cartography v2.1.1&quot;, 
+            scale = NULL, 
+            col = NA, 
+            coltitle = &quot;black&quot;, 
+            frame = FALSE, north = FALSE)  
+
+# plot a scale bar
+barscale(size = 500, lwd = 1.5, cex = 0.9)
+
+# plot a north arrow
+north(south = T)</code></pre>
+<p><img src="/post/2018-08-27-map-plots-in-r_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+</div>
