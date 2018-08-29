@@ -78,10 +78,12 @@ zone$clusters <- cl
 plot(zone["clusters"], col = colors[zone$clusters], border = colors[zone$clusters])
 ```
 ```{r}
+library(widgetframe)
 library(leaflet)
+
 zoneShp_latlon <- st_transform(zone, "+init=epsg:4326")
 
-leaflet() %>%
+l <- leaflet() %>%
   setView(lng = 5.578661, lat = 50.633766, zoom = 12) %>%
   addProviderTiles(providers$Stamen.Toner, group = "Toner") %>%
   addTiles(group = "OSM (default)") %>%
@@ -101,6 +103,8 @@ leaflet() %>%
     overlayGroups = c("Cluster"),
     options = layersControlOptions(collapsed = FALSE)
   )
+
+frameWidget(l)
 ```
 
 
@@ -164,29 +168,40 @@ Mat_BE<- vapply(unique(colnames(Mat_BE)), function(x)
                              numeric(nrow(Mat_BE)) )
 
 ```
+
 ```{r, eval = FALSE, echo = FALSE}
 save(Mat_BE, file = "/media/ubuntu/DATA/Data/Smartpop/Matrix/Mat_BE_trend.Rda")
 ```
 
 
-We also compute a row scaled version (`(x - mean)/std`) of the matrix for further use (clustering...).
-
 ```{r, eval = FALSE}
 library(scrime)
 
 Mat_BE_scaled <- rowScales(Mat_BE)
+```
+
+```{r, echo = FALSE, eval = FALSE}
 save(Mat_BE_scaled, file = "/media/ubuntu/DATA/Data/Smartpop/Matrix/Mat_BE_trend_scale_center.Rda")
+load("/media/ubuntu/DATA/Data/Smartpop/Matrix/Mat_BE_trend.Rda")
+```
+
+```{r, eval = FALSE}
+clusters <- hclust(cluster::daisy(Mat_BE_scaled), method = "complete")
+```
+
+```{r, echo = FALSE, eval = FALSE}
+save(clusters, file = "/media/ubuntu/DATA/Data/Smartpop/Clustering/hclust_Mat_BE_trend_scale_center.Rda")
 ```
 
 ```{r, echo = FALSE}
-load("/media/ubuntu/DATA/Data/Smartpop/Matrix/Mat_BE_trend.Rda")
+load("/media/ubuntu/DATA/Data/Smartpop/Clustering/hclust_Mat_BE_trend_scale_center.Rda")
 load("/media/ubuntu/DATA/Data/Smartpop/Matrix/Mat_BE_trend_scale_center.Rda")
 ```
 
 ```{r}
-clusters <- hclust(cluster::daisy(Mat_BE_scaled), method = "complete")
-plot(clusters, labels = FALSE )
+plot(clusters, labels = FALSE)
 ```
+
 ```{r}
 library(sf)
 library(RColorBrewer)
@@ -207,9 +222,17 @@ for (i in 1:10){
 
 ```{r}
 library(leaflet)
+library(sf)
+library(widgetframe)
+
+k = 8
+cl <- cutree(clusters, k)
+table(cl)
+zone$clusters <- cl
+
 zoneShp_latlon <- st_transform(zone, "+init=epsg:4326")
 
-leaflet() %>%
+l <- leaflet() %>%
   setView(lng = 5.578661, lat = 50.633766, zoom = 12) %>%
   addProviderTiles(providers$Stamen.Toner, group = "Toner") %>%
   addTiles(group = "OSM (default)") %>%
@@ -229,6 +252,8 @@ leaflet() %>%
     overlayGroups = c("Cluster"),
     options = layersControlOptions(collapsed = FALSE)
   )
+
+frameWidget(l)
 ```
 
 ```{r}
@@ -237,7 +262,7 @@ sd <- list()
 
 load("/media/ubuntu/DATA/Data/Smartpop/Dates/Dates_vec.Rda")
 
-for (i in 1:10) {
+for (i in 1:k) {
   data[[i]] <- colMeans(Mat_BE_scaled[which(cl == i),])
   sd[[i]] <- matrixStats::colSds(Mat_BE_scaled[which(cl == i),])
   par(bg = 'black', fg = 'white')
