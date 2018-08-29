@@ -18,8 +18,7 @@ output:
 
 ```{r global_options, include = FALSE}
 knitr::opts_chunk$set(warning = FALSE, 
-                      message = FALSE,
-                      eval = FALSE)
+                      message = FALSE)
 ```
 ### Decompose time series
 
@@ -63,7 +62,7 @@ library(data.table)
 resultdb <- fread("/media/ubuntu/DATA/Data/Smartpop/FinalDB/FinalDB_BE_ts.csv")
 
 Mat_BE <- dcast(ID_Grid ~  DATE_HOUR, data = resultdb, value.var = "seasonnal")
-Mat_BE <- as.matrix(Mat_BE)[, 97:264]
+Mat_BE <- as.matrix(Mat_BE)[, 98:265]
 ```
 ```{r, eval = FALSE, echo = FALSE}
 save(Mat_BE, file = "/media/ubuntu/DATA/Data/Smartpop/Matrix/Mat_BE_seasonnal.Rda")
@@ -72,7 +71,7 @@ save(Mat_BE, file = "/media/ubuntu/DATA/Data/Smartpop/Matrix/Mat_BE_seasonnal.Rd
 
 We also compute a row scaled version (`(x - mean)/std`) of the matrix for further use (clustering...).
 
-```{r}
+```{r, eval = FALSE}
 library(scrime)
 
 Mat_BE_scaled <- rowScales(Mat_BE)
@@ -176,6 +175,10 @@ load("/media/ubuntu/DATA/Data/Smartpop/Population/popVoro.Rda")
 ```
 
 ```{r, warning = FALSE, message = FALSE}
+library(raster)
+library(rasterVis)
+library(classInt)
+
 zone <- raster("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.tif")
 popZone <- reclassify(zone, popVoro)
 
@@ -189,16 +192,7 @@ levelplot(popZone, at = c(0, breaks$brks[breaks$brks > 0]),
 ## Population modeling using SIM users
 
 
-We first need to define training and testing dataset.
-
-```{r}
-library(raster)
-
-zone <- readOGR()
-<- centroid()
-
-pointDistance
-```
+We first need to define training and testing dataset [...].
 
 
 ### Population model with OLS regression (simple linear regression)
@@ -215,7 +209,6 @@ df <- data.frame(i = 1:168,
                  r2 = 1:168,
                  rmse = 1:168)
 
-
 for (i in 1:168) {
   y <- as.numeric(popVoro[-1,2])
   x <- as.numeric(Mat_BE[,i]/zoneShp$area)
@@ -226,12 +219,11 @@ for (i in 1:168) {
 
   data <- data.frame(x = x, y = y)
   lm.model <- lm(y ~ x, data = data) 
-  lm.model <- lm(y ~ poly(x,10), data = data)
+  # lm.model <- lm(y ~ poly(x,2), data = data)
 
   df$r2[i] <- summary(lm.model)$r.squared
   df$r[i] <- cor(y, predict(lm.model, newdata = data))
   df$rmse[i] <- rmse(y, predict(lm.model, newdata = data))
-  # df$coef[i] <- lm.model$coefficients
 }
 
 plot(df$i, df$r, type = "o", ylab = "pearson correlation", xlab = "time", xaxt = "n", pch = 20) +
@@ -376,12 +368,17 @@ lm.model <- lm(y ~ x)
 
 residuals <- popVoro[-1,2] - exp(lm.model$coefficients[1] + lm.model$coefficients[2]*x)
 
+cor(residuals, zoneShp$area)
 cor(abs(residuals), zoneShp$area)
+
+cor(residuals, popVoro[-1,2])
 cor(abs(residuals), popVoro[-1,2])
 
-plot(zoneShp$area, popVoro[-1,2])
-plot(popVoro[-1,2], abs(residuals)/popVoro[-1,2], ylim=c(0,4))
-plot(popVoro[-1,2], abs(residuals), ylim=c(0,20000))
+cor(log(1/(zoneShp$area)), log(abs(residuals)))
+plot(log(1/(zoneShp$area)), log(abs(residuals)), xlab ="log(1/area)", ylab = "log(|residuals|)")
+plot(1/zoneShp$area, abs(residuals), xlab ="1/area", ylab = "|residuals|")
+
+# plot(popVoro[-1,2], abs(residuals))
 
 ```
 We observe higher residuals (positive and negative) in urban areas. 
@@ -394,16 +391,17 @@ library(classInt)
 
 # Residuals
 
-zoneShp$residuals <- residuals
+zoneShp$residuals <- residuals/sd(popVoro[-1,2])
 
-my.palette <- brewer.pal(n = 5, name = "Spectral")
-
-breaks <- classIntervals(residuals, n = 5, style = "quantile")
-
-spplot(zoneShp, "residuals", at = breaks$brk,
-       col.regions = my.palette, col = "transparent", cuts = 8,  usePolypath = FALSE,
+my.palette <- brewer.pal(n = 9, name = "Spectral")
+breaks <- classIntervals(zoneShp$residuals, n = 9, style = "quantile")
+zoneShp$brks <- cut(zoneShp$residuals, breaks = breaks$brks)
+  
+spplot(zoneShp, "residuals", at = breaks$brks,
+       col.regions = my.palette, 
+       col = "transparent", usePolypath = FALSE,
        main = "residuals")
-
+# 
 # writeOGR(zoneShp, "/media/ubuntu/DATA/Data/Smartpop/Residuals/residuals.shp",
 #          layer = "residuals", driver = "ESRI Shapefile")
 
@@ -422,135 +420,78 @@ spplot(zoneShp, "residuals", at = breaks$brk,
 
 Dynamic exploration with leaflet.
 
-```{r}
+```{r, eval = FALSE}
 library(leaflet)
 library(widgetframe)
+library(dplyr)
 
 zoneShp_latlon <- spTransform(zoneShp, CRS("+init=epsg:4326"))
 
-zoneShp_latlon$cl <- as.numeric(cut(residuals, breaks = 9))
-zoneShp_latlon$cl2 <- as.numeric(cut(residuals, 
-                                     breaks = c(quantile(residuals, probs = seq(0, 1, by = 1/9))),
-                                 include.lowest = T))
+colors <- brewer.pal(n = 3, name = "Set3")
 
-colors <- brewer.pal(n = 9, name = "Spectral")
-
-
-l <- leaflet() %>%
-  setView(lng = 5.578661, lat = 50.633766,, zoom = 12) %>%
-  # Base groups
-  addProviderTiles(providers$Stamen.Toner, group = "Toner") %>%
-  addTiles(group = "OSM (default)") %>%
-  addProviderTiles(providers$Esri.WorldImagery, group = "ESRI World Imagery") %>%
-  # Overlay groups
-  addPolygons(data = zoneShp_latlon, color = ~colors[cl], fillOpacity = 0.9, 
-              layerId = ~ID, popup = ~ID,
-              highlightOptions = highlightOptions(color = "black", 
-                                                  weight = 2
-                                                  ),
-               group = "equal interval") %>%
-  addPolygons(data = zoneShp_latlon, color = ~colors[cl2], fillOpacity = 0.9, 
-              layerId = ~ID, popup = ~ID,
-              highlightOptions = highlightOptions(color = "black", 
-                                                  weight = 2),
-               group = c("quantile")) %>%
-  # Legends
-  addLegend("bottomleft", colors = colors, labels = levels(cut(residuals, breaks = 9)),
-    title = "Residuals", opacity = 1, group = c("quantile")) %>%
-    addLegend("bottomleft", colors = colors, labels = levels(cut(residuals, 
-                                     breaks = c(quantile(residuals, probs = seq(0, 1, by = 1/9))))),
-    title = "Residuals", opacity = 1, group = c("equal interval")) %>%
-  # Layers control
-  addLayersControl(
-        baseGroups = c("Toner", "OSM (default)", "ESRI World Imagery"),
-    overlayGroups = c("equal interval", "quantile", "hide"),
-    options = layersControlOptions(collapsed = FALSE)
-  ) %>% 
-  hideGroup("equal interval")
-
-frameWidget(l)
-
-
+zoneShp_latlon$cl <- "<= 3 & >= -3"
+zoneShp_latlon$cl[zoneShp_latlon$residuals > 3] <- "> 3" 
+zoneShp_latlon$cl[zoneShp_latlon$residuals < -3] <- "< -3"
+zoneShp_latlon$cl <- factor(zoneShp_latlon$cl, levels = c( "> 3", "<= 3 & >= -3", "< -3"))
 
 library(shiny)
-# make a copy of Mobile_Phone_ByDay
-Mobile_Phone_ByDay_comp <- Mobile_Phone_ByDay
-# Store all date (using an antenna active the 365 days)
-dates <- lubridate::ymd(Mobile_Phone_ByDay$`substr(DATE_HOUR, 1, 10)`[Mobile_Phone_ByDay$ID==1211])
 
+IDs <- zoneShp_latlon$ID
+zoneShp_latlon$ID <- as.character(zoneShp_latlon$ID)
 
 server <- function(input, output) {
   # Leaflet map with markers
   output$map <- renderLeaflet({
-    leaflet() %>%
-      setView(lng = 5.578661, lat = 50.633766, zoom = 12) %>%
-      addProviderTiles(providers$Stamen.Toner, group = "Toner") %>%
-      addCircleMarkers(data = antenna_select_latlon, ~lon, ~lat, layerId= ~ID, popup = ~ID, radius = 4,
-                       color="blue", fillOpacity = 0.9,  stroke = TRUE) %>%
-      addCircleMarkers(data = antenna_discard_latlon, ~lon, ~lat, layerId= ~ID, popup = ~ID, radius = 4,
-                       color="red", fillOpacity = 0.9,  stroke = TRUE)
+        leaflet() %>%
+        setView(lng = 5.578661, lat = 50.633766, zoom = 12) %>%
+            addProviderTiles(providers$Stamen.Toner, group = "Toner") %>%
+        # Overlay groups
+        addPolygons(data = zoneShp_latlon, color = ~colors[(cl)], fillOpacity = 0.9, 
+                    layerId = ~ID, popup = ~ID,
+                    highlightOptions = highlightOptions(color = "black", 
+                                                        weight = 2,
+                                                        bringToFront = TRUE)) 
   })
   
-  # Generate data in reactive for time series 1
+  # Generate data in reactive for time series
   plot_data <- reactive({
-    ID <- input$map_marker_click$id
-    if(is.null(ID)){ID=800}
-    Mobile_Phone_ByDay[Mobile_Phone_ByDay$ID %in% ID,]
+    ID <- input$map_shape_click$id
+    if (is.null(ID)) {ID = 801}
+      Mat_BE[which(IDs == ID),]
   })
   
-  # Generate data in reactive for time series 2
-  plot_data_comp <- reactive({
-    ID_comp <- input$location
-    
-    if(is.null(ID_comp)){ID_comp = 800}
-    Mobile_Phone_ByDay_comp[Mobile_Phone_ByDay_comp$ID %in% ID_comp,]
-  })
-  
-  # Zoom on selected antenna using the drop-down menu
-  observeEvent(input$location, {
-    p2 <- antenna_discard_latlon[antenna_discard_latlon$ID == input$location,]
-    leafletProxy("map") %>% 
-      setView(lng=p2$lon, lat=p2$lat, zoom=14) %>% 
-      addCircleMarkers(p2$lon, p2$lat, radius=8, color="black", 
-                       fillColor="red", fillOpacity=1, opacity=1, 
-                       stroke=TRUE, layerId="Selected")
-    
+  # Generate data in reactive for density population
+  population_data <- reactive({
+    ID <- input$map_shape_click$id
+    if (is.null(ID)) {ID = 801}
+      popVoro[which(popVoro[,1] == ID),2]
   })
   
   # Make a plot depending on the selected antennas
-  output$plot=renderPlot({
-    plot(dates, rep(NA, 365), ylim = c(0, 15000), ylab = "N SIM BE")
-    lines(lubridate::ymd(plot_data_comp()$`substr(DATE_HOUR, 1, 10)`),  
-          plot_data_comp()$SIM_BE, 
-          col = "red")
-    lines(lubridate::ymd(plot_data()$`substr(DATE_HOUR, 1, 10)`),
-          plot_data()$SIM_BE, 
-          col ="black")
+  output$plot = renderPlot({
+    plot(1:(24*7),
+         plot_data(), 
+         col = "black",
+         type = "l")
     legend("topright", col = c("red", "black"), lty = 1,
-           c("active < 365 days", "active <= 365 days"),
+           as.character(population_data()),
            bty = "n")
-  })
-  
-  # Generate text with the number of active days for the antenna selected with the drop-down menu
-  output$n_days <- renderText({ 
-    paste("N active days:", frequencyAntenna[which(names(frequencyAntenna) == input$location)])
   })
 }
 
 # Make user interface
 ui <- fluidPage(
-  br(),
-  fluidRow(
-    column(4, h2("Explore Antennas (SMARTPOP)"), h3("Click on antenna for comparison (black line)")),
-    column(4, selectInput("location", "Antenna active < 365 days (red line)", 
-                          c("", as.character(antenna_discard_latlon$ID)), 
-                          selected="", multiple=F, width="100%")),
-    column(4, textOutput("n_days"))
+  # Add script for responsive iframe
+  tags$head(
+    tags$script(src = "https://cdnjs.cloudflare.com/ajax/libs/iframe-resizer/3.5.16/iframeResizer.contentWindow.min.js",
+                type = "text/javascript")
   ),
+  br(),
   fluidRow(
     column(4, leafletOutput("map")),
     column(8, plotOutput("plot"))
   ),
+  HTML('<div data-iframe-height></div>'),
   br()
 )
 
@@ -558,9 +499,7 @@ ui <- fluidPage(
 shinyApp(ui = ui, server = server)
 ```
 
-
-
-```{r}
+```{r, eval = FALSE}
 cl <- kmeans(Mat_BE, 10) #already scaled
 cl <- cl$cluster
 
@@ -583,15 +522,7 @@ summary(lm.model)
 plot(y, predict(lm.model, newdata = df))
 ```
 
-
-
-
-
-
-
-
-
-```{r}
+```{r, eval = FALSE}
 my.palette <- brewer.pal(n = 5, name = "Spectral")
 
 colors <- my.palette[as.numeric(cut(residuals, breaks = 5))]
@@ -606,116 +537,4 @@ plot((x), (y), pch = 20, col = colors)
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-```{r, eval = FALSE, echo = FALSE}
-library(raster)
-i= 22
-x <- as.numeric(log((Mat_BE[,i] + abs(min(Mat_BE)) + 0.1) / zoneShp$area))
-x[x == -Inf] <- 0
-
-# log-log population weighted regression
-lm.model <- lm(y ~ x, w = zoneShp$area*exp(y)) 
-df$r2[i] <- summary(lm.model)$r.squared
-df$r[i] <- cor(exp(y), exp(lm.model$coefficients[1] + lm.model$coefficients[2]*x))
-df$rmse[i] <- rmse(exp(y), exp(lm.model$coefficients[1] + lm.model$coefficients[2]*x))
-
-
-df.plot <- cbind.data.frame(exp(lm.model$coefficients[1] + lm.model$coefficients[2]*x), popVoro[-1,2])
-colnames(df.plot) <- c("x", "y")
-
-library(ggplot2)
-library(viridis)
-
-ggplot(df.plot, aes(x, y)) +
-  stat_density_2d(aes(fill = ..density..), geom = 'raster', contour = FALSE) +       
-  scale_fill_viridis(option="magma") +
-  coord_cartesian(expand = FALSE) +
-  geom_point( col = 'white') +
-  ylim(c(0,30000))
-
-```
-
-```{r}
-# Rasterize Shapefile
-path.in <- "/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.shp"
-path.out <- "/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.tif"
-ext <- "23052 21125 295247 243827"
-res <- c("50 50")
-attribute <- 'ID'
-
-command <- 'gdal_rasterize'
-command <- paste(command, "--config COMPRESS LZW") 
-command <- paste(command, "-a", attribute) 
-command <- paste(command, "-te", ext) 
-command <- paste(command, "-tr", res) 
-command <- paste(command, "-ot Int16")
-command <- paste(command, path.in)
-command <- paste(command, path.out)
-```
-
-
-```{r}
-
-Mat_BE_scale <- t(scale(t(Mat_BE)))
-cl <- kmeans(Mat_BE, 10)
-cl <- cl$cluster
-
-save(cl, file = "/media/ubuntu/DATA/Data/Smartpop/Clustering/cl.Rda")
-
-for (i in 1:10) {
-  cl1 <- colMeans(Mat_BE[which(cl$cluster == i), ])
-  plot(cl1, type = "l", ylim = c(-1,1))
-  abline(v = seq(1, 24*7, 24))
-  abline(v = seq(13, 24*7, 24), lty = 2)
-}
-
-plot()
-plot(Mat_BE[which(cl$cluster == 8), ][1,])
-
-```
-
-```{r}
-PC <- prcomp(Mat_BE)
-```
-
-```{r}
-for (ID_Grid in unique(db$ID_Grid)) {
-  print(ID_Grid)
-  ID.ts <- ts(db$NBR_SIM_BE[db$ID_Grid == ID_Grid], frequency = 24*7)
-  fit <- stl(ID.ts, s.window = "periodic")
-  db$seasonnal[db$ID_Grid == ID_Grid] <- fit$time.series[,1] + abs(min(fit$time.series[,1]))
-  db$trend[db$ID_Grid == ID_Grid] <- fit$time.series[,2]
-  db$remainder[db$ID_Grid == ID_Grid] <- fit$time.series[,3]
-}
-
-
-db$seasonnal <- NA
-db$trend <- NA
-db$remainder <- NA
-
-fwrite(db, "/media/ubuntu/DATA/Data/Smartpop/FinalDB/FinalDB_BE_ts.csv")
-
-```
-```{r}
-
-head(db)
-
-Mat_BE <- xtabs(NBR_SIM_BE ~ DATE_HOUR + ID_Grid, data = db)
-
-
-```
 

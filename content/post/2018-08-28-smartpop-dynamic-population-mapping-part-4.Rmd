@@ -1,0 +1,279 @@
+---
+title: Smartpop Dynamic Population Mapping (Part 4)
+author: Damien C. Jacques
+date: '2018-08-28'
+slug: smartpop-dynamic-population-mapping-part-4
+categories:
+  - R
+summary: "This Notebook details the steps of the data analysis carried out for the Smartpop project -- Dynamic Population WP (part 4)."
+tags:
+  - population
+  - R
+  - mobile phone data
+  - statistics
+---
+
+```{r global_options, include = FALSE}
+knitr::opts_chunk$set(warning = FALSE, 
+                      message = FALSE)
+```
+
+### Seasonnal (SIM BE)
+
+```{r}
+load("/media/ubuntu/DATA/Data/Smartpop/Matrix/Mat_BE_seasonnal_scale_center.Rda")
+
+clusters <- hclust(cluster::daisy(Mat_BE_scaled), method = "complete")
+plot(clusters, labels = F)
+```
+```{r}
+library(sf)
+library(RColorBrewer)
+library(dynamicTreeCut)
+
+colors <- c('#a6cee3','#1f78b4','#b2df8a','#33a02c','#fb9a99','#e31a1c','#fdbf6f','#ff7f00','#cab2d6','#6a3d9a','#ffff99','#b15928', "yellow")
+
+zone <- st_read("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.shp",
+                quiet = T)
+
+cl <- rep(0, 4044)
+
+clus3 <- cutree(clusters, 3)
+table(clus3)
+removeClus3 <- which(clus3 %in% c(2, 3))
+cl[clus3 == 2] <- 1
+cl[clus3 == 3] <- 2
+
+clus7 <- cutree(clusters, 7)[-removeClus3]
+removeClus7 <- which(cutree(clusters, 7) %in% 3)
+table(clus7)
+cl[cutree(clusters, 7) == 3] <- 3
+
+clus17 <- cutree(clusters, 17)[-c(removeClus3, removeClus7)]
+removeClus17 <- which(cutree(clusters, 17) %in% c(4,6))
+table(clus17)
+cl[cutree(clusters, 17) == 4] <- 4
+cl[cutree(clusters, 17) == 6] <- 5
+
+clus29 <- cutree(clusters, 29)[-c(removeClus3, removeClus7, removeClus17)]
+table(clus29)
+removeClus29 <- which(cutree(clusters, 29) %in% c(5, 6, 27))
+cl[cutree(clusters, 29) == 5] <- 6
+cl[cutree(clusters, 29) == 6] <- 7
+cl[cutree(clusters, 29) == 27] <- 8
+
+clus55 <- cutree(clusters, 55)[-c(removeClus3, removeClus7, removeClus17, removeClus29)]
+table(clus55)
+removeClus55 <- which(cutree(clusters, 55) %in% c(1, 7, 15))
+cl[cutree(clusters, 55) == 1] <- 9
+cl[cutree(clusters, 55) == 7] <- 10
+cl[cutree(clusters, 55) == 15] <- 11
+cl[cutree(clusters, 55) == 2] <- 12
+cl[cutree(clusters, 55) == 3] <- 13
+
+# clus65 <- cutree(clusters, 65)[-c(removeClus3, removeClus7, removeClus17, removeClus29, removeClus55)]
+# table(clus65)
+
+zone$clusters <- cl
+plot(zone["clusters"], col = colors[zone$clusters], border = colors[zone$clusters])
+```
+```{r}
+library(leaflet)
+zoneShp_latlon <- st_transform(zone, "+init=epsg:4326")
+
+leaflet() %>%
+  setView(lng = 5.578661, lat = 50.633766, zoom = 12) %>%
+  addProviderTiles(providers$Stamen.Toner, group = "Toner") %>%
+  addTiles(group = "OSM (default)") %>%
+  addProviderTiles(providers$Esri.WorldImagery, group = "ESRI World Imagery") %>%
+  addPolygons(data = zoneShp_latlon, 
+              color = ~colors[(cl)], 
+              # border = ~colors[(cl)], 
+              fillOpacity = 0.9, 
+              popup = ~as.character(cl),
+              highlightOptions = highlightOptions(color = "black", 
+                                                  weight = 2,
+                                                  bringToFront = TRUE),
+              group = "Cluster") %>%
+  # Layers control
+  addLayersControl(
+    baseGroups = c("Toner", "OSM (default)", "ESRI World Imagery"),
+    overlayGroups = c("Cluster"),
+    options = layersControlOptions(collapsed = FALSE)
+  )
+```
+
+
+
+
+```{r}
+data <- list()
+sd <- list()
+
+for (i in 1:13) {
+  data[[i]] <- colMeans(Mat_BE_scaled[which(cl == i),])
+  sd[[i]] <- matrixStats::colSds(Mat_BE_scaled[which(cl == i),])
+  par(bg = 'black', fg = 'white')
+  plot(data[[i]], 
+       type = "l", 
+       ylim = c(-1.6, 3.2),
+       main = paste("Cluster", i),
+       col = colors[i],
+       lwd = 2,
+       col.axis = "white",
+       col.lab = "white",
+       col.main = "white",
+       ylab = "average SIM user density\n(scaled and centered)",
+       xla = "time",
+       xaxt = "n"
+  )
+  lines(data[[i]] + sd[[i]],
+        col = colors[i],
+        lty = 3)
+    lines(data[[i]] - sd[[i]],
+        col = colors[i],
+        lty = 3)
+  axis(1, 
+       at = seq(13, 168, 24), 
+       labels = c("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"),
+        col.axis = "white",
+       col.lab = "white") 
+  abline(v = seq(1 ,168, 24))
+  abline(h = 0, lty = 2)
+  legend("topright", 
+         paste("n =", as.character(table(cl)[which(names(table(cl)) == i)])),
+         bty = "n"
+  )
+}
+
+```
+
+### Trend (SIM BE)
+
+```{r, eval = FALSE}
+library(data.table)
+
+resultdb <- fread("/media/ubuntu/DATA/Data/Smartpop/FinalDB/FinalDB_BE_ts.csv")
+
+Mat_BE <- dcast(ID_Grid ~  DATE_HOUR, data = resultdb, value.var = "trend")
+Mat_BE <- as.matrix(Mat_BE)[,-1]
+
+colnames(Mat_BE) <- rep(1:365, each = 24)[-8760]
+Mat_BE<- vapply(unique(colnames(Mat_BE)), function(x) 
+      rowMeans(Mat_BE[,colnames(Mat_BE)== x,drop=FALSE], na.rm=TRUE),
+                             numeric(nrow(Mat_BE)) )
+
+```
+```{r, eval = FALSE, echo = FALSE}
+save(Mat_BE, file = "/media/ubuntu/DATA/Data/Smartpop/Matrix/Mat_BE_trend.Rda")
+```
+
+
+We also compute a row scaled version (`(x - mean)/std`) of the matrix for further use (clustering...).
+
+```{r, eval = FALSE}
+library(scrime)
+
+Mat_BE_scaled <- rowScales(Mat_BE)
+save(Mat_BE_scaled, file = "/media/ubuntu/DATA/Data/Smartpop/Matrix/Mat_BE_trend_scale_center.Rda")
+```
+
+```{r, echo = FALSE}
+load("/media/ubuntu/DATA/Data/Smartpop/Matrix/Mat_BE_trend.Rda")
+load("/media/ubuntu/DATA/Data/Smartpop/Matrix/Mat_BE_trend_scale_center.Rda")
+```
+
+```{r}
+clusters <- hclust(cluster::daisy(Mat_BE_scaled), method = "complete")
+plot(clusters, labels = FALSE )
+```
+```{r}
+library(sf)
+library(RColorBrewer)
+library(dynamicTreeCut)
+
+colors <- c('#a6cee3','#1f78b4','#b2df8a','#33a02c','#fb9a99','#e31a1c','#fdbf6f','#ff7f00','#cab2d6','#6a3d9a','#ffff99','#b15928', "yellow")
+
+zone <- st_read("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.shp",
+                quiet = T)
+
+for (i in 1:10){
+  cl <- cutree(clusters, i)
+  table(cl)
+  zone$clusters <- cl
+  plot(zone["clusters"], col = colors[zone$clusters], border = colors[zone$clusters])
+}
+```
+
+```{r}
+library(leaflet)
+zoneShp_latlon <- st_transform(zone, "+init=epsg:4326")
+
+leaflet() %>%
+  setView(lng = 5.578661, lat = 50.633766, zoom = 12) %>%
+  addProviderTiles(providers$Stamen.Toner, group = "Toner") %>%
+  addTiles(group = "OSM (default)") %>%
+  addProviderTiles(providers$Esri.WorldImagery, group = "ESRI World Imagery") %>%
+  addPolygons(data = zoneShp_latlon, 
+              color = ~colors[(cl)], 
+              # border = ~colors[(cl)], 
+              fillOpacity = 0.9, 
+              popup = ~as.character(cl),
+              highlightOptions = highlightOptions(color = "black", 
+                                                  weight = 2,
+                                                  bringToFront = TRUE),
+              group = "Cluster") %>%
+  # Layers control
+  addLayersControl(
+    baseGroups = c("Toner", "OSM (default)", "ESRI World Imagery"),
+    overlayGroups = c("Cluster"),
+    options = layersControlOptions(collapsed = FALSE)
+  )
+```
+
+```{r}
+data <- list()
+sd <- list()
+
+load("/media/ubuntu/DATA/Data/Smartpop/Dates/Dates_vec.Rda")
+
+for (i in 1:10) {
+  data[[i]] <- colMeans(Mat_BE_scaled[which(cl == i),])
+  sd[[i]] <- matrixStats::colSds(Mat_BE_scaled[which(cl == i),])
+  par(bg = 'black', fg = 'white')
+  plot(dates,
+       data[[i]], 
+       type = "l", 
+       ylim = c(-2.5, 3.8),
+       main = paste("Cluster", i),
+       col = colors[i],
+       lwd = 2,
+       col.axis = "white",
+       col.lab = "white",
+       col.main = "white",
+       ylab = "average SIM user density\n(scaled and centered)",
+       xlab = "time",
+       las = 2
+  )
+  rect(dates[c(1,29,38,62,179,192,235,289,340)], 
+     rep(-2.5, 9), 
+     dates[c(4,32,40,123,185,195,248,297,353)], 
+     rep(3.8, 9), 
+     col = "#363636", border = "transparent")
+    lines(dates, data[[i]],
+        col = colors[i],
+        lwd = 2)
+  lines(dates, data[[i]] + sd[[i]],
+        col = colors[i],
+        lty = 3)
+  lines(dates, data[[i]] - sd[[i]],
+      col = colors[i],
+      lty = 3)
+  # abline(v = seq(1, 365, 30))
+  abline(h = 0, lty = 2)
+  legend("topright", 
+         paste("n =", as.character(table(cl)[which(names(table(cl)) == i)])),
+         bty = "n"
+  )
+}
+```
