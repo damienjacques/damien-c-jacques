@@ -107,9 +107,6 @@ l <- leaflet() %>%
 frameWidget(l)
 ```
 
-
-
-
 ```{r}
 data <- list()
 sd <- list()

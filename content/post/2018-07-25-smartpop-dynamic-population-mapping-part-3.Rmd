@@ -22,14 +22,92 @@ knitr::opts_chunk$set(warning = FALSE,
 ```
 ### Decompose time series
 
-We use `stl` package to decompose the time series of SIM users into a seasonnal, trend and remainder components. The seasonal component is found by taking the mean of the seasonal sub-series. The seasonal values are removed, and the remainder loess smoothed to find the trend (the span (in lags) of the loess window for trend extraction is `nextodd(ceiling((1.5*period) / (1-(1.5/s.window))))`). The overall level is removed from the seasonal component and added to the trend component. This process is iterated a few times. The remainder component is the residuals from the seasonal plus trend fit.
-
-**Reference**
-
-[R. B. Cleveland, W. S. Cleveland, J.E. McRae, and I. Terpenning (1990) STL: A Seasonal-Trend Decomposition Procedure Based on Loess. Journal of Official Statistics, 6, 3--73.](https://robjhyndman.com/papers/wp13-15.pdf)
-
+We decompose the SIM time series in seasonnal (weekly), trend and remainder component. The seasonnal component is obtained by taking the average value for a week. Working days and holidays are considered independently. 
 
 ```{r, eval = FALSE}
+library(data.table)
+
+db <- fread("/media/ubuntu/DATA/Data/Smartpop/FinalDB/FinalDB.csv")
+
+load("/media/ubuntu/DATA/Data/Smartpop/Dates/Dates_vec.Rda")
+
+holidays <- dates[c(62:123,179:185,235:248,289:297, 340:353, 1:4,29:32,38:40,192:195)]
+whichHolidays <- which(substr(unique(db$DATE_HOUR), 1, 10) %in% as.character(holidays))
+workingDays <- dates[-c(62:123,179:185,235:248,289:297, 340:353, 1:4,29:32,38:40,192:195)]
+whichWorkingDays <- which(substr(unique(db$DATE_HOUR), 1, 10) %in% as.character(workingDays))
+
+Mat_BE <- dcast(ID_Grid ~  DATE_HOUR, 
+                data = db, 
+                value.var = "NBR_SIM_BE")
+Mat_BE <- as.matrix(Mat_BE)[, -1]
+colnames(Mat_BE) <- c(73:(24*7), rep(1:(24*7), 51), 1:95)
+
+Mat_BE_holidays <- Mat_BE[, whichHolidays]
+Mat_BE_workingDays <- Mat_BE[, whichWorkingDays]
+  
+WeekHolidays <- vapply(1:(24*7), function(x) 
+            rowMeans(Mat_BE_holidays[, colnames(Mat_BE_holidays) == x, drop = FALSE], na.rm = TRUE),
+            numeric(nrow(Mat_BE_holidays)))
+
+WeekWorkingDays <- vapply(1:(24*7), function(x) 
+  rowMeans(Mat_BE_workingDays[,colnames(Mat_BE_workingDays) == x,drop=FALSE], na.rm = TRUE),
+  numeric(nrow(Mat_BE_workingDays)) )
+
+# Example plot
+n = 1
+plot(WeekWorkingDays[n,], type = "o", 
+     ylim = c(0, 750), pch = 20, lwd = 2,
+     ylab = "SIM density (SIM/km²)", xlab = "time", 
+     xaxt = "n") +
+axis(1, at = seq(13, 168, 24), 
+     labels = c("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")) +
+abline(v = seq(1, 168, 24), lwd = 2) +
+lines(WeekHolidays[n,], col = "red", lwd = 2,  
+      type = "o", pch = 20)
+legend("topright",
+       c("Working Days", "Holidays"),
+       col = c("black", "red"),
+       lty = 1, lwd = 2)
+```
+
+The seasonal values are removed, and the remainder loess smoothed to find the trend component (local regression,  weighted least square, 2nd degree poly, tricubing weighting, 10% of the points).
+
+```{r, eval = FALSE}
+# remove seasonnal component
+for (i in 1:ncol(Mat_BE)){
+  print(i)
+  if (substr(db$DATE_HOUR[i], 1, 10) %in% dates[c(62:123,179:185,235:248,289:297, 340:353, 1:4,29:32,38:40,192:195)]) {
+    Mat_BE[,i] =  Mat_BE[,i] - WeekHolidays[, as.numeric(colnames(Mat_BE)[i])] 
+  } else {
+    Mat_BE[,i] =  Mat_BE[,i] - WeekWorkingDays[, as.numeric(colnames(Mat_BE)[i])] 
+  }
+}
+
+# compute trend
+library(foreach)
+library(doMC)
+registerDoMC(8)
+
+trend <- foreach(i = 1:nrow(Mat_BE), .combine = rbind) %dopar% {
+  z <- predict(loess(Mat_BE[i,] ~ x, span = 0.1, degree = 2))
+  z  #return value for the iterations
+}
+```
+The trend is removed to get the remainder component.
+
+```{r, eval = FALSE}
+remainder = Mat_BE - trend
+```
+
+
+```{r, eval = FALSE, echo = FALSE}
+# 
+# We use `stl` package to decompose the time series of SIM users into a seasonnal, trend and remainder components. The seasonal component is found by taking the mean of the seasonal sub-series. The seasonal values are removed, and the remainder loess smoothed to find the trend (the span (in lags) of the loess window for trend extraction is `nextodd(ceiling((1.5*period) / (1-(1.5/s.window))))`). The overall level is removed from the seasonal component and added to the trend component. This process is iterated a few times. The remainder component is the residuals from the seasonal plus trend fit.
+# 
+# **Reference**
+# 
+# [R. B. Cleveland, W. S. Cleveland, J.E. McRae, and I. Terpenning (1990) STL: A Seasonal-Trend Decomposition Procedure Based on Loess. Journal of Official Statistics, 6, 3--73.](https://robjhyndman.com/papers/wp13-15.pdf)
+
 library(data.table)
 library(foreach)
 library(doMC)
@@ -52,11 +130,9 @@ resultdb$DATE_HOUR <- rep(unique(db$DATE_HOUR, 4044))
 
 fwrite(resultdb, "/media/ubuntu/DATA/Data/Smartpop/FinalDB/FinalDB_BE_ts.csv")
 
-```
 
-Build a usable matrix corresponding to the seasonnal component (one week) of Belgium SIM.
+ # Build a usable matrix corresponding to the seasonnal component (one week) of Belgium SIM.
 
-```{r, eval = FALSE}
 library(data.table)
 
 resultdb <- fread("/media/ubuntu/DATA/Data/Smartpop/FinalDB/FinalDB_BE_ts.csv")
@@ -69,20 +145,25 @@ save(Mat_BE, file = "/media/ubuntu/DATA/Data/Smartpop/Matrix/Mat_BE_seasonnal.Rd
 ```
 
 
-We also compute a row scaled version (`(x - mean)/std`) of the matrix for further use (clustering...).
+We also compute a row scaled version (`(x - mean)/std`) of the matrices for further use (clustering...).
 
 ```{r, eval = FALSE}
 library(scrime)
 
-Mat_BE_scaled <- rowScales(Mat_BE)
-save(Mat_BE_scaled, file = "/media/ubuntu/DATA/Data/Smartpop/Matrix/Mat_BE_seasonnal_scale_center.Rda")
+WeekHolidays_scaled <- rowScales(WeekHolidays)
+WeekWorkingDays_scaled <- rowScales(WeekWorkingDays)
+```
+
+```{r, eval = FALSE, echo = FALSE}
+save(WeekHolidays_scaled, file = "/media/ubuntu/DATA/Data/Smartpop/Matrix/WeekHolidays_scaled.Rda")
+save(WeekWorkingDays_scaled, file = "/media/ubuntu/DATA/Data/Smartpop/Matrix/WeekWorkingDays_scaled.Rda")
 ```
 
 ```{r, echo = FALSE}
-load("/media/ubuntu/DATA/Data/Smartpop/Matrix/Mat_BE_seasonnal.Rda")
-load("/media/ubuntu/DATA/Data/Smartpop/Matrix/Mat_BE_seasonnal_scale_center.Rda")
+load("/media/ubuntu/DATA/Data/Smartpop/Matrix/WeekHolidays_scaled.Rda")
+load("/media/ubuntu/DATA/Data/Smartpop/Matrix/WeekWorkingDays_scaled.Rda")
 ```
-### Compute validation dataset for population estimation.
+### Compute validation dataset for population estimation
 
 We first compute the population density by statistical sector.
 
@@ -97,10 +178,15 @@ shp$pop <- rowSums(shp@data[, 26:44])/shp$ar_sqkm
 
 # histogram population density
 hist(shp$pop, main = "", xlab = "Population (> 10 y) density (hab/km²)")
+
+# histogram of proportion of population (< 10y.)  in total population
+
+hist(rowSums(shp@data[, 24:25])/rowSums(shp@data[, 24:44]),
+     main = "", xlab = "Proportion of population (< 10 y) in total population")
 ```
 
 {{% alert warning %}}
-Assumption 5: According to [(GSMA, 2014)](https://www.gsma.com/publicpolicy/wp-content/uploads/2012/03/GSMA_Childrens_use_of_mobile_phones_2014.pdf), only 10% of the population (of 15 years old) have reported ownership of first mobile phone under 10 (2014). Therefore, we only considered the population (> 10 y.)
+Assumption 5: According to [(GSMA, 2014)](https://www.gsma.com/publicpolicy/wp-content/uploads/2012/03/GSMA_Childrens_use_of_mobile_phones_2014.pdf), only 10% of the population (of 15 years old) have reported ownership of first mobile phone under 10 (2014). Therefore, we only considered the population (> 10 y.). This is important if the proportion of (<10 y.) is different depending on the place which is the case
 {{% /alert %}}
 
 ![](/img/ownership_mobile_phone.png)
@@ -112,6 +198,9 @@ library(raster)
 
 zone <- raster("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.tif")
 shp <- spTransform(shp, crs(zone))
+
+# x1000 to work with integer
+shp$pop <- shp$pop*1000
 
 writeOGR(shp, "/media/ubuntu/DATA/Data/Smartpop/Population/pop_10_100.shp", 
          layer = "pop_10_100",
@@ -130,7 +219,7 @@ command <- paste(command, "--config COMPRESS LZW")
 command <- paste(command, "-a", attribute) 
 command <- paste(command, "-te", ext) 
 command <- paste(command, "-tr", res) 
-command <- paste(command, "-ot Int16")
+command <- paste(command, "-ot Int32")
 command <- paste(command, path.in)
 command <- paste(command, path.out)
 system(command)
@@ -145,28 +234,27 @@ zone <- raster("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.tif")
 pop <- raster("/media/ubuntu/DATA/Data/Smartpop/Population/pop_10_100.tif")
 pop[zone == 0] <- NA
 
-levelplot(pop, col.regions = colorRampPalette(brewer.pal(9, 'Blues')),
+levelplot(pop/1000, col.regions = colorRampPalette(brewer.pal(9, 'Blues')),
           margin = FALSE, main = 'Population density (inhab./m²) -- Normal breaks')
 
-breaks <- classIntervals(values(pop), n = 20, style = "quantile")
+breaks <- classIntervals(values(pop)/1000, n = 20, style = "quantile")
 
-levelplot(pop, at = c(0, breaks$brks[breaks$brks > 0]), 
+levelplot(pop/1000, at = c(0, breaks$brks[breaks$brks > 0]), 
           col.regions = colorRampPalette(brewer.pal(9, 'Blues')),
           margin = FALSE, main = 'Population density (inhab./m²) -- Quantile breaks')
 ```
 Average population density in Belgium (> 10 y) is 322.2 inhab./km².
 
 ```{r}
-sum(as.numeric(values(pop)), na.rm = T)/sum(!is.na(as.numeric(values(pop))))
+(sum(as.numeric(values(pop)), na.rm = T)/sum(!is.na(as.numeric(values(pop)))))/1000
 ```
 
-### Dissagreggate population density at voronoi cell
+### Dissagreggate population density at voronoi scale
 ```{r, eval = FALSE}
 popVoro <- zonal(pop, zone, mean)
 ```
 
 ```{r, echo = FALSE, eval = FALSE}
-popVoro <- zonal(pop, zone, mean)
 save(popVoro, file = "/media/ubuntu/DATA/Data/Smartpop/Population/popVoro.Rda")
 ```
 
@@ -182,17 +270,80 @@ library(classInt)
 zone <- raster("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.tif")
 popZone <- reclassify(zone, popVoro)
 
-breaks <- classIntervals(values(popZone), n = 20, style = "quantile")
+breaks <- classIntervals(values(popZone)/1000, n = 20, style = "quantile")
 
-levelplot(popZone, at = c(0, breaks$brks[breaks$brks > 0]), 
+levelplot(popZone/1000, at = c(0, breaks$brks[breaks$brks > 0]), 
           col.regions = colorRampPalette(brewer.pal(9, 'Blues')),
           margin = FALSE, main = 'Population density (inhab./m²) -- Quantile breaks')
 ```
 
+#### Compute age group proportion foe each polygon
+
+```{r, eval = FALSE}
+# proportion of class of population per polygon
+shp$pop0_10 <- rowSums(shp@data[, 24:25])/rowSums(shp@data[, 24:44])*1000
+shp$pop10_20 <- rowSums(shp@data[, 26:27])/rowSums(shp@data[, 24:44])*1000
+shp$pop20_30 <- rowSums(shp@data[, 28:29])/rowSums(shp@data[, 24:44])*1000
+shp$pop30_40 <- rowSums(shp@data[, 30:31])/rowSums(shp@data[, 24:44])*1000
+shp$pop40_50 <- rowSums(shp@data[, 32:33])/rowSums(shp@data[, 24:44])*1000
+shp$pop50_60 <-rowSums(shp@data[, 34:35])/rowSums(shp@data[, 24:44])*1000
+shp$pop60_70 <-rowSums(shp@data[, 36:37])/rowSums(shp@data[, 24:44])*1000
+shp$pop70_80 <-rowSums(shp@data[, 38:39])/rowSums(shp@data[, 24:44])*1000
+shp$pop80_90 <-rowSums(shp@data[, 40:41])/rowSums(shp@data[, 24:44])*1000
+shp$pop90_104 <-rowSums(shp@data[, 42:44])/rowSums(shp@data[, 24:44])*1000
+
+# disaggregation of population at voronoi scale
+library(raster)
+
+zone <- raster("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.tif")
+shp <- spTransform(shp, crs(zone))
+
+writeOGR(shp, "/media/ubuntu/DATA/Data/Smartpop/Population/pop_class.shp",
+         layer = "pop_class", driver = "ESRI Shapefile")
+
+# rasterize shapefile
+ext <- "23052 21125 295247 243827"
+res <- c("50 50")
+
+attributes <- colnames(shp@data)[48:57]
+
+for (attribute in attributes){
+  path.in <- "/media/ubuntu/DATA/Data/Smartpop/Population/pop_class.shp"
+  path.out <- paste0("/media/ubuntu/DATA/Data/Smartpop/Population/pop_", attribute, ".tif")
+  
+  command <- 'gdal_rasterize'
+  command <- paste(command, "--config COMPRESS LZW") 
+  command <- paste(command, "-a", attribute) 
+  command <- paste(command, "-te", ext) 
+  command <- paste(command, "-tr", res) 
+  command <- paste(command, "-ot Int16")
+  command <- paste(command, path.in)
+  command <- paste(command, path.out)
+  system(command)
+}
+
+# zonal stats
+popClassVoro <- list()
+i = 0
+for (attribute in attributes){
+  i = i + 1
+  print(i)
+  zone <- raster("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.tif")
+  pop <- raster(paste0("/media/ubuntu/DATA/Data/Smartpop/Population/pop_", attribute, ".tif"))
+  popClassVoro[[i]] <- zonal(pop, zone, mean)
+}
+
+save(popClassVoro, file = "/media/ubuntu/DATA/Data/Smartpop/Population/popClassVoro.Rda")
+```
+
 ## Population modeling using SIM users
 
-
 We first need to define training and testing dataset [...].
+We will use the working days SIM to predict the residential population. 
+
+{{% alert warning %}}
+Assumption 6: 
+{{% /alert %}}
 
 
 ### Population model with OLS regression (simple linear regression)
@@ -202,6 +353,8 @@ library(rgdal)
 library(Metrics)
 library(data.table)
 
+popTotal <- sum(popVoro[-1,2]/1000 * (zoneShp$area/1000000))
+
 zoneShp <- readOGR("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.shp", verbose = FALSE)
 
 df <- data.frame(i = 1:168, 
@@ -210,20 +363,24 @@ df <- data.frame(i = 1:168,
                  rmse = 1:168)
 
 for (i in 1:168) {
-  y <- as.numeric(popVoro[-1,2])
-  x <- as.numeric(Mat_BE[,i]/zoneShp$area)
+  y <- as.numeric(popVoro[-1,2])/1000
+  x <- as.numeric(WeekWorkingDays[,i]/(zoneShp$area/1000000))
   
+  # zero values are dismissed (for a correct comparison with log-log reg)
   index <- which(x == 0 | y == 0)
   y <- y[-index]
   x <- x[-index]
 
   data <- data.frame(x = x, y = y)
   lm.model <- lm(y ~ x, data = data) 
-  # lm.model <- lm(y ~ poly(x,2), data = data)
 
+  x <- as.numeric((WeekWorkingDays[,i])/(zoneShp$area/1000000))
+  predData <- lm.model$coefficients[1] + lm.model$coefficients[2]*x
+  predData <- predData * popTotal/sum(predData * (zoneShp$area/1000000))
+  
   df$r2[i] <- summary(lm.model)$r.squared
-  df$r[i] <- cor(y, predict(lm.model, newdata = data))
-  df$rmse[i] <- rmse(y, predict(lm.model, newdata = data))
+  df$r[i] <- cor(popVoro[-1,2]/1000, predData)
+  df$rmse[i] <- rmse(popVoro[-1,2]/1000, predData)
 }
 
 plot(df$i, df$r, type = "o", ylab = "pearson correlation", xlab = "time", xaxt = "n", pch = 20) +
@@ -238,10 +395,15 @@ plot(df$i, df$r2, type = "o", ylab = "r² (of log-log model, not really relevant
 axis(1, at = seq(13, 168, 24), labels = c("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")) +
 abline(v = seq(1, 168, 24)) 
 ```
+Regarding correlation (the 3 measures are highly correlated), we observe:
+
+* in average, a decrease in correlation along the week (monday to saturday), then an increase sunday.
+* low correlation between 7am-5pm during the week.
+* high correlation during the evening / night.
+* lower and lower correlation early in the morning (1-4 am) along the week.(people who go out?)
 
 ### Population model with OLS regression (linear regression with log-log transformation)
 
-The issue is how to deal with the 0. We choose to ignore them.
 
 ```{r, warning = FALSE, message = FALSE}
 library(rgdal)
@@ -256,18 +418,21 @@ df <- data.frame(i = 1:168,
                  rmse = 1:168)
 
 for (i in 1:168) {
-  y <- as.numeric(log(popVoro[-1,2])) 
-  x <- as.numeric(log((Mat_BE[,i])/zoneShp$area))
+  y <- as.numeric(log(popVoro[-1,2]/1000)) 
+  x <- as.numeric(log((WeekWorkingDays[,i])/zoneShp$area))
   index <- which(x == -Inf | y == -Inf)
   y <- y[-index]
   x <- x[-index]
 
   lm.model <- lm(y ~ x) 
   
+  x <- as.numeric(log((WeekWorkingDays[,i])/(zoneShp$area/1000000)))
+  predData <- exp(lm.model$coefficients[1] + lm.model$coefficients[2]*x)
+  predData <- predData * popTotal/sum(predData * (zoneShp$area/1000000))
+  
   df$r2[i] <- summary(lm.model)$r.squared
-  df$r[i] <- cor(exp(y), exp(lm.model$coefficients[1] + lm.model$coefficients[2]*x))
-  df$rmse[i] <- rmse(exp(y), exp(lm.model$coefficients[1] + lm.model$coefficients[2]*x))
-  # df$coef[i] <- lm.model$coefficients
+  df$r[i] <- cor(popVoro[-1,2]/1000, predData)
+  df$rmse[i] <- rmse(popVoro[-1,2]/1000, predData)
 }
 
 plot(df$i, df$r, type = "o", ylab = "pearson correlation", xlab = "time", xaxt = "n", pch = 20) +
@@ -283,19 +448,12 @@ axis(1, at = seq(13, 168, 24), labels = c("Mon", "Tue", "Wed", "Thu", "Fri", "Sa
 abline(v = seq(1, 168, 24)) 
 ```
 
-Regarding correlation, we observe:
 
-* in average, a decrease in correlation along the week (monday to saturday), then an increase sunday.
-* the lowest correlation at 4 am (from monday to wednesday)
-* the highest during late evening (11-12pm during week days)
-* a plateau in correlation from 5 am to 5pm (during week days)
 
-Regarding RMSE, we observe:
+Compare to standard regression, we observe:
 
-* in average, an increase in RMSE along the week (monday to saturday), then an increase sunday.
-* the highest correlation at 4 am (week days)
-* higher RMSE in working hours
-* very high RMSE friday night
+* higher correlation.
+* lower RMSE. (it's worth mentioning that it is the scaling based on total population that derease the RMSE, otherwise, first model is better)
 
 
 ### Population model with OLS weighted regression (Deville PNAS paper)
@@ -323,15 +481,22 @@ y <- as.numeric(log(popVoro[-1,2]))
 y[y == -Inf] <- 0
 
 for (i in 1:168) {
-  x <- as.numeric(log((Mat_BE[,i] + abs(min(Mat_BE)) + 0.1) / zoneShp$area))
-  x[x == -Inf] <- 0
+  y <- as.numeric(log(popVoro[-1,2]/1000)) 
+  x <- as.numeric(log((WeekWorkingDays[,i])/(zoneShp$area/1000000)))
+  index <- which(x == -Inf | y == -Inf)
+  y <- y[-index]
+  x <- x[-index]
 
   # log-log population weighted regression (weight used to prevent heteroscedasticity)
-  lm.model <- lm(y ~ x, w = popVoro[-1,2] * zoneShp$area) 
+  lm.model <- lm(y ~ x, w = popVoro[-1,2][-index] * zoneShp$area[-index]) 
+  
+  x <- as.numeric(log((WeekWorkingDays[,i])/(zoneShp$area/1000000)))
+  predData <- exp(lm.model$coefficients[1] + lm.model$coefficients[2]*x)
+  predData <- predData * popTotal/sum(predData * (zoneShp$area/1000000))
   
   df$r2[i] <- summary(lm.model)$r.squared
-  df$r[i] <- cor(popVoro[-1,2], exp(lm.model$coefficients[1] + lm.model$coefficients[2]*x))
-  df$rmse[i] <- rmse(popVoro[-1,2], exp(lm.model$coefficients[1] + lm.model$coefficients[2]*x))
+  df$r[i] <- cor(popVoro[-1,2]/1000, predData)
+  df$rmse[i] <- rmse(popVoro[-1,2]/1000, predData)
 }
 
 plot(df$i, df$r, type = "o", ylab = "pearson correlation", xlab = "time", xaxt = "n", pch = 20) +
@@ -348,41 +513,62 @@ abline(v = seq(1, 168, 24))
 ```
 Compare to unweighted regression, we observe:
 
-* similar correlation lines.
-* higher RMSE
+* similar correlation.
+* higher RMSE.
 
 
 ### Residual analysis
+
+#### Relationship between residuals and area and absolute population
 
 
 ```{r}
 i = 24
 
-y <- as.numeric(log(popVoro[-1,2])) 
-y[y == -Inf] <- 0
-
-x <- as.numeric(log((Mat_BE[,i] + abs(min(Mat_BE)) + 0.1) / zoneShp$area))
-x[x == -Inf] <- 0
+y <- as.numeric(log(popVoro[-1,2]/1000)) 
+x <- as.numeric(log((WeekWorkingDays[,i])/(zoneShp$area/1000000)))
+index <- which(x == -Inf | y == -Inf)
+y <- y[-index]
+x <- x[-index]
 
 lm.model <- lm(y ~ x) 
 
-residuals <- popVoro[-1,2] - exp(lm.model$coefficients[1] + lm.model$coefficients[2]*x)
+x <- as.numeric(log((WeekWorkingDays[,i])/(zoneShp$area/1000000)))
+predData <- exp(lm.model$coefficients[1] + lm.model$coefficients[2]*x)
+predData <- predData * popTotal/sum(predData * (zoneShp$area/1000000))
 
-cor(residuals, zoneShp$area)
-cor(abs(residuals), zoneShp$area)
+residuals <- (popVoro[-1,2]/1000) - predData
 
-cor(residuals, popVoro[-1,2])
-cor(abs(residuals), popVoro[-1,2])
+cor(residuals, zoneShp$area[-index])
+cor(abs(residuals), zoneShp$area[-index])
 
-cor(log(1/(zoneShp$area)), log(abs(residuals)))
-plot(log(1/(zoneShp$area)), log(abs(residuals)), xlab ="log(1/area)", ylab = "log(|residuals|)")
-plot(1/zoneShp$area, abs(residuals), xlab ="1/area", ylab = "|residuals|")
+cor(residuals, exp(y))
+cor(abs(residuals), exp(y))
 
-# plot(popVoro[-1,2], abs(residuals))
-
+cor(log(1/(zoneShp$area[-index])), log(abs(residuals)))
+plot(log(1/(zoneShp$area[-index])), log(abs(residuals)), xlab = "log(1/area)", ylab = "log(|residuals|)")
+plot(1/zoneShp$area[-index], abs(residuals), xlab = "1/area", ylab = "|residuals|")
 ```
-We observe higher residuals (positive and negative) in urban areas. 
 
+#### Relationship between residuals and age group
+
+```{r}
+load("/media/ubuntu/DATA/Data/Smartpop/Population/popClassVoro.Rda")
+
+lm.residuals <- lm(residuals ~ popClassVoro[[1]][-1,2] +
+               popClassVoro[[2]][-1,2] +
+               popClassVoro[[3]][-1,2] +
+               popClassVoro[[4]][-1,2] +
+               popClassVoro[[5]][-1,2] +
+               popClassVoro[[6]][-1,2] +
+               popClassVoro[[7]][-1,2] +
+               popClassVoro[[8]][-1,2] +
+               popClassVoro[[9]][-1,2] +
+               popClassVoro[[10]][-1,2])
+summary(lm.residuals)
+```
+
+### Mapping of residuals
 
 ```{r}
 library(raster)
@@ -401,9 +587,6 @@ spplot(zoneShp, "residuals", at = breaks$brks,
        col.regions = my.palette, 
        col = "transparent", usePolypath = FALSE,
        main = "residuals")
-# 
-# writeOGR(zoneShp, "/media/ubuntu/DATA/Data/Smartpop/Residuals/residuals.shp",
-#          layer = "residuals", driver = "ESRI Shapefile")
 
 # Absolute residuals
 
@@ -417,8 +600,9 @@ spplot(zoneShp, "residuals", at = breaks$brk,
        col.regions = my.palette, col = "transparent", cuts = 8,  usePolypath = FALSE,
        main = "absolute residuals")
 ```
+We observe higher residuals (positive and negative) in urban areas. 
 
-Dynamic exploration with leaflet.
+#### Dynamic exploration with leaflet.
 
 ```{r, eval = FALSE}
 library(leaflet)
@@ -498,6 +682,91 @@ ui <- fluidPage(
 # Launch the app
 shinyApp(ui = ui, server = server)
 ```
+
+
+```{r}
+# Prepare region raster
+region <- readOGR("/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Belgium_Adm/BEL_adm_shp/BEL_adm1_103300.shp")
+region <- spTransform(region, crs(zone))
+
+writeOGR(region, "/media/ubuntu/DATA/Data/Smartpop/Belgium/Belgium_Region.shp",
+         layer = "Belgium_Region", driver = "ESRI Shapefile")
+
+# rasterize shapefile
+ext <- "23052 21125 295247 243827"
+res <- c("50 50")
+attribute <- "ID_1"
+  
+path.in <- "/media/ubuntu/DATA/Data/Smartpop/Belgium/Belgium_Region.shp"
+path.out <- "/media/ubuntu/DATA/Data/Smartpop/Belgium/Belgium_Region.tif"
+
+command <- 'gdal_rasterize'
+command <- paste(command, "--config COMPRESS LZW") 
+command <- paste(command, "-a", attribute) 
+command <- paste(command, "-te", ext) 
+command <- paste(command, "-tr", res) 
+command <- paste(command, "-ot Int32")
+command <- paste(command, path.in)
+command <- paste(command, path.out)
+system(command)
+
+# Find region for each zone
+r <- raster("/media/ubuntu/DATA/Data/Smartpop/Belgium/Belgium_Region.tif")
+
+wal <- r
+wal[wal %in% c(1,2)] <- 0
+wal[wal == 3] <- 1
+fla <- r
+fla[fla %in% c(1,3)] <- 0
+fla[fla == 2] <- 1
+bru <- r
+bru[bru %in% c(2,3)] <- 0
+bru[bru == 1] <- 1
+
+# Function for efficient zonal stats
+myZonal <- function (x, z, stat, digits = 0, na.rm = TRUE, 
+                     ...) { 
+  library(data.table)
+  fun <- match.fun(stat) 
+  vals <- getValues(x) 
+  zones <- round(getValues(z), digits = digits) 
+  rDT <- data.table(vals, z=zones) 
+  setkey(rDT, z) 
+  rDT[, lapply(.SD, fun, na.rm = TRUE), by=z] 
+} 
+
+zStat_wal <- data.frame(myZonal(z = zone, wal, mean))
+colnames(zStat_wal) <- c("ID", "wal")
+zStat_fla <- data.frame(myZonal(z = zone, fla, mean))
+colnames(zStat_fla) <- c("ID", "fla")
+zStat_bru <- data.frame(myZonal(z = zone, bru, mean))
+colnames(zStat_bru) <- c("ID", "bru")
+
+zstat_reg <- plyr::join(zStat_wal, zStat_fla, by="ID")
+zstat_reg <- plyr::join(zstat_reg, zStat_bru, by="ID")
+zstat_reg$max <- as.numeric(apply(zstat_reg[2:4],1, function(x){which.max(x)}))
+zstat_reg <- zstat_reg[-1, c(1,5)]
+colnames(zstat_reg) <- c("z", "reg")
+
+
+df <- data.frame(residuals = residuals, cl = zstat_reg$reg)
+boxplot(residuals ~ cl, df)
+
+
+library(lme4)
+
+lmer.model <- lmer(y ~ x + (1 + x | cl), data = df)
+summary(lmer.model)
+plot(exp(y), exp(predict(lmer.model, newdata = df)))
+cor(exp(y), exp(predict(lmer.model, newdata = df)))
+
+```
+
+
+
+
+
+
 
 ```{r, eval = FALSE}
 cl <- kmeans(Mat_BE, 10) #already scaled
