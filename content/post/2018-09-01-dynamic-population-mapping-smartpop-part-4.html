@@ -1,8 +1,8 @@
 ---
-title: Dynamic Population Mapping (Smartpop) - Part 4
+title: Dynamic Population Mapping (Smartpop) - Part 5
 author: Damien C. Jacques
 date: '2018-09-01'
-slug: dynamic-population-mapping-smartpop-part-4
+slug: dynamic-population-mapping-smartpop-part-5
 categories:
   - R
 summary: This Notebook details the steps of the data analysis carried out for the Smartpop project – Dynamic Population WP (part 4).
@@ -22,7 +22,7 @@ tags:
 <pre class="r"><code>## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## packages loading
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-
+library(data.table)
 library(rgdal)
 library(Metrics)
 library(lme4)
@@ -68,9 +68,16 @@ SIM_Wd &lt;- data.frame(Mon = WeekWorkingDays[,22],
                      Sat = WeekWorkingDays[,22 + 24*5],
                      Sun = WeekWorkingDays[,22 + 24*6])
 
-cor(SIM_Wd)
-
-# select only 9pm monday (choosing another day will not change much as 9 pm SIM users area highly correlated between weeks)
+cor(SIM_Wd)</code></pre>
+<pre><code>##           Mon       Tue       Wed       Thu       Fri       Sat       Sun
+## Mon 1.0000000 0.9985714 0.9973233 0.9951320 0.9712811 0.9579187 0.9904702
+## Tue 0.9985714 1.0000000 0.9984820 0.9968303 0.9736201 0.9599970 0.9896599
+## Wed 0.9973233 0.9984820 1.0000000 0.9967947 0.9730440 0.9594743 0.9881843
+## Thu 0.9951320 0.9968303 0.9967947 1.0000000 0.9763028 0.9622748 0.9859938
+## Fri 0.9712811 0.9736201 0.9730440 0.9763028 1.0000000 0.9892262 0.9765400
+## Sat 0.9579187 0.9599970 0.9594743 0.9622748 0.9892262 1.0000000 0.9699475
+## Sun 0.9904702 0.9896599 0.9881843 0.9859938 0.9765400 0.9699475 1.0000000</code></pre>
+<pre class="r"><code># select only 9pm monday (choosing another day will not change much as 9 pm SIM users area highly correlated between weeks)
 WeekWorkingDays &lt;- data.frame(ID = AREA.df$ID, SIM = WeekWorkingDays[,22])</code></pre>
 <p>Smaller polygons are in Brussels</p>
 <pre class="r"><code># region code (1: Wallonia, 2: Flanders, 3: Brussels)
@@ -91,8 +98,8 @@ colnames(df) &lt;- round(AREA.df$area[order(AREA.df$area)][seq(100, 1000, 100)],
 
 colors &lt;- c(&#39;#e41a1c&#39;,&#39;#377eb8&#39;,&#39;#4daf4a&#39;)
 
-par(mar=c(4,4,1,6))
-par(xpd=TRUE)
+par(mar = c(4,4,1,6))
+par(xpd = TRUE)
 barplot(df, col = colors, 
         border = &quot;white&quot;, space = 0.04, 
         font.axis = 2,
@@ -101,6 +108,7 @@ barplot(df, col = colors,
 legend(10.5, 100,
        c(&quot;Wallonia&quot;, &quot;Flanders&quot;, &quot;Brussels&quot;),
        fill = colors)</code></pre>
+<p><img src="/post/2018-09-01-dynamic-population-mapping-smartpop-part-4_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
 <pre class="r"><code>## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##  
 ## progressive merging of polygons with small area and regression
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
@@ -238,15 +246,16 @@ for (i in 1:n) {
 lines(df$area[1:1000], 
       df$r[1:1000], 
       type = &quot;l&quot;, 
-      pch = 20, lwd = 2)
-legend(&quot;bottomright&quot;,
+      pch = 20, lwd = 2)</code></pre>
+<pre><code>## integer(0)</code></pre>
+<pre class="r"><code>legend(&quot;bottomright&quot;,
        c(&quot;Standard model&quot;,
          &quot;Mixed model&quot;),
        lwd = 2,
        col = 1:2,
-       bty = &quot;n&quot;)
-
-plot(df$area[1:1000], 
+       bty = &quot;n&quot;)</code></pre>
+<p><img src="/post/2018-09-01-dynamic-population-mapping-smartpop-part-4_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<pre class="r"><code>plot(df$area[1:1000], 
      df$rmse[1:1000], 
      type = &quot;l&quot;, 
      pch = 20, 
@@ -256,16 +265,16 @@ lines(df$area[1:1000],
       df$rmse.lmer[1:1000], 
       type = &quot;l&quot;, 
       col = &quot;red&quot;, 
-      pch = 20, lwd = 2)
-legend(&quot;topright&quot;,
+      pch = 20, lwd = 2)</code></pre>
+<pre><code>## integer(0)</code></pre>
+<pre class="r"><code>legend(&quot;topright&quot;,
        c(&quot;Standard model&quot;,
          &quot;Mixed model&quot;),
        lwd = 2,
        col = 1:2,
-       bty = &quot;n&quot;)
-
-
-plot(df$area[1:1000], 
+       bty = &quot;n&quot;)</code></pre>
+<p><img src="/post/2018-09-01-dynamic-population-mapping-smartpop-part-4_files/figure-html/unnamed-chunk-5-2.png" width="672" /></p>
+<pre class="r"><code>plot(df$area[1:1000], 
      df$rmse[1:1000], 
      type = &quot;l&quot;, 
      pch = 20, 
@@ -277,13 +286,15 @@ lines(df$area[1:1000],
       df$rmse.lmer[1:1000], 
       type = &quot;l&quot;, 
       col = &quot;red&quot;, 
-      pch = 20, lwd = 2)
-legend(&quot;topright&quot;,
+      pch = 20, lwd = 2)</code></pre>
+<pre><code>## integer(0)</code></pre>
+<pre class="r"><code>legend(&quot;topright&quot;,
        c(&quot;Standard model&quot;,
          &quot;Mixed model&quot;),
        lwd = 2,
        col = 1:2,
        bty = &quot;n&quot;)</code></pre>
+<p><img src="/post/2018-09-01-dynamic-population-mapping-smartpop-part-4_files/figure-html/unnamed-chunk-5-3.png" width="672" /></p>
 <pre class="r"><code>library(ggplot2)
 library(gridExtra)
 library(animation)
@@ -340,7 +351,10 @@ saveGIF(movie.name = &quot;/media/ubuntu/DATA/Data/Smartpop/Regression/mixed_mod
            bty = &quot;n&quot;)
   }
 })</code></pre>
-<p><img src="/img/mixed_model_merged_area.gif" /> <img src="/img/mixed_model_merged_area_whiteBG.gif" /> ### Build the new grid of reference</p>
+<p><img src="/img/mixed_model_merged_area.gif" /> <img src="/img/mixed_model_merged_area_whiteBG.gif" /></p>
+</div>
+<div id="build-the-new-grid-of-reference" class="section level3">
+<h3>Build the new grid of reference</h3>
 <pre class="r"><code>library(raster)
 
 zone &lt;- raster(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.tif&quot;)
@@ -364,11 +378,9 @@ table(cl[,2])[-which(table(cl[,2]) %in% c(1,2))][order(table(cl[,2])[-which(tabl
 # Reclassify the zone raster
 zone.new &lt;- reclassify(zone, cl)
 plot(zone.new)</code></pre>
-</div>
-<div id="build-the-new-grid-of-reference" class="section level3">
-<h3>Build the new grid of reference</h3>
 <pre class="r"><code>library(data.table)
 library(plyr)
+library(dplyr)
 
 # Tabulate area of new zone and old zone
 tabulateArea &lt;- function(x, z, digits = 0, na.rm = TRUE) { 
@@ -378,7 +390,94 @@ tabulateArea &lt;- function(x, z, digits = 0, na.rm = TRUE) {
   count(rDT) 
 } 
 
-TabArea &lt;- tabulateArea(zone.new, zone)
+TabArea &lt;- tabulateArea(zone.new, zone)[-1, ]
 
-db &lt;- fread(&quot;/media/ubuntu/DATA/Data/Smartpop/FinalDB/FinalDB.csv&quot;)</code></pre>
+db &lt;- fread(&quot;/media/ubuntu/DATA/Data/Smartpop/FinalDB/FinalDB.csv&quot;)
+
+dim.1 &lt;- length(unique(db$DATE_HOUR))
+dim.2 &lt;- length(unique(TabArea[, 1]))
+db.new &lt;- data.table(ID_Grid = rep(unique(TabArea[, 1], dim)), 
+                     NBR_SIM_BE = rep(0, dim.1*dim.2),
+                     NBR_SIM_ROAMERS = rep(0, dim.1*dim.2),
+                     DATE_HOUR = rep(unique(db$DATE_HOUR), each = dim.2))
+
+for (i in unique(TabArea[, 1])) {
+  print(i)
+  index &lt;- TabArea[which(TabArea[,1] == i), 2]
+  
+  db.sub &lt;- db %&gt;%
+    filter(db$ID_Grid %in% index) %&gt;%
+    group_by(DATE_HOUR) %&gt;%
+    summarise(NBR_SIM_BE = sum(NBR_SIM_BE),
+              NBR_SIM_ROAMERS = sum(NBR_SIM_ROAMERS))
+  
+  db.new[which(db.new$ID_Grid == i), 2:3] &lt;- db.sub[, 2:3]
+}</code></pre>
+</div>
+<div id="recompute-time-series-decomposition" class="section level3">
+<h3>Recompute time series decomposition</h3>
+<pre class="r"><code>load(&quot;/media/ubuntu/DATA/Data/Smartpop/Dates/Dates_vec.Rda&quot;)
+
+holidays &lt;- dates[c(62:123,179:185,235:248,289:297, 340:353, 1:4,29:32,38:40,192:195)]
+whichHolidays &lt;- which(substr(unique(db.new$DATE_HOUR), 1, 10) %in% as.character(holidays))
+workingDays &lt;- dates[-c(62:123,179:185,235:248,289:297, 340:353, 1:4,29:32,38:40,192:195)]
+whichWorkingDays &lt;- which(substr(unique(db.new$DATE_HOUR), 1, 10) %in% as.character(workingDays))
+
+Mat_BE &lt;- dcast(ID_Grid ~  DATE_HOUR, 
+                data = db.new, 
+                value.var = &quot;NBR_SIM_BE&quot;)
+Mat_BE &lt;- as.matrix(Mat_BE)[, -1]
+colnames(Mat_BE) &lt;- c(73:(24*7), rep(1:(24*7), 51), 1:95)
+
+Mat_BE_holidays &lt;- Mat_BE[, whichHolidays]
+Mat_BE_workingDays &lt;- Mat_BE[, whichWorkingDays]
+  
+WeekHolidays &lt;- vapply(1:(24*7), function(x) 
+            rowMeans(Mat_BE_holidays[, colnames(Mat_BE_holidays) == x, drop = FALSE], na.rm = TRUE),
+            numeric(nrow(Mat_BE_holidays)))
+
+WeekWorkingDays &lt;- vapply(1:(24*7), function(x) 
+  rowMeans(Mat_BE_workingDays[,colnames(Mat_BE_workingDays) == x, drop = FALSE], na.rm = TRUE),
+  numeric(nrow(Mat_BE_workingDays)) )
+
+# Example plot
+n = 1
+plot(WeekWorkingDays[n,], type = &quot;o&quot;, 
+     ylim = c(0, 750), pch = 20, lwd = 2,
+     ylab = &quot;SIM&quot;, xlab = &quot;time&quot;, 
+     xaxt = &quot;n&quot;) +
+axis(1, at = seq(13, 168, 24), 
+     labels = c(&quot;Mon&quot;, &quot;Tue&quot;, &quot;Wed&quot;, &quot;Thu&quot;, &quot;Fri&quot;, &quot;Sat&quot;, &quot;Sun&quot;)) +
+abline(v = seq(1, 168, 24), lwd = 2) +
+lines(WeekHolidays[n,], col = &quot;red&quot;, lwd = 2,  
+      type = &quot;o&quot;, pch = 20)</code></pre>
+<pre><code>## numeric(0)</code></pre>
+<pre class="r"><code>legend(&quot;topright&quot;,
+       c(&quot;Working Days&quot;, &quot;Holidays&quot;),
+       col = c(&quot;black&quot;, &quot;red&quot;),
+       lty = 1, lwd = 2)</code></pre>
+<p><img src="/post/2018-09-01-dynamic-population-mapping-smartpop-part-4_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
+<p>The seasonal values are removed, and the remainder loess smoothed to find the trend component (local regression, weighted least square, 2nd degree poly, tricubing weighting, 10% of the points).</p>
+<pre class="r"><code># remove seasonnal component
+for (i in 1:ncol(Mat_BE)){
+  print(i)
+  if (substr(db$DATE_HOUR[i], 1, 10) %in% dates[c(62:123,179:185,235:248,289:297, 340:353, 1:4,29:32,38:40,192:195)]) {
+    Mat_BE[,i] =  Mat_BE[,i] - WeekHolidays[, as.numeric(colnames(Mat_BE)[i])] 
+  } else {
+    Mat_BE[,i] =  Mat_BE[,i] - WeekWorkingDays[, as.numeric(colnames(Mat_BE)[i])] 
+  }
+}
+
+# compute trend
+library(foreach)
+library(doMC)
+registerDoMC(8)
+
+x &lt;- 1:ncol(Mat_BE)
+trend &lt;- foreach(i = 1:nrow(Mat_BE), .combine = rbind) %dopar% {
+  z &lt;- predict(loess(Mat_BE[i,] ~ x, span = 0.1, degree = 2))
+  z  #return value for the iterations
+}</code></pre>
+<p>The trend is removed to get the remainder component.</p>
+<pre class="r"><code>remainder = Mat_BE - trend</code></pre>
 </div>

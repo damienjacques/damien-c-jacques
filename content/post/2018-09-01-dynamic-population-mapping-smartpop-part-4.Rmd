@@ -1,8 +1,8 @@
 ---
-title: Dynamic Population Mapping (Smartpop) - Part 4
+title: Dynamic Population Mapping (Smartpop) - Part 5
 author: Damien C. Jacques
 date: '2018-09-01'
-slug: dynamic-population-mapping-smartpop-part-4
+slug: dynamic-population-mapping-smartpop-part-5
 categories:
   - R
 summary: This Notebook details the steps of the data analysis carried out for the Smartpop project – Dynamic Population WP (part 4).
@@ -30,7 +30,7 @@ We use the average SIM users density at 9pm (monday - working days) as the input
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## packages loading
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-
+library(data.table)
 library(rgdal)
 library(Metrics)
 library(lme4)
@@ -372,6 +372,7 @@ saveGIF(movie.name = "/media/ubuntu/DATA/Data/Smartpop/Regression/mixed_model_me
 
 ![](/img/mixed_model_merged_area.gif)
 ![](/img/mixed_model_merged_area_whiteBG.gif)
+
 ### Build the new grid of reference
 ```{r, echo = F}
 library(raster)
@@ -408,8 +409,8 @@ plot(zone.new)
 ```{r, eval = F, echo = F}
 writeRaster(zone.new, "/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2.tif")
 ```
-### Build the new grid of reference
-```{r}
+
+```{r, eval = F}
 library(data.table)
 library(plyr)
 library(dplyr)
@@ -454,7 +455,7 @@ fwrite(db.new, "/media/ubuntu/DATA/Data/Smartpop/FinalDB/FinalDB_085km2.csv")
 db.new <- fread("/media/ubuntu/DATA/Data/Smartpop/FinalDB/FinalDB_085km2.csv")
 ```
 
-# Recompute time series decomposition
+### Recompute time series decomposition
 
 ```{r}
 load("/media/ubuntu/DATA/Data/Smartpop/Dates/Dates_vec.Rda")
