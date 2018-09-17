@@ -1,0 +1,70 @@
+---
+title: HIV facts
+author: Damien C. Jacques
+date: '2018-09-07'
+slug: hiv-facts
+summary: HIV facts.
+categories:
+  - HIV
+tags:
+  - HIV
+draft: true
+---
+
+# HIV facts
+
+### Acronyms
+
+* People Living with HIV (PLHIV)
+* Antiretroviral Therapy (ART)
+* Pre-Exposure Prophylaxis (PrEP)
+* Voluntary Medical Male Circumcision (VMMC)
+* Joint United Nations Programme on HIV/AIDS (UNAIDS)
+
+### Definition
+
+* Incidence: loosely expressed as the number of new cases during some time period.
+
+## Facts
+
+### 90-90-90 targets
+* In 2014, UNAIDS set 90-90-90 targets to be reached by 2020 in order to end the AIDS epidemic by 2030 ([UNAIDS, 2014](http://www.unaids.org/sites/default/files/media_asset/90-90-90_en_0.pdf)).
+* By 2020, 90% of people living with HIV (PLHIV) will be diagnosed, 90% of those diagnosed will be on antiretroviral therapy (ART), and 90% of people on treatment will achieve viral suppression. This achievement will translate to 73% of PLHIV being virally suppressed ([UNAIDS, 2014](http://www.unaids.org/sites/default/files/media_asset/90-90-90_en_0.pdf)).
+* Achieving 90-90-90 by 2020 and scaling up to 95-95-95 by 2030 will reduce annual new HIV infections and AIDS-related deaths by 90% compared to 2010 ([Stover, 2016](https://journals.plos.org/plosone/article/file?id=10.1371/journal.pone.0154893&type=printable)).
+* Sweden was the first country to achieve the 90-90-90 target.
+
+### Fast Track
+* In 2016, the 90-90-90 targets were extended in the Fast-Track commitments drawn from the 2016 United Nations Political Declaration ([UNAIDS, 2016](http://www.unaids.org/sites/default/files/media_asset/fast-track-commitments_en.pdf)).
+* FastTrack approach goes further than 90-90-90 targets by including rapid scale-up of effective prevention (such as condom programming, pre-exposure prophylaxis (PrEP), voluntary medical male circumcision (VMMC)) as well as zero discrimination (gender inequality, young people...) ([UNAIDS, 2016](http://www.unaids.org/sites/default/files/media_asset/fast-track-commitments_en.pdf)).
+
+### Statistics
+* In 2015, of 63.7 million PLHIV globally, 57% were diagnosed, 46% on ART, and 38% virally suppressed ([UNAIDS, 2016](https://reliefweb.int/sites/reliefweb.int/files/resources/90_90_90_Progress_ReportFINAL.pdf)) 
+* In 2016, 70% were diagnosed, 53% on ART, and 44% virally suppressed ([UNAIDS, 2017](http://www.unaids.org/sites/default/files/media_asset/Global_AIDS_update_2017_en.pdf)).
+
+### Botswana
+
+* Population: 2,024,904
+* Immigrants: 350,000
+* 90-90-90 targets in Botswana:
+
+|           | 2013          | 2013 adj. unenrolled | 2013 std nationwide |
+| -------   | ------------- |-------------         | -----               |
+| Firt 90   | 81.4          | 80.9                 | 76.2                |
+| Second 90 | 85.8          | 85.8                 | 83.3                |
+| Third 90  | 96.0          | 96.0                 | 92.4                |
+
+|           | 2015          | 2015 adj. unenrolled | 2015 std nationwide |
+| -------   | ------------- |-------------         | -----               |
+| Firt 90   | 85.2          | 84.7                 | 79.4                |
+| Second 90 | 89.0          | 89.1                 | 86.8                |
+| Third 90  | 97.0          | 97.0                 | 95.3                |
+
+
+* Prevalence: 18.5% (prevalence) ([Statistics Botswana, 2013](http://www.statsbots.org.bw/sites/default/files/publications/BOTSWANA%20AIDS%20IMPACT%20SURVEY%20IV%202013.pdf))
+* Annual HIV incidence: 1.34% ([Moyo, 2016](http://www.aids2016.org/Portals/0/File/AIDS2016_Abstracts_LOW.pdf?ver=2016-08-10-154247-087))
+
+
+
+
+
+

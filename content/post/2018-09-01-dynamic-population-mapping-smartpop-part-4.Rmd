@@ -1,0 +1,536 @@
+---
+title: Dynamic Population Mapping (Smartpop) - Part 4
+author: Damien C. Jacques
+date: '2018-09-01'
+slug: dynamic-population-mapping-smartpop-part-4
+categories:
+  - R
+summary: This Notebook details the steps of the data analysis carried out for the Smartpop project – Dynamic Population WP (part 4).
+tags:
+  - R
+  - population
+  - mobile phone data
+  - statistics
+---
+
+```{r global_options, include = FALSE}
+knitr::opts_chunk$set(warning = FALSE, 
+                      message = FALSE,
+                      eval = T)
+```
+
+This part aims at improving the results of the regression by merging small polygons of voronoi corresponding to area with high antenna density where high residuals are mostly found (either due to mislocation of antenna, over-/under-estimation of voronoi polygon, error in database).
+
+### Progressive merging of polygons with small areas
+
+We use the average SIM users density at 9pm (monday - working days) as the input to fit the models. For each step of the iteration, the two smallest neighboring polygons are merged together (population density, SIM users density and area are merged), the model is re-run on the new dataset and its performance assessed. 
+
+
+```{r}
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## packages loading
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+library(rgdal)
+library(Metrics)
+library(lme4)
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## data loading and preparation
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+# load region classification
+load("/media/ubuntu/DATA/Data/Smartpop/Belgiumzstat_reg.Rda")
+
+# load population at voronoi scale and transform in dataframe
+load("/media/ubuntu/DATA/Data/Smartpop/Population/popVoro.Rda")
+popVoro <- data.frame(popVoro[-1,])
+colnames(popVoro) <- c("ID", "pop")
+popVoro$ID <- as.integer(popVoro$ID)
+
+# load shapefile of voronoi
+zoneShp <- readOGR("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.shp", verbose = FALSE)
+
+# compute matrices of neihgboring polygons
+polyneighbor <- rgeos::gTouches(zoneShp, byid = TRUE)
+colnames(polyneighbor) <- rownames(polyneighbor) <- zoneShp@data$ID
+
+# store temporary data (lookup table Old ID - New ID and area of each polygon)
+ID.df <- data.frame(OldID = zoneShp@data$ID, NewID = zoneShp@data$ID)
+AREA.df <- data.frame(ID = zoneShp@data$ID, area = zoneShp@data$area/1000000)
+
+# transform population density into absolute population (division by 1000 comes from the transformation in integer when the shapefile was rasterized)
+popVoro$pop <- (popVoro$pop/1000) * AREA.df$area
+
+# compute total population
+popTotal <- sum(popVoro$pop)
+
+# load seasonnal component (average week) of SIM users during working days
+load("/media/ubuntu/DATA/Data/Smartpop/Matrix/WeekWorkingDays.Rda")
+
+SIM_Wd <- data.frame(Mon = WeekWorkingDays[,22],
+                     Tue = WeekWorkingDays[,22 + 24],
+                     Wed = WeekWorkingDays[,22 + 24*2],
+                     Thu = WeekWorkingDays[,22 + 24*3],
+                     Fri = WeekWorkingDays[,22 + 24*4],
+                     Sat = WeekWorkingDays[,22 + 24*5],
+                     Sun = WeekWorkingDays[,22 + 24*6])
+
+cor(SIM_Wd)
+
+# select only 9pm monday (choosing another day will not change much as 9 pm SIM users area highly correlated between weeks)
+WeekWorkingDays <- data.frame(ID = AREA.df$ID, SIM = WeekWorkingDays[,22])
+```
+
+
+Smaller polygons are in Brussels
+
+```{r}
+# region code (1: Wallonia, 2: Flanders, 3: Brussels)
+
+df  <- cbind(table(zstat_reg$reg[order(AREA.df$area)][1:100]),
+             table(zstat_reg$reg[order(AREA.df$area)][101:200]),
+             table(zstat_reg$reg[order(AREA.df$area)][201:300]),
+             table(zstat_reg$reg[order(AREA.df$area)][301:400]),
+             table(zstat_reg$reg[order(AREA.df$area)][401:500]),
+             table(zstat_reg$reg[order(AREA.df$area)][501:600]),
+             table(zstat_reg$reg[order(AREA.df$area)][601:700]),
+             table(zstat_reg$reg[order(AREA.df$area)][701:800]),
+             table(zstat_reg$reg[order(AREA.df$area)][801:900]),
+             table(zstat_reg$reg[order(AREA.df$area)][901:1000]))
+
+row.names(df) <- c("Wallonia", "Flanders", "Brussels")
+colnames(df) <- round(AREA.df$area[order(AREA.df$area)][seq(100, 1000, 100)], 2)
+
+colors <- c('#e41a1c','#377eb8','#4daf4a')
+
+par(mar = c(4,4,1,6))
+par(xpd = TRUE)
+barplot(df, col = colors, 
+        border = "white", space = 0.04, 
+        font.axis = 2,
+        ylab = "Percentage",
+        xlab = "Larger area per class (km²)")
+legend(10.5, 100,
+       c("Wallonia", "Flanders", "Brussels"),
+       fill = colors)
+```
+
+
+
+
+```{r, eval = FALSE}
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##  
+## progressive merging of polygons with small area and regression
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+# prepare empty list to store the intermediary products and lookup tables
+polyneighbor_list <- list()
+ID.df_list <- list()
+AREA.df_list <- list()
+WeekWorkingDays_list <- list()
+popVoro_list <- list()
+zstat_reg_list <- list()
+
+# define the number of iteration
+n = 1000
+
+# prepare empty data frame for storing the results
+df <- data.frame(OldID = rep(0, n),
+                 r = rep(0, n),
+                 r2 = rep(0, n),
+                 rmse = rep(0, n),
+                 r.lmer = rep(0, n),
+                 rmse.lmer = rep(0, n),
+                 area = rep(0, n),
+                 NewID = rep(0, n),
+                 reg = rep(0, n))
+
+# loop
+for (i in 1:n) {
+  print(i)
+  
+  # get ID of the polygon with the smallest area
+  OldID <- AREA.df$ID[which.min(AREA.df$area)] 
+  # find the IDs of its neighboring polygons
+  IDsNeighbor <- as.numeric(colnames(polyneighbor)[which(polyneighbor[rownames(polyneighbor) == OldID, ] == TRUE)])
+  # find the neighboring polygons with the smallest area
+  # OldID polygon will be merged with NewID polygon
+  NewID <- IDsNeighbor[which.min(AREA.df$area[AREA.df$ID %in% IDsNeighbor])]
+  
+  # merge neighboring polygons of NewID and OldID as they are now considered as a single polygon
+  polyneighbor[, colnames(polyneighbor) == NewID] <- as.logical(polyneighbor[, colnames(polyneighbor) == OldID] + polyneighbor[, colnames(polyneighbor) == NewID])
+  polyneighbor[rownames(polyneighbor) == NewID,] <- as.logical(polyneighbor[rownames(polyneighbor) == OldID,] + polyneighbor[rownames(polyneighbor) == NewID,])
+  
+  # remove OldID entries from polyneighbor
+  polyneighbor <- polyneighbor[-which(rownames(polyneighbor) == OldID), ] 
+  polyneighbor <- polyneighbor[, -which(colnames(polyneighbor) == OldID)] 
+  diag(polyneighbor) <- FALSE
+  
+  # sum SIM users of NewID and OldID
+  WeekWorkingDays$SIM[WeekWorkingDays$ID == NewID] <- sum(
+                                                     WeekWorkingDays$SIM[WeekWorkingDays$ID == NewID],
+                                                     WeekWorkingDays$SIM[WeekWorkingDays$ID == OldID])
+  # remove OldID entries from WeekWorkingDays
+  WeekWorkingDays <-  WeekWorkingDays[-which(WeekWorkingDays$ID == OldID),]
+  
+  # build current lookup table using OldID and NewID
+  ID.df$NewID[ID.df$OldID == OldID] <- NewID
+  
+  # store region of merged polygon for further use
+  df$reg[i] <- zstat_reg$reg[zstat_reg$z == OldID] 
+  
+  # test which of OldID or NewID as the larger area
+  # if it is OldID then, region of NewID becomes region of OldID
+  if (AREA.df$area[AREA.df$ID == OldID] > AREA.df$area[AREA.df$ID == NewID]) {
+    zstat_reg$reg[zstat_reg$z == NewID] <- zstat_reg$reg[zstat_reg$z == OldID] 
+  } 
+  
+  # remove OldID entries from zstat_reg
+  zstat_reg <- zstat_reg[-which(zstat_reg$z == OldID),]
+
+  # merge OldID and NewID entries in AREA.df
+  AREA.df$ID[AREA.df$ID == OldID] <- NewID
+  AREA.df <- aggregate(area ~ ID, data = AREA.df, sum)
+  
+  # merge OldID and NewID entries in popVoro
+  popVoro$ID[popVoro$ID == OldID] <- NewID
+  popVoro <- aggregate(pop ~ ID, data = popVoro, sum)
+
+  # store intermediary products in list for further use
+  ID.df_list[[i]] <- ID.df
+  WeekWorkingDays_list[[i]] <- WeekWorkingDays
+  popVoro_list[[i]] <- popVoro
+  AREA.df_list[[i]] <- AREA.df
+  zstat_reg_list[[i]] <- zstat_reg
+
+  # initiate variable for regression
+  y <- as.numeric(log(popVoro$pop/AREA.df$area)) 
+  x <- as.numeric(log(WeekWorkingDays$SIM/AREA.df$area))
+  # remove log(0) values
+  index <- which(x == -Inf | y == -Inf)
+  if (length(index) != 0) {
+    y <- y[-index]
+    x <- x[-index]
+    cl <- zstat_reg$reg[-index]
+  }
+  
+  # standard log-log regression
+  lm.model <- lm(y ~ x) 
+  
+  # initiate dataframe for mixed model regression
+  data <- data.frame(x = x, y = y, cl = cl)
+  # mixed model regression 
+  lmer.model <- lmer(y ~  x + (1 + x | cl), data = data)
+  
+  # compute prediction data and statistics from lm.model
+  x <- as.numeric(log(WeekWorkingDays$SIM/AREA.df$area))
+  predData <- exp(lm.model$coefficients[1] + lm.model$coefficients[2]*x)
+  predData <- predData * popTotal/sum(predData * AREA.df$area)
+  
+  df$r2[i] <- summary(lm.model)$r.squared
+  df$r[i] <- cor(popVoro$pop/AREA.df$area, predData)
+  df$rmse[i] <- rmse(popVoro$pop/AREA.df$area, predData)
+
+  # compute prediction data and statistics from lmer.model
+  predData <- rep(0, nrow(popVoro))
+  predData[-index] <- as.numeric(exp(predict(lmer.model, newdata = data)))
+  predData[-index] <- predData[-index] * popTotal/sum(predData[-index] * AREA.df$area[-index])
+
+  df$r.lmer[i] <- cor(popVoro$pop/AREA.df$area, predData)
+  df$rmse.lmer[i] <- rmse(popVoro$pop/AREA.df$area, predData)
+  
+  # store intermediary data for further use
+  df$area[i] <- min(AREA.df$area)
+  df$OldID[i] <- OldID
+  df$NewID[i] <- NewID
+}
+```
+
+```{r}
+load("~/Dropbox/Research/Projects/SMARTPOP/Data/MergeArea/MergeArea.RData")
+```
+
+```{r}
+plot(df$area[1:1000], 
+     df$r.lmer[1:1000], 
+     type = "l", 
+     pch = 20, 
+     col = "red", 
+     ylim = c(0.58, 0.9), 
+     xlab = "Smallest Area (km²)", 
+     ylab = "Pearson correlation", lwd = 2) +
+lines(df$area[1:1000], 
+      df$r[1:1000], 
+      type = "l", 
+      pch = 20, lwd = 2)
+legend("bottomright",
+       c("Standard model",
+         "Mixed model"),
+       lwd = 2,
+       col = 1:2,
+       bty = "n")
+
+plot(df$area[1:1000], 
+     df$rmse[1:1000], 
+     type = "l", 
+     pch = 20, 
+     xlab = "Smallest Area (km²)", 
+     ylab = "Pearson correlation", lwd = 2) +
+lines(df$area[1:1000], 
+      df$rmse.lmer[1:1000], 
+      type = "l", 
+      col = "red", 
+      pch = 20, lwd = 2)
+legend("topright",
+       c("Standard model",
+         "Mixed model"),
+       lwd = 2,
+       col = 1:2,
+       bty = "n")
+
+
+plot(df$area[1:1000], 
+     df$rmse[1:1000], 
+     type = "l", 
+     pch = 20, 
+    ylim = c(750, 1300),
+     xlim = c(0.5, 1.2),
+     xlab = "Smallest Area (km²)", 
+     ylab = "Pearson correlation", lwd = 2) +
+lines(df$area[1:1000], 
+      df$rmse.lmer[1:1000], 
+      type = "l", 
+      col = "red", 
+      pch = 20, lwd = 2)
+legend("topright",
+       c("Standard model",
+         "Mixed model"),
+       lwd = 2,
+       col = 1:2,
+       bty = "n")
+```
+
+```{r, eval = FALSE}
+library(ggplot2)
+library(gridExtra)
+library(animation)
+ani.options(interval = .10,
+            ani.width = 600, 
+            ani.height = 400)
+
+colors <- c('#e41a1c','#377eb8','#4daf4a')
+
+k = 0
+g <- list()
+saveGIF(movie.name = "/media/ubuntu/DATA/Data/Smartpop/Regression/mixed_model_merged_area.gif", { 
+  for (i in seq(1,1000,100)) {
+    k = k + 1
+    # initiate variable for regression
+    y <- as.numeric(log(popVoro_list[[i]]$pop/AREA.df_list[[i]]$area)) 
+    x <- as.numeric(log(WeekWorkingDays_list[[i]]$SIM/AREA.df_list[[i]]$area))
+    # remove log(0) values
+    index <- which(x == -Inf | y == -Inf)
+    if (length(index) != 0) {
+      y <- y[-index]
+      x <- x[-index]
+      cl <- zstat_reg_list[[i]]$reg[-index]
+    }
+    
+    data <- data.frame(x = x, y = y, cl = cl)
+    
+    lmer.model <- lmer(y ~  x + (1 + x | cl), data = data)
+    
+    newdat <- expand.grid(Sex = unique(data$cl),
+                          x = c(min(data$x),
+                                max(data$x)))
+  
+    plot(exp(data$x), exp(data$y), 
+         col = colors[cl], pch = 20, 
+         xlim = c(0.1, 30000), ylim = c(0.1, 30000),
+         ylab = "Population Density",
+         xlab = "SIM Users Density", log = "xy",
+         tck = 0.02) +
+    lines(exp(data$x[cl == 1]), exp(predict(lmer.model)[cl == 1]), lwd = 3, col = colors[1]) +
+    lines(exp(data$x[cl == 2]), exp(predict(lmer.model)[cl == 2]), lwd = 3, col = colors[2]) +
+    lines(exp(data$x[cl == 3]), exp(predict(lmer.model)[cl == 3]), lwd = 3, col = colors[3])
+    grid(lwd = 0.5, col = "black") +
+    abline(a = 0, b = 1)
+    legend("bottomright", 
+           c("Wallonia", "Flanders", "Brussels"),
+           bty = "n",
+           col = colors,
+           pch = 20)
+    legend("topleft",
+           paste("Smallest area is",
+                 round(min(AREA.df_list[[i]]$area), 2), 
+                 "km2"),
+           bty = "n")
+  }
+})
+```
+
+![](/img/mixed_model_merged_area.gif)
+![](/img/mixed_model_merged_area_whiteBG.gif)
+### Build the new grid of reference
+```{r, echo = F}
+library(raster)
+
+zone <- raster("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.tif")
+zone.new <- raster("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_finalGrid.tif")
+```
+
+```{r, eval = F}
+library(raster)
+
+zone <- raster("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.tif")
+plot(zone)
+
+# Find the index corresponding to 0.85 km2 area
+index <- which(df$area > 0.85)[1]
+
+# Build reclassification matrix
+m <- unique(zone[,])
+cl <- cbind(m, m)
+
+for (i in 1:which(df$area > 0.85)[1]) {
+  cl[cl[, 2] == df$OldID[i], 2] <- df$NewID[i]   
+  cl[cl[, 1] == df$OldID[i], 2] <- df$NewID[i]   
+}
+
+# Show how many polygons are merged in One
+table(cl[,2])[-which(table(cl[,2]) %in% c(1,2))][order(table(cl[,2])[-which(table(cl[,2]) %in% c(1,2))])]
+
+# Reclassify the zone raster
+zone.new <- reclassify(zone, cl)
+plot(zone.new)
+```
+```{r, eval = F, echo = F}
+writeRaster(zone.new, "/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2.tif")
+```
+### Build the new grid of reference
+```{r}
+library(data.table)
+library(plyr)
+library(dplyr)
+
+# Tabulate area of new zone and old zone
+tabulateArea <- function(x, z, digits = 0, na.rm = TRUE) { 
+  vals <- getValues(x) 
+  zones <- round(getValues(z), digits = digits) 
+  rDT <- data.table(vals, z = zones) 
+  count(rDT) 
+} 
+
+TabArea <- tabulateArea(zone.new, zone)[-1, ]
+
+db <- fread("/media/ubuntu/DATA/Data/Smartpop/FinalDB/FinalDB.csv")
+
+dim.1 <- length(unique(db$DATE_HOUR))
+dim.2 <- length(unique(TabArea[, 1]))
+db.new <- data.table(ID_Grid = rep(unique(TabArea[, 1], dim)), 
+                     NBR_SIM_BE = rep(0, dim.1*dim.2),
+                     NBR_SIM_ROAMERS = rep(0, dim.1*dim.2),
+                     DATE_HOUR = rep(unique(db$DATE_HOUR), each = dim.2))
+
+for (i in unique(TabArea[, 1])) {
+  print(i)
+  index <- TabArea[which(TabArea[,1] == i), 2]
+  
+  db.sub <- db %>%
+    filter(db$ID_Grid %in% index) %>%
+    group_by(DATE_HOUR) %>%
+    summarise(NBR_SIM_BE = sum(NBR_SIM_BE),
+              NBR_SIM_ROAMERS = sum(NBR_SIM_ROAMERS))
+  
+  db.new[which(db.new$ID_Grid == i), 2:3] <- db.sub[, 2:3]
+}
+```
+
+```{r, echo = F, eval = F}
+fwrite(db.new, "/media/ubuntu/DATA/Data/Smartpop/FinalDB/FinalDB_085km2.csv")
+```
+```{r, echo = F}
+db.new <- fread("/media/ubuntu/DATA/Data/Smartpop/FinalDB/FinalDB_085km2.csv")
+```
+
+# Recompute time series decomposition
+
+```{r}
+load("/media/ubuntu/DATA/Data/Smartpop/Dates/Dates_vec.Rda")
+
+holidays <- dates[c(62:123,179:185,235:248,289:297, 340:353, 1:4,29:32,38:40,192:195)]
+whichHolidays <- which(substr(unique(db.new$DATE_HOUR), 1, 10) %in% as.character(holidays))
+workingDays <- dates[-c(62:123,179:185,235:248,289:297, 340:353, 1:4,29:32,38:40,192:195)]
+whichWorkingDays <- which(substr(unique(db.new$DATE_HOUR), 1, 10) %in% as.character(workingDays))
+
+Mat_BE <- dcast(ID_Grid ~  DATE_HOUR, 
+                data = db.new, 
+                value.var = "NBR_SIM_BE")
+Mat_BE <- as.matrix(Mat_BE)[, -1]
+colnames(Mat_BE) <- c(73:(24*7), rep(1:(24*7), 51), 1:95)
+
+Mat_BE_holidays <- Mat_BE[, whichHolidays]
+Mat_BE_workingDays <- Mat_BE[, whichWorkingDays]
+  
+WeekHolidays <- vapply(1:(24*7), function(x) 
+            rowMeans(Mat_BE_holidays[, colnames(Mat_BE_holidays) == x, drop = FALSE], na.rm = TRUE),
+            numeric(nrow(Mat_BE_holidays)))
+
+WeekWorkingDays <- vapply(1:(24*7), function(x) 
+  rowMeans(Mat_BE_workingDays[,colnames(Mat_BE_workingDays) == x, drop = FALSE], na.rm = TRUE),
+  numeric(nrow(Mat_BE_workingDays)) )
+
+# Example plot
+n = 1
+plot(WeekWorkingDays[n,], type = "o", 
+     ylim = c(0, 750), pch = 20, lwd = 2,
+     ylab = "SIM", xlab = "time", 
+     xaxt = "n") +
+axis(1, at = seq(13, 168, 24), 
+     labels = c("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")) +
+abline(v = seq(1, 168, 24), lwd = 2) +
+lines(WeekHolidays[n,], col = "red", lwd = 2,  
+      type = "o", pch = 20)
+legend("topright",
+       c("Working Days", "Holidays"),
+       col = c("black", "red"),
+       lty = 1, lwd = 2)
+```
+
+The seasonal values are removed, and the remainder loess smoothed to find the trend component (local regression,  weighted least square, 2nd degree poly, tricubing weighting, 10% of the points).
+
+```{r, eval = FALSE}
+# remove seasonnal component
+for (i in 1:ncol(Mat_BE)){
+  print(i)
+  if (substr(db$DATE_HOUR[i], 1, 10) %in% dates[c(62:123,179:185,235:248,289:297, 340:353, 1:4,29:32,38:40,192:195)]) {
+    Mat_BE[,i] =  Mat_BE[,i] - WeekHolidays[, as.numeric(colnames(Mat_BE)[i])] 
+  } else {
+    Mat_BE[,i] =  Mat_BE[,i] - WeekWorkingDays[, as.numeric(colnames(Mat_BE)[i])] 
+  }
+}
+
+# compute trend
+library(foreach)
+library(doMC)
+registerDoMC(8)
+
+x <- 1:ncol(Mat_BE)
+trend <- foreach(i = 1:nrow(Mat_BE), .combine = rbind) %dopar% {
+  z <- predict(loess(Mat_BE[i,] ~ x, span = 0.1, degree = 2))
+  z  #return value for the iterations
+}
+```
+The trend is removed to get the remainder component.
+
+```{r, eval = FALSE}
+remainder = Mat_BE - trend
+```
+
+```{r, eval = FALSE, echo = FALSE}
+save(remainder, file = "/media/ubuntu/DATA/Data/Smartpop/Matrix/remainder_085km2.Rda")
+save(trend, file = "/media/ubuntu/DATA/Data/Smartpop/Matrix/trend_085km2.Rda")
+save(WeekHolidays, file = "/media/ubuntu/DATA/Data/Smartpop/Matrix/WeekHolidays_085km2.Rda")
+save(WeekWorkingDays, file = "/media/ubuntu/DATA/Data/Smartpop/Matrix/WeekWorkingDays_085km2.Rda")
+```

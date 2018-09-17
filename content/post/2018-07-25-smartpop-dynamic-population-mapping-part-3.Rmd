@@ -18,7 +18,8 @@ output:
 
 ```{r global_options, include = FALSE}
 knitr::opts_chunk$set(warning = FALSE, 
-                      message = FALSE)
+                      message = FALSE,
+                      eval = FALSE)
 ```
 ### Decompose time series
 
@@ -50,14 +51,14 @@ WeekHolidays <- vapply(1:(24*7), function(x)
             numeric(nrow(Mat_BE_holidays)))
 
 WeekWorkingDays <- vapply(1:(24*7), function(x) 
-  rowMeans(Mat_BE_workingDays[,colnames(Mat_BE_workingDays) == x,drop=FALSE], na.rm = TRUE),
+  rowMeans(Mat_BE_workingDays[,colnames(Mat_BE_workingDays) == x, drop = FALSE], na.rm = TRUE),
   numeric(nrow(Mat_BE_workingDays)) )
 
 # Example plot
 n = 1
 plot(WeekWorkingDays[n,], type = "o", 
      ylim = c(0, 750), pch = 20, lwd = 2,
-     ylab = "SIM density (SIM/km²)", xlab = "time", 
+     ylab = "SIM", xlab = "time", 
      xaxt = "n") +
 axis(1, at = seq(13, 168, 24), 
      labels = c("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")) +
@@ -88,6 +89,7 @@ library(foreach)
 library(doMC)
 registerDoMC(8)
 
+x <- 1:ncol(Mat_BE)
 trend <- foreach(i = 1:nrow(Mat_BE), .combine = rbind) %dopar% {
   z <- predict(loess(Mat_BE[i,] ~ x, span = 0.1, degree = 2))
   z  #return value for the iterations
@@ -149,7 +151,7 @@ We also compute a row scaled version (`(x - mean)/std`) of the matrices for furt
 
 ```{r, eval = FALSE}
 library(scrime)
-
+# Divide by area to get density (maybe does not change anything for scaled, could have an impact on )
 WeekHolidays_scaled <- rowScales(WeekHolidays)
 WeekWorkingDays_scaled <- rowScales(WeekWorkingDays)
 ```
@@ -157,6 +159,8 @@ WeekWorkingDays_scaled <- rowScales(WeekWorkingDays)
 ```{r, eval = FALSE, echo = FALSE}
 save(WeekHolidays_scaled, file = "/media/ubuntu/DATA/Data/Smartpop/Matrix/WeekHolidays_scaled.Rda")
 save(WeekWorkingDays_scaled, file = "/media/ubuntu/DATA/Data/Smartpop/Matrix/WeekWorkingDays_scaled.Rda")
+save(WeekHolidays, file = "/media/ubuntu/DATA/Data/Smartpop/Matrix/WeekHolidays.Rda")
+save(WeekWorkingDays, file = "/media/ubuntu/DATA/Data/Smartpop/Matrix/WeekWorkingDays.Rda")
 ```
 
 ```{r, echo = FALSE}
@@ -353,9 +357,9 @@ library(rgdal)
 library(Metrics)
 library(data.table)
 
-popTotal <- sum(popVoro[-1,2]/1000 * (zoneShp$area/1000000))
-
 zoneShp <- readOGR("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.shp", verbose = FALSE)
+
+popTotal <- sum(popVoro[-1,2]/1000 * (zoneShp$area/1000000))
 
 df <- data.frame(i = 1:168, 
                  r = 1:168,
@@ -419,7 +423,7 @@ df <- data.frame(i = 1:168,
 
 for (i in 1:168) {
   y <- as.numeric(log(popVoro[-1,2]/1000)) 
-  x <- as.numeric(log((WeekWorkingDays[,i])/zoneShp$area))
+  x <- as.numeric(log((WeekWorkingDays[,i])/zoneShp$area/1000000))
   index <- which(x == -Inf | y == -Inf)
   y <- y[-index]
   x <- x[-index]
@@ -683,8 +687,11 @@ ui <- fluidPage(
 shinyApp(ui = ui, server = server)
 ```
 
+#### Model for each region
 
-```{r}
+##### Classify each zone in region
+
+```{r, eval = FALSE}
 # Prepare region raster
 region <- readOGR("/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Belgium_Adm/BEL_adm_shp/BEL_adm1_103300.shp")
 region <- spTransform(region, crs(zone))
@@ -712,6 +719,7 @@ system(command)
 
 # Find region for each zone
 r <- raster("/media/ubuntu/DATA/Data/Smartpop/Belgium/Belgium_Region.tif")
+zone <- raster("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.tif")
 
 wal <- r
 wal[wal %in% c(1,2)] <- 0
@@ -730,9 +738,9 @@ myZonal <- function (x, z, stat, digits = 0, na.rm = TRUE,
   fun <- match.fun(stat) 
   vals <- getValues(x) 
   zones <- round(getValues(z), digits = digits) 
-  rDT <- data.table(vals, z=zones) 
+  rDT <- data.table(vals, z = zones) 
   setkey(rDT, z) 
-  rDT[, lapply(.SD, fun, na.rm = TRUE), by=z] 
+  rDT[, lapply(.SD, fun, na.rm = TRUE), by = z] 
 } 
 
 zStat_wal <- data.frame(myZonal(z = zone, wal, mean))
@@ -742,64 +750,93 @@ colnames(zStat_fla) <- c("ID", "fla")
 zStat_bru <- data.frame(myZonal(z = zone, bru, mean))
 colnames(zStat_bru) <- c("ID", "bru")
 
-zstat_reg <- plyr::join(zStat_wal, zStat_fla, by="ID")
-zstat_reg <- plyr::join(zstat_reg, zStat_bru, by="ID")
+zstat_reg <- plyr::join(zStat_wal, zStat_fla, by = "ID")
+zstat_reg <- plyr::join(zstat_reg, zStat_bru, by = "ID")
 zstat_reg$max <- as.numeric(apply(zstat_reg[2:4],1, function(x){which.max(x)}))
 zstat_reg <- zstat_reg[-1, c(1,5)]
 colnames(zstat_reg) <- c("z", "reg")
-
-
+```
+```{r, eval = F, echo = F}
+save(zstat_reg, file = "/media/ubuntu/DATA/Data/Smartpop/Belgiumzstat_reg.Rda")
+```
+```{r, echo = F}
+load("/media/ubuntu/DATA/Data/Smartpop/Belgiumzstat_reg.Rda")
+```
+```{r}
 df <- data.frame(residuals = residuals, cl = zstat_reg$reg)
 boxplot(residuals ~ cl, df)
+```
+
+##### Mixed effect model with random intercept and slope
 
 
+```{r}
 library(lme4)
+library(rgdal)
+library(Metrics)
+library(data.table)
 
-lmer.model <- lmer(y ~ x + (1 + x | cl), data = df)
-summary(lmer.model)
-plot(exp(y), exp(predict(lmer.model, newdata = df)))
-cor(exp(y), exp(predict(lmer.model, newdata = df)))
+zoneShp <- readOGR("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.shp", verbose = FALSE)
 
+df <- data.frame(i = 1:168, 
+                 r = rep(0, 168),
+                 r2 = rep(0, 168),
+                 rmse = rep(0, 168))
+index <- c(3:15)
+index0 <- c(3:15)
+for (i in 1:6){
+  index <- c(index, index0 + 24*i)
+}
+
+for (i in (1:168)[-index]) {
+  y <- as.numeric(log(popVoro[-1,2]/1000)) 
+  x <- as.numeric(log((WeekWorkingDays[,i])/zoneShp$area/1000000))
+  index <- which(x == -Inf | y == -Inf)
+  y <- y[-index]
+  x <- x[-index]
+  
+  data <- data.frame(x = x, y = y, cl = zstat_reg$reg[-index])
+
+
+  lmer.model <- lmer(y ~ x + (1 + x | cl), data = data)
+  
+  # y <- as.numeric(log(popVoro[-1,2]/1000)) 
+  # x <- as.numeric(log((WeekWorkingDays[,i])/(zoneShp$area/1000000)))
+  # df <- data.frame(x = x, y = y, cl = zstat_reg$reg)
+  
+  predData <- rep(0, length(popVoro[-1,2]))
+  predData[-index] <- as.numeric(exp(predict(lmer.model, newdata = data)))
+  predData[-index] <- predData[-index] * popTotal/sum(predData[-index] * (zoneShp$area[-index]/1000000))
+
+  df$r[i] <- cor(popVoro[-1,2]/1000, predData)
+  df$rmse[i] <- rmse(popVoro[-1,2]/1000, predData)
+}
+
+plot(df$i, df$r, type = "o", ylab = "pearson correlation", xlab = "time", xaxt = "n", pch = 20) +
+axis(1, at = seq(13, 168, 24), labels = c("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")) +
+abline(v = seq(1, 168, 24)) 
+
+plot(df$i, df$rmse, type = "o", ylab = "RMSE (inhab./km²)", xlab = "time", xaxt = "n", pch = 20) +
+axis(1, at = seq(13, 168, 24), labels = c("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")) +
+abline(v = seq(1, 168, 24)) 
+
+plot(df$i, df$r2, type = "o", ylab = "r² (of log-log model, not really relevant)", xlab = "time", xaxt = "n", pch = 20) +
+axis(1, at = seq(13, 168, 24), labels = c("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")) +
+abline(v = seq(1, 168, 24)) 
 ```
 
+We will work with 9 pm as it gives the best results in average for each day of the week.
 
+```{r}
+output <- data.frame(h = 0:23, cor = rep(0,24))
 
+for (i in 1:24) {
+  output[i, 2] <- mean(df$r[seq(i,168,24)])
+}
 
-
-
-
-```{r, eval = FALSE}
-cl <- kmeans(Mat_BE, 10) #already scaled
-cl <- cl$cluster
-
-df <- data.frame(residuals = residuals, cl = cl)
-df <- data.frame(residuals = residuals, cl = cut(residuals, breaks = 10))
-df <- data.frame(residuals = residuals, cl = cut(residuals, 
-                                                 breaks = c(quantile(residuals, probs = seq(0, 1, by = 0.1)))))
-
-boxplot(residuals ~ cl, df)
-
-library(lme4)
-
-lmer.model <- lmer(y ~ x + (1 + x | cl), data = df)
-summary(lmer.model)
-plot(exp(y), exp(predict(lmer.model, newdata = df)))
-cor(exp(y), exp(predict(lmer.model, newdata = df)))
-
-lm.model <- lm(y ~ x, data = df)
-summary(lm.model)
-plot(y, predict(lm.model, newdata = df))
+plot(output$h,  output$cor, ylim = c(0.5,0.7), xlab = "hour", ulab = "pearson correlation")
 ```
 
-```{r, eval = FALSE}
-my.palette <- brewer.pal(n = 5, name = "Spectral")
-
-colors <- my.palette[as.numeric(cut(residuals, breaks = 5))]
-colors <- my.palette[as.numeric(cut(residuals, breaks=c(quantile(residuals, probs = seq(0, 1, by = 0.1))), include.lowest=TRUE))]
-plot(exp(x), exp(y), pch = 20, col = colors)
-
-plot((x), (y), pch = 20, col = colors)
-```
 
   
 
