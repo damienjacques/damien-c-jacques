@@ -1,0 +1,363 @@
+---
+title: Dynamic Population Mapping (Smartpop) - Part 6
+author: Damien C. Jacques
+date: '2018-10-08'
+slug: dynamic-population-mapping-smartpop-part-6
+categories:
+  - R
+summary: This Notebook details the steps of the data analysis carried out for the Smartpop project – Dynamic Population WP (part 6).
+tags:
+  - population
+  - mobile phone data
+  - statistics
+header:
+  caption: ''
+  image: ''
+---
+
+
+
+<div id="build-final-zone-shapefile" class="section level1">
+<h1>Build final zone shapefile</h1>
+<pre class="r"><code>source(&quot;/home/ubuntu/Dropbox/Research/scriptR/rasterToPolygons.R&quot;)
+r &lt;- raster(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2.tif&quot;)
+shp &lt;- gdal_polygonizeR(r, &quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2.shp&quot;)</code></pre>
+<pre class="r"><code>library(sf)
+library(dplyr)
+
+shp &lt;- st_read(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2.shp&quot;)
+shp &lt;- shp[!(shp$DN == 0), ]
+shp &lt;- shp[order(shp$DN),]  # needed to correctly cbind matrix data
+colnames(shp)[1] &lt;- &quot;ID_Grid&quot; 
+shp_dissolve &lt;- shp %&gt;% group_by(ID_Grid) %&gt;% summarize() # remove small polygons
+st_write(shp_dissolve, &quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp&quot;)</code></pre>
+<div id="population" class="section level2">
+<h2>Population</h2>
+<pre class="r"><code>library(raster)
+library(rasterVis)
+library(classInt)
+library(data.table)
+
+zone &lt;- raster(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2.tif&quot;)
+pop &lt;- raster(&quot;/media/ubuntu/DATA/Data/Smartpop/Population/pop_10_100.tif&quot;)
+pop[zone == 0] &lt;- NA
+pop &lt;- pop/1000
+
+# Population density at Voronoi scale in km2
+popVoro &lt;- zonal(pop, zone, mean)
+popVoro &lt;- popVoro[ -1, ]
+colnames(popVoro) &lt;- c(&quot;zone&quot;, &quot;pop&quot;)
+
+fwrite(data.frame(popVoro), &quot;/media/ubuntu/DATA/Data/Smartpop/Population/pop_085km2.csv&quot;)
+
+area &lt;- table(zone[,])
+area &lt;- as.data.frame(area)
+area &lt;- area[-1,]
+colnames(area) &lt;- c(&quot;zone&quot;, &quot;area(km2)&quot;)
+area$`area(km2)` &lt;- (area$`area(km2)`*50*50) / 1e6
+
+
+fwrite(area, &quot;/media/ubuntu/DATA/Data/Smartpop/Zone/area_085_inKm2.csv&quot;)</code></pre>
+</div>
+</div>
+<div id="spatial-cross-validation" class="section level1">
+<h1>Spatial cross-validation</h1>
+<div id="distance-matrix" class="section level2">
+<h2>Distance matrix</h2>
+<pre class="r"><code>library(reshape)
+library(geosphere)
+
+shp &lt;- st_read(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp&quot;)
+st_crs(shp) &lt;- &quot;+proj=lcc +lat_1=51.16666723333333 +lat_2=49.8333339 +lat_0=90 +lon_0=4.367486666666666 +x_0=150000.013
++y_0=5400088.438 +ellps=intl +units=m +no_defs&quot;
+
+# Compute zone centroids
+shpCentroid &lt;- st_centroid(shp)
+
+# Compute the geodesic for each OD pair
+shpCentroid_latlon &lt;- st_transform(shpCentroid, &quot;+init=epsg:4326&quot;)
+
+db &lt;- expand.grid.df(data.frame(st_coordinates(shpCentroid_latlon)), 
+                     data.frame(st_coordinates(shpCentroid_latlon)))
+names(db)[3:4] &lt;- c(&quot;X_dest&quot;, &quot;Y_dest&quot;)
+
+# Vector of distances in meters
+db$dist &lt;- distGeo(matrix(c(db$X, db$Y), ncol = 2), 
+                   matrix(c(db$X_dest, db$Y_dest), ncol = 2))
+
+# Build OD matrix
+db[,c(&quot;Origin&quot;, &quot;Destination&quot;)] &lt;- expand.grid(shpCentroid_latlon$ID_Grid, 
+               shpCentroid_latlon$ID_Grid)
+
+# Keep only relevant columns
+OD_distance &lt;- db[, c(6, 7, 5)]
+rm(db)
+
+# Remove Origin = Destination rows
+OD_distance &lt;- OD_distance[-which(OD_distance$Origin == OD_distance$Destination), ]
+
+# Save data
+fwrite(OD_distance, &quot;/media/ubuntu/DATA/Data/Smartpop/Zone/OD_distance_085km2.csv&quot;)</code></pre>
+<p>The model is trained on a sample of 30% of closest Voronoi polygons from a random polygon and validate using the 70% remaining polygons.</p>
+<pre class="r"><code>library(Metrics)
+
+popTotal &lt;- sum(popVoro$pop * area$`area(km2)`)
+
+# Set the number of iteration
+nIteration &lt;- 1000
+
+# randomly select 100 antennas
+set.seed(1)
+randomIDs &lt;- popVoro$zone[sample(1:nrow(popVoro), nIteration)]
+
+# Initiate output dataframes
+OutputSpatialCV &lt;- data.frame(randomID = randomIDs,
+                              rsquared = rep(NA, length(randomIDs)),
+                              cor = rep(NA, length(randomIDs)),
+                              rmse = rep(NA, length(randomIDs)),
+                              intercept = rep(NA, length(randomIDs)),
+                              slope = rep(NA, length(randomIDs)))
+
+UncertaintySpatialCV &lt;- data.frame(zone = popVoro$zone,
+                                   Iteration1 = rep(NA, length(popVoro$zone)))
+for (i in 2:nIteration) {
+  UncertaintySpatialCV[, paste0(&quot;Iteration&quot;, i)] &lt;- NA
+}
+
+# Start Spatial CV loop
+k = 0
+for (randomID in randomIDs) {
+  k = k + 1
+  # print(k)
+  
+  # Build training sample
+  OD_distance_sub &lt;- OD_distance[OD_distance$Origin == randomID,]
+  OD_distance_sub &lt;- OD_distance_sub[order(OD_distance_sub$dist), ][1:994, ]  # 995 = 30% of polygons
+  trainingIDs &lt;- c(randomID, OD_distance_sub$Destination)
+  trainingWhich &lt;- which(popVoro$zone %in% trainingIDs)
+  
+  ## Plot training
+  # test &lt;- as(shp, &quot;Spatial&quot;)
+  # test$col &lt;- ifelse(test$ID_Grid %in% trainingIDs, &quot;red&quot;, &quot;white&quot;)
+  # plot(test, col = test$col)
+  
+  # initiate variable for regression
+  y &lt;- as.numeric(log(popVoro$pop[trainingWhich])) 
+  x &lt;- as.numeric(log(WeekWorkingDays[trainingWhich,22]/area$`area(km2)`[trainingWhich]))
+  # remove log(0) values
+  index &lt;- which(x == -Inf | y == -Inf)
+  if (length(index) != 0) {
+    y &lt;- y[-index]
+    x &lt;- x[-index]
+  }
+  
+  # standard log-log regression
+  lm.model &lt;- lm(y ~ x) 
+  
+  # compute prediction data and statistics from lm.model
+  x &lt;- as.numeric(log(WeekWorkingDays[-trainingWhich,22]/area$`area(km2)`[-trainingWhich]))
+  predData &lt;- exp(lm.model$coefficients[1] + lm.model$coefficients[2]*x)
+  predData &lt;- predData * popTotal/sum(predData * area$`area(km2)`[-trainingWhich])
+  UncertaintySpatialCV[-trainingWhich, k + 1] &lt;- predData
+
+  OutputSpatialCV$rsquared[OutputSpatialCV$randomID == randomID] &lt;- summary(lm.model)$r.squared
+  OutputSpatialCV$cor[OutputSpatialCV$randomID == randomID] &lt;- cor(popVoro$pop[-trainingWhich], predData)
+  OutputSpatialCV$rmse[OutputSpatialCV$randomID == randomID] &lt;- rmse(popVoro$pop[-trainingWhich], predData)
+  OutputSpatialCV$intercept[OutputSpatialCV$randomID == randomID] &lt;- lm.model$coefficients[1]
+  OutputSpatialCV$slope[OutputSpatialCV$randomID == randomID] &lt;- lm.model$coefficients[2]
+}</code></pre>
+</div>
+<div id="mapping-uncertainty" class="section level2">
+<h2>Mapping uncertainty</h2>
+<pre class="r"><code>library(GADMTools)
+map &lt;- gadm.loadCountries(c(&quot;BEL&quot;), level = 5, basefile = &quot;./&quot;)
+plotmap(map)</code></pre>
+<pre class="r"><code>library(matrixStats)
+
+UncertaintySpatialCV_mean &lt;- rowSds(as.matrix(UncertaintySpatialCV[, -1]), na.rm = T)
+
+shp &lt;- st_read(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp&quot;)
+st_crs(shp) &lt;- &quot;+proj=lcc +lat_1=51.16666723333333 +lat_2=49.8333339 +lat_0=90 +lon_0=4.367486666666666 +x_0=150000.013
++y_0=5400088.438 +ellps=intl +units=m +no_defs&quot;
+
+shp &lt;- cbind(shp, UncertaintySpatialCV_mean)
+
+par(mar = c(0,0,1.5,0))
+layout(matrix(c(1,1,2,1,1,3, 4, 5,6), 3, 3, byrow = TRUE))
+
+# quantization breaks of the rate
+bks &lt;- getBreaks(v = shp[[&quot;UncertaintySpatialCV_mean&quot;]], method = &quot;quantile&quot;, nclass = 5)
+bks &lt;- seq(1, 150, 150/5)
+bks[6] &lt;- max(shp[[&quot;UncertaintySpatialCV_mean&quot;]])
+
+# get a color palette
+cols &lt;- c(&#39;#ffffb2&#39;,&#39;#fecc5c&#39;,&#39;#fd8d3c&#39;,&#39;#f03b20&#39;,&#39;#bd0026&#39;)
+
+choroLayer(x = shp, var = &quot;UncertaintySpatialCV_mean&quot;, breaks = bks, col = cols,
+           border = &quot;khaki&quot;, lwd = 0.001, 
+           legend.title.txt = &quot;Uncertainty of population density prediction&quot;, 
+           legend.pos = &#39;bottomleft&#39;, legend.values.rnd = 0)
+layoutLayer(title = paste0(&quot;Population density in Belgium during working days (&quot;, colname, &quot;h)&quot;), 
+            sources = &quot;&quot;, north = TRUE, 
+            scale = 50, tabtitle = TRUE,
+            frame = FALSE,  
+            author = &quot;*model based on mobile phone data&quot;)
+
+for (city in c(&quot;Brussel&quot;, &quot;Antwerpen&quot;, &quot;Leuven&quot;, &quot;Liège&quot; ,&quot;Namur&quot;)) {
+    choroLayer(x = st_crop(shp, region[region$NAME_3 == city,]),
+               var = &quot;UncertaintySpatialCV_mean&quot;, breaks = bks, col = cols,
+               lwd = 0.001, 
+               legend.pos = &#39;n&#39;)
+    plot(as(commune, &quot;Spatial&quot;), border = &quot;black&quot;, lwd = 0.8, add = TRUE)
+    layoutLayer(title = paste0(&quot;Zoom over &quot;, city), 
+                sources = &quot;&quot;, scale = 5, tabtitle = TRUE,
+                frame = T,  
+                author = &quot;&quot;)
+}</code></pre>
+<pre class="r"><code>library(matrixStats)
+
+popVoro[1531,] &lt;- 1  #replace 0 by 1
+UncertaintySpatialCV_mean_normalized &lt;- UncertaintySpatialCV_mean/popVoro$pop
+
+shp &lt;- st_read(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp&quot;)
+st_crs(shp) &lt;- &quot;+proj=lcc +lat_1=51.16666723333333 +lat_2=49.8333339 +lat_0=90 +lon_0=4.367486666666666 +x_0=150000.013
++y_0=5400088.438 +ellps=intl +units=m +no_defs&quot;
+
+shp &lt;- cbind(shp, UncertaintySpatialCV_mean_normalized)
+
+shp[[&quot;UncertaintySpatialCV_mean_normalized&quot;]] &lt;- shp[[&quot;UncertaintySpatialCV_mean_normalized&quot;]]*100
+
+par(mar = c(0,0,1.5,0))
+layout(matrix(c(1,1,2,1,1,3, 4, 5,6), 3, 3, byrow = TRUE))
+
+# quantization breaks of the rate
+bks &lt;- getBreaks(v = shp[[&quot;UncertaintySpatialCV_mean_normalized&quot;]], method = &quot;quantile&quot;, nclass = 5)
+bks &lt;- seq(0, 50, 100/10)
+bks[6] &lt;- max(shp[[&quot;UncertaintySpatialCV_mean_normalized&quot;]])
+
+# get a color palette
+cols &lt;- c(&#39;#ffffb2&#39;,&#39;#fecc5c&#39;,&#39;#fd8d3c&#39;,&#39;#f03b20&#39;,&#39;#bd0026&#39;)
+
+choroLayer(x = shp, var = &quot;UncertaintySpatialCV_mean_normalized&quot;, breaks = bks, col = cols,
+           border = &quot;khaki&quot;, lwd = 0.001, 
+           legend.title.txt = &quot;Uncertainty of population density prediction&quot;, 
+           legend.pos = &#39;bottomleft&#39;, legend.values.rnd = 0)
+layoutLayer(title = paste0(&quot;Population density in Belgium during working days (&quot;, colname, &quot;h)&quot;), 
+            sources = &quot;&quot;, north = TRUE, 
+            scale = 50, tabtitle = TRUE,
+            frame = FALSE,  
+            author = &quot;*model based on mobile phone data&quot;)
+
+for (city in c(&quot;Brussel&quot;, &quot;Antwerpen&quot;, &quot;Leuven&quot;, &quot;Liège&quot; ,&quot;Namur&quot;)) {
+    choroLayer(x = st_crop(shp, region[region$NAME_3 == city,]),
+               var = &quot;UncertaintySpatialCV_mean_normalized&quot;, breaks = bks, col = cols,
+               lwd = 0.001, 
+               legend.pos = &#39;n&#39;)
+    plot(as(commune, &quot;Spatial&quot;), border = &quot;black&quot;, lwd = 0.8, add = TRUE)
+    layoutLayer(title = paste0(&quot;Zoom over &quot;, city), 
+                sources = &quot;&quot;, scale = 5, tabtitle = TRUE,
+                frame = T,  
+                author = &quot;&quot;)
+}</code></pre>
+</div>
+</div>
+<div id="mapping" class="section level1">
+<h1>Mapping</h1>
+<div id="load-shapefile-for-subsetting-and-plotting" class="section level2">
+<h2>Load shapefile for subsetting and plotting</h2>
+<pre class="r"><code>region &lt;- st_read(&quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Belgium_Adm/BEL_adm_shp/BEL_adm3.shp&quot;)
+region &lt;- st_transform(region, st_crs(shp))
+
+commune &lt;- st_read(&quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Belgium_Adm/BEL_adm_shp/BEL_adm4.shp&quot;)
+commune &lt;- st_transform(commune, st_crs(shp))</code></pre>
+</div>
+<div id="make-animated-map" class="section level2">
+<h2>Make animated map</h2>
+<pre class="r"><code>library(cartography)
+library(cartogram)
+library(animation)
+library(sp)
+
+# Plot data
+shp &lt;- cbind(shp, WeekHolidays)
+
+ani.options(interval = .10,
+            ani.width = 800, 
+            ani.height = 800)
+
+saveVideo(movie.name = &quot;/media/ubuntu/DATA/Data/Smartpop/Map/SIM_workingDays.mp4&quot;, { 
+  for (colname in colnames(shp)[2:5]) {
+    bks &lt;- getBreaks(v = shp[[colname]], method = &quot;quantile&quot;, nclass = 5)
+    # figdim &lt;- getFigDim(x = shp, width = 1000, mar = c(0,0,1.2,0), res = 100)
+    
+    par(mar = c(0,0,1.5,0))
+    layout(matrix(c(1,1,2,1,1,3, 4, 5,6), 3, 3, byrow = TRUE))
+    
+    # quantization breaks of the rate
+    bks &lt;- getBreaks(v = shp[[colname]], method = &quot;quantile&quot;, nclass = 5)
+    # get a color palette
+    cols &lt;- c(&#39;#d7191c&#39;,&#39;#fdae61&#39;,&#39;#ffffbf&#39;,&#39;#abdda4&#39;,&#39;#2b83ba&#39;)
+    
+    choroLayer(x = shp,var = colname, breaks = bks, col = cols,
+               border = &quot;khaki&quot;, lwd = 0.01, 
+               legend.title.txt = &quot;Population\ndensity&quot;, 
+               legend.pos = &#39;bottomleft&#39;, legend.values.rnd = 0)
+    layoutLayer(title = paste0(&quot;Population density in Belgium during working days (&quot;, colname, &quot;h)&quot;), 
+                sources = &quot;&quot;, north = TRUE, 
+                scale = 50, tabtitle = TRUE,
+                frame = FALSE,  
+                author = &quot;*model based on mobile phone data&quot;)
+    
+    for (city in c(&quot;Brussel&quot;, &quot;Antwerpen&quot;, &quot;Leuven&quot;, &quot;Liège&quot; ,&quot;Namur&quot;)) {
+      choroLayer(x = st_crop(shp, region[region$NAME_3 == city,]),
+                 var = colname, breaks = bks, col = cols,
+                 lwd = 0.01, 
+                 legend.title.txt = &quot;Population\ndensity&quot;, 
+                 legend.pos = &#39;n&#39;)
+      plot(as(commune, &quot;Spatial&quot;), border = &quot;white&quot;, lwd = 0.8, add = TRUE)
+      layoutLayer(title = paste0(&quot;Zoom over &quot;, city), 
+                  sources = &quot;&quot;, scale = 5, tabtitle = TRUE,
+                  frame = T,  
+                  author = &quot;&quot;)
+    }
+  }
+})</code></pre>
+<pre class="r"><code>library(splancs)
+
+shp_grid &lt;- getGridLayer(x = shp, cellsize = 5e+06,
+ type = &quot;hexagonal&quot;, var = &quot;X15&quot;)
+
+choroLayer(x = shp_grid,
+           var = &quot;X15&quot;, breaks = bks, col = cols,
+           lwd = 0.01, 
+           legend.title.txt = &quot;Population\ndensity&quot;, 
+           legend.pos = &#39;n&#39;)
+layoutLayer(title = &quot;Population density in Belgium during working days&quot;, 
+            sources = &quot;&quot;, north = TRUE, 
+            scale = 5, tabtitle = TRUE,
+            frame = FALSE,  
+            author = &quot;*per 100,000 live births. Source: North Carolina SIDS data set&quot;)
+choroLayer(x = shp,
+           var = &quot;X15&quot;, breaks = bks, col = cols,
+           lwd = 0.01, 
+           legend.title.txt = &quot;Population\ndensity&quot;, 
+           legend.pos = &#39;n&#39;)</code></pre>
+<pre class="r"><code>nc &lt;- cartogram_cont(shp, &quot;X15&quot;)
+
+# quantization breaks of the rate
+bks &lt;- getBreaks(v = nc$share, method = &quot;quantile&quot;, nclass = 5)
+# correct the breaks to use the global rate as limit of class 
+bks[4] &lt;- global_rate
+# get a color palette
+cols &lt;- carto.pal(pal1 = &quot;green.pal&quot;, n1 = 3, 
+                  pal2 = &quot;wine.pal&quot;, n2 = 2)
+## Choropleth layer
+# set figure margins and background color
+par(mar = c(0,0,1.2,0), bg = &quot;lemonchiffon&quot;)
+# display the sudden infant deaths per 1000 births
+choroLayer(x = nc,var = &quot;X15&quot;, breaks = bks, col = cols,
+           border = &quot;khaki&quot;, lwd = 0.5, 
+           legend.title.txt = &quot;Sudden infant death syndrome rate*&quot;, 
+           legend.pos = &#39;topleft&#39;, legend.values.rnd = 0)</code></pre>
+</div>
+</div>

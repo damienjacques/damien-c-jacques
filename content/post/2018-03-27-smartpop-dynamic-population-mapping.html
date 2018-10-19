@@ -1,12 +1,13 @@
 ---
-title: Dynamic Population Mapping (Smartpop)
+title: Dynamic Population Mapping (Smartpop) - Part 1
 author: Damien C. Jacques
 date: '2018-03-27'
 categories:
   - R
 tags:
-  - mobile phone data
   - population
+  - mobile phone data
+  - statistics
 summary: "This Notebook details the steps of the data analysis carried out for the Smartpop project -- Dynamic Population WP."
 slug: smartpop-dynamic-population-mapping
 output:
@@ -23,19 +24,19 @@ output:
 <li><a href="#data-cleaning">Data Cleaning</a><ul>
 <li><a href="#data-loading">Data Loading</a></li>
 <li><a href="#antennas">Antennas</a><ul>
-<li><a href="#how-many-antennas-base-transceiver-station-in-the-database">How many antennas / base transceiver station in the database ?</a></li>
+<li><a href="#how-many-antennas-base-transceiver-stations-are-in-the-database">How many antennas / base transceiver stations are in the database ?</a></li>
 <li><a href="#where-are-they-located">Where are they located?</a></li>
 <li><a href="#are-they-correctly-located">Are they correctly located?</a></li>
 <li><a href="#inter-antenna-distance">Inter-antenna distance</a></li>
 <li><a href="#buffer-analysis">Buffer analysis</a></li>
-<li><a href="#number-of-antennas-over-time">Number of antennas over time</a></li>
-<li><a href="#type-of-antennas">Type of antennas</a></li>
+<li><a href="#number-of-bts-over-time">Number of BTS over time</a></li>
+<li><a href="#type-of-bts">Type of BTS</a></li>
 </ul></li>
 </ul></li>
 </ul>
 </div>
 
-<p>This Notebook details the steps of the data analysis carried out for the Smartpop project – Dynamic Population WP.</p>
+<p>This Notebook details the steps of the data analysis performed in the frame of the Smartpop project – Dynamic Population WP.</p>
 <div id="data-cleaning" class="section level1">
 <h1>Data Cleaning</h1>
 <div id="data-loading" class="section level2">
@@ -72,8 +73,8 @@ Mobile_Phone</code></pre>
 </div>
 <div id="antennas" class="section level2">
 <h2>Antennas</h2>
-<div id="how-many-antennas-base-transceiver-station-in-the-database" class="section level3">
-<h3>How many antennas / base transceiver station in the database ?</h3>
+<div id="how-many-antennas-base-transceiver-stations-are-in-the-database" class="section level3">
+<h3>How many antennas / base transceiver stations are in the database ?</h3>
 <pre class="r"><code>unique_antenna &lt;- unique(Mobile_Phone[, c(&quot;CELL_BTS_XCOORD_NUM&quot; ,&quot;CELL_BTS_YCOORD_NUM&quot;)])
 
 nrow(unique_antenna)</code></pre>
@@ -96,7 +97,7 @@ plot(antenna_shp, pch = &quot;*&quot;)</code></pre>
 colnames(Mobile_Phone)[2:3] &lt;- c(&quot;X&quot;, &quot;Y&quot;)
 Mobile_Phone &lt;- plyr::join(Mobile_Phone, antenna_shp@data, by = c(&quot;X&quot;, &quot;Y&quot;))
 Mobile_Phone &lt;- Mobile_Phone[, -(2:3)]</code></pre>
-<p>Two antennas are mislocated (located beyond the Belgium border). The number of active SIMs for these antennas represent less than 0.001% of the total active SIM. The (2415660, 181728, ID:4877) antenna is very poorly active while the (0, 0, ID:4635) antenna is more active than 25% of the antennas. Therefore, removing these antennas could lead to some local wrong estimates.</p>
+<p>Two BTS/antennas are mislocated (located beyond the Belgium border). They represent less than 0.001% of the total active SIMs in the database. The (2415660, 181728, ID:4877) antenna is very poorly active while the (0, 0, ID:4635) antenna is more active than 25% of the antennas. Removing these antennas should have little impact on the analysis.</p>
 <pre class="r"><code>library(raster)
 library(rgeos)
 
@@ -150,7 +151,7 @@ plot(antenna_discarded, add = T, col = &quot;red&quot;, pch = &quot;*&quot;)  # 
 </div>
 <div id="are-they-correctly-located" class="section level3">
 <h3>Are they correctly located?</h3>
-<p>Comparison with the cadastre (from <a href="http://geoapps.wallonie.be/antennes/#BBOX=-45890.77766488868,367190.77766488865,-12341.35551604438,197672.0853441707">Walloon Region</a>) shows that several antennas from cadastre are not in the db and vice versa.</p>
+<p>Comparison with the cadastre (from <a href="http://geoapps.wallonie.be/antennes/#BBOX=-45890.77766488868,367190.77766488865,-12341.35551604438,197672.0853441707">Walloon Region</a>) shows that several BTS from the cadastre are not found in the dataset and vice versa.</p>
 <pre class="r"><code>cadastre_antenna &lt;- readOGR(&quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Cadastre_antenna/antenna_orange_cadastre_31370.shp&quot;)</code></pre>
 <pre><code>## OGR data source with driver: ESRI Shapefile 
 ## Source: &quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Cadastre_antenna/antenna_orange_cadastre_31370.shp&quot;, layer: &quot;antenna_orange_cadastre_31370&quot;
@@ -164,7 +165,7 @@ liege &lt;- belgium[belgium$NAME_4 == &quot;Liège&quot;,]
 liege &lt;- spTransform(liege, crs(antenna_shp))
 
 plot(liege, main = &quot;zoom on Liège/Luik&quot;) +
-plot(cadastre_antenna, pch = &quot;*&quot;, col =&quot;red&quot;, add = T) +
+plot(cadastre_antenna, pch = &quot;*&quot;, col = &quot;red&quot;, add = T) +
 plot(antenna_shp, pch = &quot;*&quot;, add = T)</code></pre>
 <pre><code>## integer(0)</code></pre>
 <pre class="r"><code>legend(&quot;bottomright&quot;, c(&quot;antennas from cadastre&quot;, &quot;antennas from db&quot;), 
@@ -190,9 +191,9 @@ l &lt;- leaflet() %&gt;%
   addProviderTiles(providers$Esri.WorldImagery, group = &quot;ESRI World Imagery&quot;) %&gt;%
   # Overlay groups
   addCircles(data = antenna_latlon, ~lon, ~lat,  weight = 5,
-             color =&quot;blue&quot;, fillOpacity = 0.9, group = &quot;antenna db&quot;) %&gt;%
+             color = &quot;blue&quot;, fillOpacity = 0.9, group = &quot;antenna db&quot;) %&gt;%
   addCircles(data = cadastre_latlon, ~lon, ~lat,  weight = 5,
-             color =&quot;red&quot;, fillOpacity = 0.9, group = &quot;antenna cadastre&quot;) %&gt;%
+             color = &quot;red&quot;, fillOpacity = 0.9, group = &quot;antenna cadastre&quot;) %&gt;%
   # Layers control
   addLayersControl(
     baseGroups = c(&quot;Toner&quot;, &quot;OSM (default)&quot;, &quot;ESRI World Imagery&quot;),
@@ -205,7 +206,7 @@ frameWidget(l)</code></pre>
 </div>
 <div id="inter-antenna-distance" class="section level3">
 <h3>Inter-antenna distance</h3>
-<p>After exploration some clusters of very close antenna exist. Let’s further investigate this point.</p>
+<p>After exploration, it seems that there are some clusters of very close antenna. Let’s further investigate this point.</p>
 <p>First, we compute the distance matrix between each antenna.</p>
 <pre class="r"><code>library(geosphere)
 library(reshape)
@@ -221,7 +222,7 @@ dt.cad &lt;- expand.grid.df(cadastre_latlon[, c(&quot;lon&quot;, &quot;lat&quot;
 names(dt.cad)[3:4] &lt;- c(&quot;lon_dest&quot;, &quot;lat_dest&quot;)
 dt.cad$dist &lt;- distGeo(matrix(c(dt.cad$lon, dt.cad$lat), ncol = 2), 
                    matrix(c(dt.cad$lon_dest, dt.cad$lat_dest), ncol = 2))</code></pre>
-<p>The lowest distance between two antennas from the cadastre is 3.6 m. Less than 0.1 % of the antenna are closer than 1 km.</p>
+<p>According to the cadastre, the lowest distance between two antennas is 3.6 m. Less than 0.1 % of the antennas are closer than 1 km.</p>
 <pre class="r"><code>range(dt.cad$dist[dt.cad$dist &gt; 0])</code></pre>
 <pre><code>## [1] 3.605757e+00 2.489118e+05</code></pre>
 <pre class="r"><code>hist(dt.cad$dist[dt.cad$dist &gt; 0]/1000, 
@@ -235,7 +236,7 @@ dt.cad$dist &lt;- distGeo(matrix(c(dt.cad$lon, dt.cad$lat), ncol = 2),
 <pre class="r"><code>quantile(dt.cad$dist[dt.cad$dist &gt; 0], c(0.001))</code></pre>
 <pre><code>##     0.1% 
 ## 1007.321</code></pre>
-<p>1735 antennas are closer than 2 m. There are probably antennas from the same BTS and other points correspond to all antennas of one BTS.</p>
+<p>In the dataset, 1735 location points are closer than 2 m. In that case, each point probably correspond to antennas from the same BTS.</p>
 <pre class="r"><code>load(&quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/WorkingDataBase/antenna_distance&quot;)
 
 hist(dt$dist/1000, 
@@ -252,11 +253,11 @@ length(unique(c(paste(CloseAntenna$lon, CloseAntenna$lat), paste(CloseAntenna$lo
 <pre class="r"><code>quantile(dt$dist[dt$dist &gt; 1], c(0.001))</code></pre>
 <pre><code>##     0.1% 
 ## 958.3147</code></pre>
-<p>{{% alert warning %}} Assumption 2: Very close antennas are antennas from the same BTS OR the same BTS but active at different time of the year. These antennas will be merged. Close antennas (&gt; 2 m, &lt; 1 km) will also be merged but in a further step. Other points correspond to all antennas of one BTS. {{% /alert %}}</p>
+<p>{{% alert warning %}} Assumption 2: Very close location points are antennas from the same BTS OR the same BTS but active at different time of the year. These antennas will be merged. Close antennas (&gt; 2 m, &lt; 1 km) will also be merged but in a further step. {{% /alert %}}</p>
 </div>
 <div id="buffer-analysis" class="section level3">
 <h3>Buffer analysis</h3>
-<p>Buffer of 2 m around antennas are used to merge the IDs of very close antenna.</p>
+<p>Two meters buffer around antennas are used to merge the IDs of very close location points.</p>
 <pre class="r"><code>library(rgeos)
 library(sp)
 
@@ -288,17 +289,17 @@ antenna_shp  &lt;- antenna_shp[-which(antenna_shp$ID %in% lookUp$OldID), ]
 library(dplyr)
 Mobile_Phone &lt;- Mobile_Phone %&gt;%
                 group_by(DATE_HOUR, ID) %&gt;%
-                summarise(NBR_SIM_BE = sum(NBR_SIM_BE),
-                          NBR_SIM_ROAMERS = sum(NBR_SIM_ROAMERS),
-                          NBR_EVENTS_BE = sum(NBR_EVENTS_BE),
-                          NBR_EVENTS_ROAMERS = sum(NBR_EVENTS_ROAMERS))</code></pre>
-<p>The remaining antennas in the database are 4375.</p>
+                dplyr::summarise(NBR_SIM_BE = sum(as.numeric(NBR_SIM_BE)),
+                          NBR_SIM_ROAMERS = sum(as.numeric(NBR_SIM_ROAMERS)),
+                          NBR_EVENTS_BE = sum(as.numeric(NBR_EVENTS_BE)),
+                          NBR_EVENTS_ROAMERS = sum(as.numeric(NBR_EVENTS_ROAMERS)))</code></pre>
+<p>The remaining number of antennas in the database is 4375.</p>
 <pre class="r"><code>nrow(antenna_shp)</code></pre>
 <pre><code>## [1] 4375</code></pre>
 </div>
-<div id="number-of-antennas-over-time" class="section level3">
-<h3>Number of antennas over time</h3>
-<p>Now, let’s plot the number of antennas over time.</p>
+<div id="number-of-bts-over-time" class="section level3">
+<h3>Number of BTS over time</h3>
+<p>Now, let’s explore the number of BTS over time.</p>
 <pre class="r"><code>x &lt;- Mobile_Phone %&gt;%                   
                  group_by(DATE_HOUR) %&gt;%          
                  summarise(Unique_Elements = n_distinct(ID))  
@@ -353,7 +354,7 @@ plot(lubridate::ymd(x$`substr(DATE_HOUR, 1, 10)`),
      type = &quot;l&quot;, 
      xlab = &quot;day&quot;, ylab = &quot;N EVENTS ROAMERS&quot;)</code></pre>
 <p><img src="/post/2018-03-27-smartpop-dynamic-population-mapping_files/figure-html/unnamed-chunk-19-6.png" width="672" /></p>
-<p>The number of antenna increase over time (trend) with a daily pattern (day / night). For the trend, there is three different periods: before 100 first days (around the beginning of August), then from 100 to 315 (mid of March) and the rest.</p>
+<p>The number of BTS increases over time (trend) with a daily pattern (day / night). For the trend, one can identify three contrasted periods: before 100 first days (around the beginning of August), from 100 to 315 (mid of March) and what remains.</p>
 <pre class="r"><code># aggregate SIM activity per day
 Mobile_Phone_ByDay &lt;- Mobile_Phone %&gt;%                   
                  group_by(substr(DATE_HOUR, 1, 10), ID) %&gt;%          
@@ -369,9 +370,9 @@ length(AntennaNotActivetheWholeYear)</code></pre>
 antenna_shp_discard &lt;- antenna_shp[which(antenna_shp$ID %in% AntennaNotActivetheWholeYear), ]
 antenna_shp_select &lt;- antenna_shp[-which(antenna_shp$ID %in% AntennaNotActivetheWholeYear), ]</code></pre>
 <pre><code>##             used   (Mb) gc trigger   (Mb)   max used   (Mb)
-## Ncells   1552790   83.0   29688859 1585.6   46388843 2477.5
-## Vcells 176721636 1348.3  515184586 3930.6 1240442911 9463.9</code></pre>
-<p>A <a href="https://smartpop.shinyapps.io/ExploreAntenna/">shiny app</a> was developped to check each antenna with less than 365 active days (609), one by one and create a lookup table to merge the antennas depending on their time series.</p>
+## Ncells   1565526   83.7   35652230 1904.1   55706611 2975.1
+## Vcells 246937383 1884.0  618295862 4717.3 1240450979 9463.9</code></pre>
+<p>A <a href="https://smartpop.shinyapps.io/ExploreAntenna/">shiny app</a> is developped to check, one by one, each BTS with less than 365 active days (609).</p>
 <pre class="r"><code>library(leaflet)
 
 # make shapefile readable in leaflet
@@ -485,22 +486,22 @@ shinyApp(ui = ui, server = server)</code></pre>
   });
 </script>
 </div>
-<div id="type-of-antennas" class="section level3">
-<h3>Type of antennas</h3>
-<p>After visual exploration several types of antenna can be identified:</p>
+<div id="type-of-bts" class="section level3">
+<h3>Type of BTS</h3>
+<p>After visual exploration several types of BTS can be identified:</p>
 <ul>
-<li><strong>Type 1</strong>: antennas active all days with a regular pattern without apparent anomalies.</li>
-<li><strong>Type 2</strong>: antennas active all days with an irregular pattern and potential anomalies.</li>
-<li><strong>Type 3</strong>: antennas that are set up for special events, active for a couple of days (for the duration of the event) with a peak in SIM numbers (summer festivals…).</li>
-<li><strong>Type 4</strong>: antennas covering commercial area. Most probably inside the building as they show lower SIM numbers than antenna around.</li>
-<li><strong>Type 5</strong>: antennas that complete each other time series without overlap. They look like the same antenna but with different location points.</li>
+<li><strong>Type 1</strong>: BTS active all days with a regular pattern without noticeable anomalies.</li>
+<li><strong>Type 2</strong>: BTS active all days with an irregular pattern and potential anomalies.</li>
+<li><strong>Type 3</strong>: BTS set up for special events, active for a couple of days (for the duration of the event) with a peak in SIM numbers (summer festivals…).</li>
+<li><strong>Type 4</strong>: BTS covering commercial areas, most probably located inside a building with low range coverage as they show lower SIM numbers than BTS around.</li>
+<li><strong>Type 5</strong>: Two or more BTS completing each other time series without overlap. They look like the same BTS but with different antennas</li>
 <li><strong>Type 5 bis</strong>: same as type 5 but with overlap in time.</li>
-<li><strong>Type 6</strong>: antennas that have a regular patterns and appear at some point in time. They look like new antennas. With the new antenna, the number of SIM active in the antennas decrease as the users can connect to more antennas.</li>
-<li><strong>Type 7</strong>: same as type 5 but without changed in activity of antennas around. It looks like an area that was previously poorly covered by the network and new users can access the network thanks to the new antenna. It concerns only few users otherwise some trends should be visible on the time series of total SIM over time.</li>
-<li><strong>Type 8</strong>: antennas in events area/buildings (such as national stadium, spiroudome, Bruxelles expo) with high peak during irregular events.</li>
-<li><strong>Type 9</strong>: antennas with SIM very close to 0 for each active days.</li>
+<li><strong>Type 6</strong>: Two or more BTS having a regular patterns appearing simultaneously in the database. They look like newly installed BTS. With the new BTS, the number of SIM active in the BTS decrease since the users can connect to more BTS.</li>
+<li><strong>Type 7</strong>: same as type 5 but without changed in activity of BTS around. It looks like an area that was previously poorly covered by the network and new users can access the network thanks to the new BTS. It concerns only few users otherwise some trends should be visible on the time series of total SIM over time.</li>
+<li><strong>Type 8</strong>: BTS in events area/buildings (such as national stadium, spiroudome, Bruxelles expo) with high peak during irregular events.</li>
+<li><strong>Type 9</strong>: BTS with SIM very close to 0 for each active days.</li>
 </ul>
-<p>The lookup table build tahnks to the shiny app is used to merge the antennas.</p>
+<p>A lookup table is produced thanks to the shiny app to merge the location points (BTS / antenna) with activity complementing each other.</p>
 <pre class="r"><code>## Delete antenna with 0 activity
 
 # Load lookup table
@@ -521,11 +522,11 @@ antenna_shp  &lt;- antenna_shp[-which(antenna_shp$ID %in% lookUp2$OldID), ]
 library(dplyr)
 Mobile_Phone &lt;- Mobile_Phone %&gt;%
                 group_by(DATE_HOUR, ID) %&gt;%
-                summarise(NBR_SIM_BE = sum(NBR_SIM_BE),
+                dplyr::summarise(NBR_SIM_BE = sum(NBR_SIM_BE),
                           NBR_SIM_ROAMERS = sum(NBR_SIM_ROAMERS),
                           NBR_EVENTS_BE = sum(NBR_EVENTS_BE),
                           NBR_EVENTS_ROAMERS = sum(NBR_EVENTS_ROAMERS))</code></pre>
-<p>The final database is almost ready. Zero values are added to antenna with &lt; 365 days of activity and located in event areas (e.g. Bruxelles expo) identified during the visual exloration using the shiny app.</p>
+<p>The final database is almost ready. Zero values are added to antenna with &lt; 365 days of activity and specific areas (e.g. Bruxelles expo) identified during the visual exloration using the shiny app.</p>
 <pre class="r"><code>for (id in na.omit(lookUp$`event area (add 0)`)) {
   dates &lt;- unique(Mobile_Phone$DATE_HOUR)[-which(unique(Mobile_Phone$DATE_HOUR) %in% Mobile_Phone$DATE_HOUR[Mobile_Phone$ID == id])]
   df &lt;- data.frame(DATE_HOUR = dates,
@@ -536,8 +537,8 @@ Mobile_Phone &lt;- Mobile_Phone %&gt;%
                    NBR_EVENTS_ROAMERS = rep(0, length(dates)))
   Mobile_Phone &lt;- rbind.data.frame(Mobile_Phone, df)
 }</code></pre>
-<p>{{% alert warning %}} Assumption 3: there is <em>nobody</em> in areas covered by antennas located in “event areas”&quot; (e.g. Bruxelles Expo) when these antenna are not active. {{% /alert %}}</p>
-<p>The remainder of the analysis can be found <a href="https://damien-c-jacques.rbind.io/post/dynamic-population-mapping-smartpop-part-2/">here</a>.</p>
+<p>{{% alert warning %}} Assumption 3: There is <em>nobody</em> in areas covered by BTS located in “event areas”&quot; (e.g. Bruxelles Expo) when these BTS are not active. {{% /alert %}}</p>
+<p>Part 2 of the analysis is <a href="https://damien-c-jacques.rbind.io/post/dynamic-population-mapping-smartpop-part-2/">here</a>.</p>
 </div>
 </div>
 </div>

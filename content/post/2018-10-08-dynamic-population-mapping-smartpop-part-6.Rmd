@@ -1,0 +1,427 @@
+---
+title: Dynamic Population Mapping (Smartpop) - Part 6
+author: Damien C. Jacques
+date: '2018-10-08'
+slug: dynamic-population-mapping-smartpop-part-6
+categories:
+  - R
+summary: This Notebook details the steps of the data analysis carried out for the Smartpop project – Dynamic Population WP (part 6).
+tags:
+  - population
+  - mobile phone data
+  - statistics
+header:
+  caption: ''
+  image: ''
+---
+```{r global_options, include = FALSE}
+knitr::opts_chunk$set(warning = FALSE, 
+                      message = FALSE,
+                      eval = F)
+```
+
+```{r, echo = F}
+load("/media/ubuntu/DATA/Data/Smartpop/Matrix/remainder_085km2.Rda")
+load("/media/ubuntu/DATA/Data/Smartpop/Matrix/trend_085km2.Rda")
+load("/media/ubuntu/DATA/Data/Smartpop/Matrix/WeekHolidays_085km2.Rda")
+load("/media/ubuntu/DATA/Data/Smartpop/Matrix/WeekWorkingDays_085km2.Rda")
+```
+
+# Build final zone shapefile
+
+```{r, eval = F}
+source("/home/ubuntu/Dropbox/Research/scriptR/rasterToPolygons.R")
+r <- raster("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2.tif")
+shp <- gdal_polygonizeR(r, "/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2.shp")
+```
+
+```{r, eval = F}
+library(sf)
+library(dplyr)
+
+shp <- st_read("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2.shp")
+shp <- shp[!(shp$DN == 0), ]
+shp <- shp[order(shp$DN),]  # needed to correctly cbind matrix data
+colnames(shp)[1] <- "ID_Grid" 
+shp_dissolve <- shp %>% group_by(ID_Grid) %>% summarize() # remove small polygons
+st_write(shp_dissolve, "/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp")
+```
+
+```{r, echo = F}
+library(sf)
+
+shp <- st_read("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp")
+st_crs(shp) <- "+proj=lcc +lat_1=51.16666723333333 +lat_2=49.8333339 +lat_0=90 +lon_0=4.367486666666666 +x_0=150000.013
++y_0=5400088.438 +ellps=intl +units=m +no_defs"
+```
+
+## Population
+
+```{r, eval = F}
+library(raster)
+library(rasterVis)
+library(classInt)
+library(data.table)
+
+zone <- raster("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2.tif")
+pop <- raster("/media/ubuntu/DATA/Data/Smartpop/Population/pop_10_100.tif")
+pop[zone == 0] <- NA
+pop <- pop/1000
+
+# Population density at Voronoi scale in km2
+popVoro <- zonal(pop, zone, mean)
+popVoro <- popVoro[ -1, ]
+colnames(popVoro) <- c("zone", "pop")
+
+fwrite(data.frame(popVoro), "/media/ubuntu/DATA/Data/Smartpop/Population/pop_085km2.csv")
+
+area <- table(zone[,])
+area <- as.data.frame(area)
+area <- area[-1,]
+colnames(area) <- c("zone", "area(km2)")
+area$`area(km2)` <- (area$`area(km2)`*50*50) / 1e6
+
+
+fwrite(area, "/media/ubuntu/DATA/Data/Smartpop/Zone/area_085_inKm2.csv")
+```
+
+```{r, echo = F}
+popVoro <- fread("/media/ubuntu/DATA/Data/Smartpop/Population/pop_085km2.csv")
+area <- fread("/media/ubuntu/DATA/Data/Smartpop/Zone/area_085_inKm2.csv")  
+```
+
+
+# Spatial cross-validation
+
+## Distance matrix
+
+```{r, eval = F}
+library(reshape)
+library(geosphere)
+
+shp <- st_read("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp")
+st_crs(shp) <- "+proj=lcc +lat_1=51.16666723333333 +lat_2=49.8333339 +lat_0=90 +lon_0=4.367486666666666 +x_0=150000.013
++y_0=5400088.438 +ellps=intl +units=m +no_defs"
+
+# Compute zone centroids
+shpCentroid <- st_centroid(shp)
+
+# Compute the geodesic for each OD pair
+shpCentroid_latlon <- st_transform(shpCentroid, "+init=epsg:4326")
+
+db <- expand.grid.df(data.frame(st_coordinates(shpCentroid_latlon)), 
+                     data.frame(st_coordinates(shpCentroid_latlon)))
+names(db)[3:4] <- c("X_dest", "Y_dest")
+
+# Vector of distances in meters
+db$dist <- distGeo(matrix(c(db$X, db$Y), ncol = 2), 
+                   matrix(c(db$X_dest, db$Y_dest), ncol = 2))
+
+# Build OD matrix
+db[,c("Origin", "Destination")] <- expand.grid(shpCentroid_latlon$ID_Grid, 
+               shpCentroid_latlon$ID_Grid)
+
+# Keep only relevant columns
+OD_distance <- db[, c(6, 7, 5)]
+rm(db)
+
+# Remove Origin = Destination rows
+OD_distance <- OD_distance[-which(OD_distance$Origin == OD_distance$Destination), ]
+
+# Save data
+fwrite(OD_distance, "/media/ubuntu/DATA/Data/Smartpop/Zone/OD_distance_085km2.csv")
+```
+
+```{r, echo = F}
+OD_distance <- fread("/media/ubuntu/DATA/Data/Smartpop/Zone/OD_distance_085km2.csv")
+```
+
+The model is trained on a sample of 30% of closest Voronoi polygons from a random polygon and validate using the 70% remaining polygons. 
+
+```{r}
+library(Metrics)
+
+popTotal <- sum(popVoro$pop * area$`area(km2)`)
+
+# Set the number of iteration
+nIteration <- 1000
+
+# randomly select 100 antennas
+set.seed(1)
+randomIDs <- popVoro$zone[sample(1:nrow(popVoro), nIteration)]
+
+# Initiate output dataframes
+OutputSpatialCV <- data.frame(randomID = randomIDs,
+                              rsquared = rep(NA, length(randomIDs)),
+                              cor = rep(NA, length(randomIDs)),
+                              rmse = rep(NA, length(randomIDs)),
+                              intercept = rep(NA, length(randomIDs)),
+                              slope = rep(NA, length(randomIDs)))
+
+UncertaintySpatialCV <- data.frame(zone = popVoro$zone,
+                                   Iteration1 = rep(NA, length(popVoro$zone)))
+for (i in 2:nIteration) {
+  UncertaintySpatialCV[, paste0("Iteration", i)] <- NA
+}
+
+# Start Spatial CV loop
+k = 0
+for (randomID in randomIDs) {
+  k = k + 1
+  # print(k)
+  
+  # Build training sample
+  OD_distance_sub <- OD_distance[OD_distance$Origin == randomID,]
+  OD_distance_sub <- OD_distance_sub[order(OD_distance_sub$dist), ][1:994, ]  # 995 = 30% of polygons
+  trainingIDs <- c(randomID, OD_distance_sub$Destination)
+  trainingWhich <- which(popVoro$zone %in% trainingIDs)
+  
+  ## Plot training
+  # test <- as(shp, "Spatial")
+  # test$col <- ifelse(test$ID_Grid %in% trainingIDs, "red", "white")
+  # plot(test, col = test$col)
+  
+  # initiate variable for regression
+  y <- as.numeric(log(popVoro$pop[trainingWhich])) 
+  x <- as.numeric(log(WeekWorkingDays[trainingWhich,22]/area$`area(km2)`[trainingWhich]))
+  # remove log(0) values
+  index <- which(x == -Inf | y == -Inf)
+  if (length(index) != 0) {
+    y <- y[-index]
+    x <- x[-index]
+  }
+  
+  # standard log-log regression
+  lm.model <- lm(y ~ x) 
+  
+  # compute prediction data and statistics from lm.model
+  x <- as.numeric(log(WeekWorkingDays[-trainingWhich,22]/area$`area(km2)`[-trainingWhich]))
+  predData <- exp(lm.model$coefficients[1] + lm.model$coefficients[2]*x)
+  predData <- predData * popTotal/sum(predData * area$`area(km2)`[-trainingWhich])
+  UncertaintySpatialCV[-trainingWhich, k + 1] <- predData
+
+  OutputSpatialCV$rsquared[OutputSpatialCV$randomID == randomID] <- summary(lm.model)$r.squared
+  OutputSpatialCV$cor[OutputSpatialCV$randomID == randomID] <- cor(popVoro$pop[-trainingWhich], predData)
+  OutputSpatialCV$rmse[OutputSpatialCV$randomID == randomID] <- rmse(popVoro$pop[-trainingWhich], predData)
+  OutputSpatialCV$intercept[OutputSpatialCV$randomID == randomID] <- lm.model$coefficients[1]
+  OutputSpatialCV$slope[OutputSpatialCV$randomID == randomID] <- lm.model$coefficients[2]
+}
+```
+
+
+
+
+## Mapping uncertainty
+
+
+```{r}
+library(GADMTools)
+map <- gadm.loadCountries(c("BEL"), level = 5, basefile = "./")
+plotmap(map)
+```
+
+
+```{r}
+library(matrixStats)
+
+UncertaintySpatialCV_mean <- rowSds(as.matrix(UncertaintySpatialCV[, -1]), na.rm = T)
+
+shp <- st_read("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp")
+st_crs(shp) <- "+proj=lcc +lat_1=51.16666723333333 +lat_2=49.8333339 +lat_0=90 +lon_0=4.367486666666666 +x_0=150000.013
++y_0=5400088.438 +ellps=intl +units=m +no_defs"
+
+shp <- cbind(shp, UncertaintySpatialCV_mean)
+
+par(mar = c(0,0,1.5,0))
+layout(matrix(c(1,1,2,1,1,3, 4, 5,6), 3, 3, byrow = TRUE))
+
+# quantization breaks of the rate
+bks <- getBreaks(v = shp[["UncertaintySpatialCV_mean"]], method = "quantile", nclass = 5)
+bks <- seq(1, 150, 150/5)
+bks[6] <- max(shp[["UncertaintySpatialCV_mean"]])
+
+# get a color palette
+cols <- c('#ffffb2','#fecc5c','#fd8d3c','#f03b20','#bd0026')
+
+choroLayer(x = shp, var = "UncertaintySpatialCV_mean", breaks = bks, col = cols,
+           border = "khaki", lwd = 0.001, 
+           legend.title.txt = "Uncertainty of population density prediction", 
+           legend.pos = 'bottomleft', legend.values.rnd = 0)
+layoutLayer(title = paste0("Population density in Belgium during working days (", colname, "h)"), 
+            sources = "", north = TRUE, 
+            scale = 50, tabtitle = TRUE,
+            frame = FALSE,  
+            author = "*model based on mobile phone data")
+
+for (city in c("Brussel", "Antwerpen", "Leuven", "Liège" ,"Namur")) {
+    choroLayer(x = st_crop(shp, region[region$NAME_3 == city,]),
+               var = "UncertaintySpatialCV_mean", breaks = bks, col = cols,
+               lwd = 0.001, 
+               legend.pos = 'n')
+    plot(as(commune, "Spatial"), border = "black", lwd = 0.8, add = TRUE)
+    layoutLayer(title = paste0("Zoom over ", city), 
+                sources = "", scale = 5, tabtitle = TRUE,
+                frame = T,  
+                author = "")
+}
+```
+
+```{r}
+library(matrixStats)
+
+popVoro[1531,] <- 1  #replace 0 by 1
+UncertaintySpatialCV_mean_normalized <- UncertaintySpatialCV_mean/popVoro$pop
+
+shp <- st_read("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp")
+st_crs(shp) <- "+proj=lcc +lat_1=51.16666723333333 +lat_2=49.8333339 +lat_0=90 +lon_0=4.367486666666666 +x_0=150000.013
++y_0=5400088.438 +ellps=intl +units=m +no_defs"
+
+shp <- cbind(shp, UncertaintySpatialCV_mean_normalized)
+
+shp[["UncertaintySpatialCV_mean_normalized"]] <- shp[["UncertaintySpatialCV_mean_normalized"]]*100
+
+par(mar = c(0,0,1.5,0))
+layout(matrix(c(1,1,2,1,1,3, 4, 5,6), 3, 3, byrow = TRUE))
+
+# quantization breaks of the rate
+bks <- getBreaks(v = shp[["UncertaintySpatialCV_mean_normalized"]], method = "quantile", nclass = 5)
+bks <- seq(0, 50, 100/10)
+bks[6] <- max(shp[["UncertaintySpatialCV_mean_normalized"]])
+
+# get a color palette
+cols <- c('#ffffb2','#fecc5c','#fd8d3c','#f03b20','#bd0026')
+
+choroLayer(x = shp, var = "UncertaintySpatialCV_mean_normalized", breaks = bks, col = cols,
+           border = "khaki", lwd = 0.001, 
+           legend.title.txt = "Uncertainty of population density prediction", 
+           legend.pos = 'bottomleft', legend.values.rnd = 0)
+layoutLayer(title = paste0("Population density in Belgium during working days (", colname, "h)"), 
+            sources = "", north = TRUE, 
+            scale = 50, tabtitle = TRUE,
+            frame = FALSE,  
+            author = "*model based on mobile phone data")
+
+for (city in c("Brussel", "Antwerpen", "Leuven", "Liège" ,"Namur")) {
+    choroLayer(x = st_crop(shp, region[region$NAME_3 == city,]),
+               var = "UncertaintySpatialCV_mean_normalized", breaks = bks, col = cols,
+               lwd = 0.001, 
+               legend.pos = 'n')
+    plot(as(commune, "Spatial"), border = "black", lwd = 0.8, add = TRUE)
+    layoutLayer(title = paste0("Zoom over ", city), 
+                sources = "", scale = 5, tabtitle = TRUE,
+                frame = T,  
+                author = "")
+}
+```
+
+
+# Mapping
+
+## Load shapefile for subsetting and plotting
+```{r}
+region <- st_read("/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Belgium_Adm/BEL_adm_shp/BEL_adm3.shp")
+region <- st_transform(region, st_crs(shp))
+
+commune <- st_read("/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Belgium_Adm/BEL_adm_shp/BEL_adm4.shp")
+commune <- st_transform(commune, st_crs(shp))
+```
+
+## Make animated map
+
+```{r}
+library(cartography)
+library(cartogram)
+library(animation)
+library(sp)
+
+# Plot data
+shp <- cbind(shp, WeekHolidays)
+
+ani.options(interval = .10,
+            ani.width = 800, 
+            ani.height = 800)
+
+saveVideo(movie.name = "/media/ubuntu/DATA/Data/Smartpop/Map/SIM_workingDays.mp4", { 
+  for (colname in colnames(shp)[2:5]) {
+    bks <- getBreaks(v = shp[[colname]], method = "quantile", nclass = 5)
+    # figdim <- getFigDim(x = shp, width = 1000, mar = c(0,0,1.2,0), res = 100)
+    
+    par(mar = c(0,0,1.5,0))
+    layout(matrix(c(1,1,2,1,1,3, 4, 5,6), 3, 3, byrow = TRUE))
+    
+    # quantization breaks of the rate
+    bks <- getBreaks(v = shp[[colname]], method = "quantile", nclass = 5)
+    # get a color palette
+    cols <- c('#d7191c','#fdae61','#ffffbf','#abdda4','#2b83ba')
+    
+    choroLayer(x = shp,var = colname, breaks = bks, col = cols,
+               border = "khaki", lwd = 0.01, 
+               legend.title.txt = "Population\ndensity", 
+               legend.pos = 'bottomleft', legend.values.rnd = 0)
+    layoutLayer(title = paste0("Population density in Belgium during working days (", colname, "h)"), 
+                sources = "", north = TRUE, 
+                scale = 50, tabtitle = TRUE,
+                frame = FALSE,  
+                author = "*model based on mobile phone data")
+    
+    for (city in c("Brussel", "Antwerpen", "Leuven", "Liège" ,"Namur")) {
+      choroLayer(x = st_crop(shp, region[region$NAME_3 == city,]),
+                 var = colname, breaks = bks, col = cols,
+                 lwd = 0.01, 
+                 legend.title.txt = "Population\ndensity", 
+                 legend.pos = 'n')
+      plot(as(commune, "Spatial"), border = "white", lwd = 0.8, add = TRUE)
+      layoutLayer(title = paste0("Zoom over ", city), 
+                  sources = "", scale = 5, tabtitle = TRUE,
+                  frame = T,  
+                  author = "")
+    }
+  }
+})
+```
+
+```{r}
+library(splancs)
+
+shp_grid <- getGridLayer(x = shp, cellsize = 5e+06,
+ type = "hexagonal", var = "X15")
+
+choroLayer(x = shp_grid,
+           var = "X15", breaks = bks, col = cols,
+           lwd = 0.01, 
+           legend.title.txt = "Population\ndensity", 
+           legend.pos = 'n')
+layoutLayer(title = "Population density in Belgium during working days", 
+            sources = "", north = TRUE, 
+            scale = 5, tabtitle = TRUE,
+            frame = FALSE,  
+            author = "*per 100,000 live births. Source: North Carolina SIDS data set")
+choroLayer(x = shp,
+           var = "X15", breaks = bks, col = cols,
+           lwd = 0.01, 
+           legend.title.txt = "Population\ndensity", 
+           legend.pos = 'n')
+```
+
+
+
+```{r}
+nc <- cartogram_cont(shp, "X15")
+
+# quantization breaks of the rate
+bks <- getBreaks(v = nc$share, method = "quantile", nclass = 5)
+# correct the breaks to use the global rate as limit of class 
+bks[4] <- global_rate
+# get a color palette
+cols <- carto.pal(pal1 = "green.pal", n1 = 3, 
+                  pal2 = "wine.pal", n2 = 2)
+## Choropleth layer
+# set figure margins and background color
+par(mar = c(0,0,1.2,0), bg = "lemonchiffon")
+# display the sudden infant deaths per 1000 births
+choroLayer(x = nc,var = "X15", breaks = bks, col = cols,
+           border = "khaki", lwd = 0.5, 
+           legend.title.txt = "Sudden infant death syndrome rate*", 
+           legend.pos = 'topleft', legend.values.rnd = 0)
+```
+
