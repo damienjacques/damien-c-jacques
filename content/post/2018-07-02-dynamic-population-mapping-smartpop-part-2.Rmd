@@ -14,10 +14,10 @@ output:
     toc: yes
 ---
 
-The next step is to build a grid of reference that will be used to classify the land use and estimate the population. To do that, a new assumption is required. 
+Because the number of antennas/BTS is not constant over time (some antennas/BTS are not active during all the hours of the day), we need to build a grid of reference that will be used to estimate the population.  
 
 {{% alert warning %}}
-Assumption 4: when an antenna is not active during the day, it means that during this period, its area is covered by the neighboring antennas (i.e. some voronoi polygons become larger when an antenna is not active). 
+Assumption 4: MP users can only connect to active antenna/BTS. It means that the Voronoi polygons map (corresponding to BTS/antenna coverage) changes every hour because some antenna/BTS are not active during certain hours of the day (i.e. some Voronoi polygons become larger when an antenna/BTS becomes innactive). 
 {{% /alert %}}
 
 
@@ -56,7 +56,7 @@ belgium <- spTransform(belgium, crs(antenna_shp))
 
 ### Reference grid
 
-A reference grid (shapefile of voronoi polygons) is defined to have a spatially consistent database with values for each hour in each polygon of reference. All antennas remaining in the database are used to define this grid. 
+A reference grid (shapefile of voronoi polygons) is build to have a spatially consistent database with values for each hour in each polygon of reference. All antennas/BTS remaining in the database are used to define this grid. 
 
 ```{r, eval = F}
 # Voronoi Polygons
@@ -87,7 +87,7 @@ system(command)
 
 ### Compute voronoi polygons for each hour
 
-We need to disaggregate the value of each hour in this grid. First let's compute the gride of each hour.
+We need to interesect the Voronoi maps of each hour with the reference grid and then disaggregate the MP users of each antenna/BTS in the reference polygons. First let's compute the Voronoi map of each hour.
 
 ```{r, eval = F}
 sequence <- seq(0, length(dates), 16)
@@ -148,7 +148,7 @@ foreach(i = 1:length(filenames)) %dopar% {
 
 ### Zonal stats (tabulate area)
 
-The intersection between each 'hourly voronoi' and the reference grid is computed.
+The intersection between each 'hourly Voronoi map' and the reference grid is computed.
 
 ```{r, eval = F}
 library(raster)
@@ -187,7 +187,7 @@ for (k in 1:length(sequence)) {
 
 ### Transform database based on tabulate area
 
-```{r}
+```{r, eval = F}
 
 library(data.table)
 library(raster)
@@ -228,7 +228,7 @@ for(i in 1:length(dates)) {
 
 ### Merge files to get final database
 
-```{r}
+```{r, eval = F}
 filenames <- list.files("/media/ubuntu/DATA/Data/Smartpop/DB_new/", full.names = T)
 
 dt <- lapply(filenames, function(x){fread(x)})

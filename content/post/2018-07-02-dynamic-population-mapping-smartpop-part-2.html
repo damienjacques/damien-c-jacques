@@ -27,8 +27,8 @@ output:
 </ul>
 </div>
 
-<p>The next step is to build a grid of reference that will be used to classify the land use and estimate the population. To do that, a new assumption is required.</p>
-<p>{{% alert warning %}} Assumption 4: when an antenna is not active during the day, it means that during this period, its area is covered by the neighboring antennas (i.e. some voronoi polygons become larger when an antenna is not active). {{% /alert %}}</p>
+<p>Because the number of antennas/BTS is not constant over time (some antennas/BTS are not active during all the hours of the day), we need to build a grid of reference that will be used to estimate the population.</p>
+<p>{{% alert warning %}} Assumption 4: MP users can only connect to active antenna/BTS. It means that the Voronoi polygons map (corresponding to BTS/antenna coverage) changes every hour because some antenna/BTS are not active during certain hours of the day (i.e. some Voronoi polygons become larger when an antenna/BTS becomes innactive). {{% /alert %}}</p>
 <div id="data-and-packages-loading" class="section level3">
 <h3>Data and packages loading</h3>
 <pre class="r"><code>library(maptools)
@@ -56,7 +56,7 @@ belgium &lt;- spTransform(belgium, crs(antenna_shp))</code></pre>
 </div>
 <div id="reference-grid" class="section level3">
 <h3>Reference grid</h3>
-<p>A reference grid (shapefile of voronoi polygons) is defined to have a spatially consistent database with values for each hour in each polygon of reference. All antennas remaining in the database are used to define this grid.</p>
+<p>A reference grid (shapefile of voronoi polygons) is build to have a spatially consistent database with values for each hour in each polygon of reference. All antennas/BTS remaining in the database are used to define this grid.</p>
 <pre class="r"><code># Voronoi Polygons
 all.antenna_sub &lt;- antenna_shp
 voro.sub &lt;- voronoi.polygons(all.antenna_sub, belgium)
@@ -84,7 +84,7 @@ system(command)</code></pre>
 </div>
 <div id="compute-voronoi-polygons-for-each-hour" class="section level3">
 <h3>Compute voronoi polygons for each hour</h3>
-<p>We need to disaggregate the value of each hour in this grid. First let’s compute the gride of each hour.</p>
+<p>We need to interesect the Voronoi maps of each hour with the reference grid and then disaggregate the MP users of each antenna/BTS in the reference polygons. First let’s compute the Voronoi map of each hour.</p>
 <pre class="r"><code>sequence &lt;- seq(0, length(dates), 16)
 
 for (k in 1:length(sequence)) {
@@ -140,7 +140,7 @@ foreach(i = 1:length(filenames)) %dopar% {
 </div>
 <div id="zonal-stats-tabulate-area" class="section level3">
 <h3>Zonal stats (tabulate area)</h3>
-<p>The intersection between each ‘hourly voronoi’ and the reference grid is computed.</p>
+<p>The intersection between each ‘hourly Voronoi map’ and the reference grid is computed.</p>
 <pre class="r"><code>library(raster)
 
 myZonal &lt;- function(r, z, digits = 0, na.rm = TRUE) { 
