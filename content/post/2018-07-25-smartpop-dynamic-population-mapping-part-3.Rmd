@@ -1,5 +1,5 @@
 ---
-title: Smartpop Dynamic Population Mapping (Part 3)
+title: Dynamic Population Mapping (Smartpop) - Part 3
 author: Damien C. Jacques
 date: '2018-07-25'
 slug: smartpop-dynamic-population-mapping-part-3
@@ -19,7 +19,7 @@ output:
 ```{r global_options, include = FALSE}
 knitr::opts_chunk$set(warning = FALSE, 
                       message = FALSE,
-                      eval = FALSE)
+                      eval = T)
 ```
 ### Decompose time series
 
@@ -147,7 +147,7 @@ save(Mat_BE, file = "/media/ubuntu/DATA/Data/Smartpop/Matrix/Mat_BE_seasonnal.Rd
 ```
 
 
-We also compute a row scaled version (`(x - mean)/std`) of the matrices for further use (clustering...).
+We also compute a row scaled version (`(x - mean)/std`) of the matrices for further use (e.g. clustering...).
 
 ```{r, eval = FALSE}
 library(scrime)
@@ -164,8 +164,8 @@ save(WeekWorkingDays, file = "/media/ubuntu/DATA/Data/Smartpop/Matrix/WeekWorkin
 ```
 
 ```{r, echo = FALSE}
-load("/media/ubuntu/DATA/Data/Smartpop/Matrix/WeekHolidays_scaled.Rda")
-load("/media/ubuntu/DATA/Data/Smartpop/Matrix/WeekWorkingDays_scaled.Rda")
+load("/media/ubuntu/DATA/Data/Smartpop/Matrix/WeekHolidays.Rda")
+load("/media/ubuntu/DATA/Data/Smartpop/Matrix/WeekWorkingDays.Rda")
 ```
 ### Compute validation dataset for population estimation
 
@@ -342,14 +342,6 @@ save(popClassVoro, file = "/media/ubuntu/DATA/Data/Smartpop/Population/popClassV
 
 ## Population modeling using SIM users
 
-We first need to define training and testing dataset [...].
-We will use the working days SIM to predict the residential population. 
-
-{{% alert warning %}}
-Assumption 6: 
-{{% /alert %}}
-
-
 ### Population model with OLS regression (simple linear regression)
 
 ```{r, warning = FALSE, message = FALSE}
@@ -523,7 +515,7 @@ Compare to unweighted regression, we observe:
 
 ### Residual analysis
 
-#### Relationship between residuals and area and absolute population
+#### Relationship between residuals, area and absolute population
 
 
 ```{r}
@@ -537,26 +529,40 @@ x <- x[-index]
 
 lm.model <- lm(y ~ x) 
 
-x <- as.numeric(log((WeekWorkingDays[,i])/(zoneShp$area/1000000)))
+# x <- as.numeric(log((WeekWorkingDays[,i])/(zoneShp$area/1000000)))
 predData <- exp(lm.model$coefficients[1] + lm.model$coefficients[2]*x)
-predData <- predData * popTotal/sum(predData * (zoneShp$area/1000000))
+predData <- predData * popTotal/sum(predData * (zoneShp$area[-index]/1000000))
 
-residuals <- (popVoro[-1,2]/1000) - predData
+residuals <- (popVoro[-1,2][-index]/1000) - predData
 
 cor(residuals, zoneShp$area[-index])
 cor(abs(residuals), zoneShp$area[-index])
+cor(log(abs(residuals)), log(1/(zoneShp$area[-index])))
 
 cor(residuals, exp(y))
 cor(abs(residuals), exp(y))
+cor(log(abs(residuals)), y)
 
-cor(log(1/(zoneShp$area[-index])), log(abs(residuals)))
-plot(log(1/(zoneShp$area[-index])), log(abs(residuals)), xlab = "log(1/area)", ylab = "log(|residuals|)")
+cor(exp(y), zoneShp$area[-index])
+cor(exp(y), 1/(zoneShp$area[-index]))
+cor(y, log(1/(zoneShp$area[-index])))
+
+par(mfrow = c(1,2))
+plot(exp(y), abs(residuals), xlab = "population density", ylab = "|residuals|")
+plot(y, log(abs(residuals)), xlab = "log(population density)", ylab = "log(|residuals|)")
+
+par(mfrow = c(1,2))
 plot(1/zoneShp$area[-index], abs(residuals), xlab = "1/area", ylab = "|residuals|")
+plot(log(1/(zoneShp$area[-index])), log(abs(residuals)), xlab = "log(1/area)", ylab = "log(|residuals|)")
+
+par(mfrow = c(1,2))
+plot(1/zoneShp$area[-index], exp(y), xlab = "1/area", ylab = "population density")
+plot(log(1/(zoneShp$area[-index])), y, xlab = "log(1/area)", ylab = "log(population density)")
 ```
 
 #### Relationship between residuals and age group
 
-```{r}
+```{r, eval = F, echo = F}
 load("/media/ubuntu/DATA/Data/Smartpop/Population/popClassVoro.Rda")
 
 lm.residuals <- lm(residuals ~ popClassVoro[[1]][-1,2] +
@@ -574,17 +580,34 @@ summary(lm.residuals)
 
 ### Mapping of residuals
 
+We observe higher residuals (positive and negative) in urban areas. 
+
 ```{r}
 library(raster)
 library(rasterVis)
 library(classInt)
 
 # Residuals
+i = 24
+
+y <- as.numeric(log(popVoro[-1,2]/1000)) 
+x <- as.numeric(log((WeekWorkingDays[,i])/(zoneShp$area/1000000)))
+index <- which(x == -Inf | y == -Inf)
+y <- y[-index]
+x <- x[-index]
+
+lm.model <- lm(y ~ x) 
+
+x <- as.numeric(log((WeekWorkingDays[,i])/(zoneShp$area/1000000)))
+predData <- exp(lm.model$coefficients[1] + lm.model$coefficients[2]*x)
+predData <- predData * popTotal/sum(predData * (zoneShp$area/1000000))
+
+residuals <- (popVoro[-1,2]/1000) - predData
 
 zoneShp$residuals <- residuals/sd(popVoro[-1,2])
 
-my.palette <- brewer.pal(n = 9, name = "Spectral")
-breaks <- classIntervals(zoneShp$residuals, n = 9, style = "quantile")
+my.palette <- brewer.pal(n = 5, name = "Spectral")
+breaks <- classIntervals(zoneShp$residuals, n = 5, style = "quantile")
 zoneShp$brks <- cut(zoneShp$residuals, breaks = breaks$brks)
   
 spplot(zoneShp, "residuals", at = breaks$brks,
@@ -604,7 +627,121 @@ spplot(zoneShp, "residuals", at = breaks$brk,
        col.regions = my.palette, col = "transparent", cuts = 8,  usePolypath = FALSE,
        main = "absolute residuals")
 ```
-We observe higher residuals (positive and negative) in urban areas. 
+## Spatial regression model
+
+```{r, echo = F, eval = F}
+# Residuals
+i = 24
+
+y <- as.numeric(log(popVoro[-1,2]/1000)) 
+x <- as.numeric(log((WeekWorkingDays[,i])/(zoneShp$area/1000000)))
+index <- which(x == -Inf | y == -Inf)
+y <- y[-index]
+x <- x[-index]
+
+lm.model <- lm(y ~ x) 
+
+x <- as.numeric(log((WeekWorkingDays[,i])/(zoneShp$area/1000000)))
+predData <- exp(lm.model$coefficients[1] + lm.model$coefficients[2]*x)
+predData <- predData * popTotal/sum(predData * (zoneShp$area/1000000))
+
+residuals <- (popVoro[-1,2]/1000) - predData
+
+zoneShp$residuals <- residuals
+
+library(spdep)
+nb <- poly2nb(zoneShp, , queen=TRUE)
+
+par(mar = c(0,0,0,0))
+plot(zoneShp)
+plot(nb, coordinates(zoneShp), col = 'red', lwd=2, add=TRUE)
+
+resnb <- sapply(nb, function(x) mean(zoneShp$residuals[x]))
+cor(zoneShp$residuals, resnb)
+
+plot(zoneShp$residuals, resnb, xlab='Residuals', ylab='Mean adjacent residuals')
+
+lw <- nb2listw(nb)
+
+moran.mc(zoneShp$residuals, lw, 999)
+
+# Spatial lag model
+
+y <- as.numeric(popVoro[-1,2]/1000)
+x <- as.numeric(WeekWorkingDays[,i]/(zoneShp$area/1000000))
+data <- data.frame(x = x, y = y)
+
+nb <- poly2nb(zoneShp, queen=TRUE)
+lw <- nb2listw(nb)
+m1s <- lagsarlm(y ~ x, data = data, listw = lw, tol.solve=1.0e-30)
+
+zoneShp$residuals <- residuals(m1s)
+moran.mc(zoneShp.sub$residuals, lw, 999)
+
+grps <- 10
+brks <- quantile(zoneShp.sub$residuals, 0:(grps-1)/(grps-1), na.rm=TRUE)
+p <- spplot(zoneShp.sub, "residuals", at=brks, col.regions=rev(brewer.pal(grps, "RdBu")), col="transparent")
+print( p )
+
+resnb <- sapply(nb, function(x) mean(zoneShp$residuals[x]))
+cor(zoneShp$residuals, resnb)
+
+plot(zoneShp$residuals, resnb, xlab='Residuals', ylab='Mean adjacent residuals')
+
+plot(predict(m1s), y)
+
+# Spatial error model
+
+m1e = errorsarlm(y ~ x, data = data, listw = lw, tol.solve=1.0e-30)
+
+zoneShp$residuals <- residuals(m1e)
+moran.mc(zoneShp$residuals, lw, 999)
+
+grps <- 10
+brks <- quantile(zoneShp$residuals, 0:(grps-1)/(grps-1), na.rm=TRUE)
+p <- spplot(zoneShp, "residuals", at=brks, col.regions=rev(brewer.pal(grps, "RdBu")), col="transparent")
+print( p )
+
+resnb <- sapply(nb, function(x) mean(zoneShp$residuals[x]))
+cor(zoneShp$residuals, resnb)
+
+plot(zoneShp$residuals, resnb, xlab='Residuals', ylab='Mean adjacent residuals')
+
+cor(predict(m1e), y)
+plot(m1e$fitted.values, y)
+
+lm = lm(y ~ x, data = data)
+cor(predict(lm, newdata = data), y)
+
+cor(predict(m1e), y)
+```
+
+```{r, echo = F, eval = F}
+library(rgeos)
+library(spgwr)
+
+trueCentroids = gCentroid(zoneShp, byid = TRUE)
+
+GWRbandwidth <- gwr.sel(y ~ x, data = data, coords = coordinates(trueCentroids), adapt = F) 
+
+#run the gwr model
+gwr.model <- gwr(y ~ x, data = data, bandwidth=GWRbandwidth, coords = coordinates(trueCentroids), hatmatrix=TRUE, se.fit=TRUE) 
+#print the results of the model
+gwr.model
+
+results <- as.data.frame(gwr.model$SDF)
+head(results)
+
+zoneShp$intercept <- results$X.Intercept.
+zoneShp$slope <- results$x
+zoneShp$localR2 <- results$localR2
+
+grps <- 10
+brks <- quantile(zoneShp$localR2, 0:(grps-1)/(grps-1), na.rm=TRUE)
+p <- spplot(zoneShp, "localR2", at=brks, col.regions=rev(brewer.pal(grps, "RdBu")), col="transparent")
+print( p )
+
+```
 
 #### Dynamic exploration with leaflet.
 
@@ -780,7 +917,6 @@ zoneShp <- readOGR("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.shp", verbose
 
 df <- data.frame(i = 1:168, 
                  r = rep(0, 168),
-                 r2 = rep(0, 168),
                  rmse = rep(0, 168))
 index <- c(3:15)
 index0 <- c(3:15)
@@ -817,10 +953,6 @@ axis(1, at = seq(13, 168, 24), labels = c("Mon", "Tue", "Wed", "Thu", "Fri", "Sa
 abline(v = seq(1, 168, 24)) 
 
 plot(df$i, df$rmse, type = "o", ylab = "RMSE (inhab./km²)", xlab = "time", xaxt = "n", pch = 20) +
-axis(1, at = seq(13, 168, 24), labels = c("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")) +
-abline(v = seq(1, 168, 24)) 
-
-plot(df$i, df$r2, type = "o", ylab = "r² (of log-log model, not really relevant)", xlab = "time", xaxt = "n", pch = 20) +
 axis(1, at = seq(13, 168, 24), labels = c("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")) +
 abline(v = seq(1, 168, 24)) 
 ```

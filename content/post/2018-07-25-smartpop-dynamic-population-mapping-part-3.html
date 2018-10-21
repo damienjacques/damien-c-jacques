@@ -1,5 +1,5 @@
 ---
-title: Smartpop Dynamic Population Mapping (Part 3)
+title: Dynamic Population Mapping (Smartpop) - Part 3
 author: Damien C. Jacques
 date: '2018-07-25'
 slug: smartpop-dynamic-population-mapping-part-3
@@ -101,7 +101,7 @@ trend &lt;- foreach(i = 1:nrow(Mat_BE), .combine = rbind) %dopar% {
 }</code></pre>
 <p>The trend is removed to get the remainder component.</p>
 <pre class="r"><code>remainder = Mat_BE - trend</code></pre>
-<p>We also compute a row scaled version (<code>(x - mean)/std</code>) of the matrices for further use (clustering…).</p>
+<p>We also compute a row scaled version (<code>(x - mean)/std</code>) of the matrices for further use (e.g. clustering…).</p>
 <pre class="r"><code>library(scrime)
 # Divide by area to get density (maybe does not change anything for scaled, could have an impact on )
 WeekHolidays_scaled &lt;- rowScales(WeekHolidays)
@@ -119,12 +119,13 @@ shp &lt;- readOGR(&quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Sec
 shp$pop &lt;- rowSums(shp@data[, 26:44])/shp$ar_sqkm
 
 # histogram population density
-hist(shp$pop, main = &quot;&quot;, xlab = &quot;Population (&gt; 10 y) density (hab/km²)&quot;)
-
-# histogram of proportion of population (&lt; 10y.)  in total population
+hist(shp$pop, main = &quot;&quot;, xlab = &quot;Population (&gt; 10 y) density (hab/km²)&quot;)</code></pre>
+<p><img src="/post/2018-07-25-smartpop-dynamic-population-mapping-part-3_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<pre class="r"><code># histogram of proportion of population (&lt; 10y.)  in total population
 
 hist(rowSums(shp@data[, 24:25])/rowSums(shp@data[, 24:44]),
      main = &quot;&quot;, xlab = &quot;Proportion of population (&lt; 10 y) in total population&quot;)</code></pre>
+<p><img src="/post/2018-07-25-smartpop-dynamic-population-mapping-part-3_files/figure-html/unnamed-chunk-9-2.png" width="672" /></p>
 <p>{{% alert warning %}} Assumption 5: According to <a href="https://www.gsma.com/publicpolicy/wp-content/uploads/2012/03/GSMA_Childrens_use_of_mobile_phones_2014.pdf">(GSMA, 2014)</a>, only 10% of the population (of 15 years old) have reported ownership of first mobile phone under 10 (2014). Therefore, we only considered the population (&gt; 10 y.). This is important if the proportion of (&lt;10 y.) is different depending on the place which is the case {{% /alert %}}</p>
 <div class="figure">
 <img src="/img/ownership_mobile_phone.png" />
@@ -169,15 +170,16 @@ pop &lt;- raster(&quot;/media/ubuntu/DATA/Data/Smartpop/Population/pop_10_100.ti
 pop[zone == 0] &lt;- NA
 
 levelplot(pop/1000, col.regions = colorRampPalette(brewer.pal(9, &#39;Blues&#39;)),
-          margin = FALSE, main = &#39;Population density (inhab./m²) -- Normal breaks&#39;)
-
-breaks &lt;- classIntervals(values(pop)/1000, n = 20, style = &quot;quantile&quot;)
+          margin = FALSE, main = &#39;Population density (inhab./m²) -- Normal breaks&#39;)</code></pre>
+<p><img src="/post/2018-07-25-smartpop-dynamic-population-mapping-part-3_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
+<pre class="r"><code>breaks &lt;- classIntervals(values(pop)/1000, n = 20, style = &quot;quantile&quot;)
 
 levelplot(pop/1000, at = c(0, breaks$brks[breaks$brks &gt; 0]), 
           col.regions = colorRampPalette(brewer.pal(9, &#39;Blues&#39;)),
           margin = FALSE, main = &#39;Population density (inhab./m²) -- Quantile breaks&#39;)</code></pre>
-<p>Average population density in Belgium (&gt; 10 y) is 322.2 inhab./km².</p>
+<p><img src="/post/2018-07-25-smartpop-dynamic-population-mapping-part-3_files/figure-html/unnamed-chunk-11-2.png" width="672" /> Average population density in Belgium (&gt; 10 y) is 322.2 inhab./km².</p>
 <pre class="r"><code>(sum(as.numeric(values(pop)), na.rm = T)/sum(!is.na(as.numeric(values(pop)))))/1000</code></pre>
+<pre><code>## [1] 322.1848</code></pre>
 </div>
 <div id="dissagreggate-population-density-at-voronoi-scale" class="section level3">
 <h3>Dissagreggate population density at voronoi scale</h3>
@@ -194,6 +196,7 @@ breaks &lt;- classIntervals(values(popZone)/1000, n = 20, style = &quot;quantile
 levelplot(popZone/1000, at = c(0, breaks$brks[breaks$brks &gt; 0]), 
           col.regions = colorRampPalette(brewer.pal(9, &#39;Blues&#39;)),
           margin = FALSE, main = &#39;Population density (inhab./m²) -- Quantile breaks&#39;)</code></pre>
+<p><img src="/post/2018-07-25-smartpop-dynamic-population-mapping-part-3_files/figure-html/unnamed-chunk-16-1.png" width="672" /></p>
 <div id="compute-age-group-proportion-foe-each-polygon" class="section level4">
 <h4>Compute age group proportion foe each polygon</h4>
 <pre class="r"><code># proportion of class of population per polygon
@@ -254,8 +257,6 @@ save(popClassVoro, file = &quot;/media/ubuntu/DATA/Data/Smartpop/Population/popC
 </div>
 <div id="population-modeling-using-sim-users" class="section level2">
 <h2>Population modeling using SIM users</h2>
-<p>We first need to define training and testing dataset […]. We will use the working days SIM to predict the residential population.</p>
-<p>{{% alert warning %}} Assumption 6: {{% /alert %}}</p>
 <div id="population-model-with-ols-regression-simple-linear-regression" class="section level3">
 <h3>Population model with OLS regression (simple linear regression)</h3>
 <pre class="r"><code>library(rgdal)
@@ -294,15 +295,19 @@ for (i in 1:168) {
 
 plot(df$i, df$r, type = &quot;o&quot;, ylab = &quot;pearson correlation&quot;, xlab = &quot;time&quot;, xaxt = &quot;n&quot;, pch = 20) +
 axis(1, at = seq(13, 168, 24), labels = c(&quot;Mon&quot;, &quot;Tue&quot;, &quot;Wed&quot;, &quot;Thu&quot;, &quot;Fri&quot;, &quot;Sat&quot;, &quot;Sun&quot;)) +
-abline(v = seq(1, 168, 24)) 
-
-plot(df$i, df$rmse, type = &quot;o&quot;, ylab = &quot;RMSE (inhab./km²)&quot;, xlab = &quot;time&quot;, xaxt = &quot;n&quot;, pch = 20) +
-axis(1, at = seq(13, 168, 24), labels = c(&quot;Mon&quot;, &quot;Tue&quot;, &quot;Wed&quot;, &quot;Thu&quot;, &quot;Fri&quot;, &quot;Sat&quot;, &quot;Sun&quot;)) +
-abline(v = seq(1, 168, 24)) 
-
-plot(df$i, df$r2, type = &quot;o&quot;, ylab = &quot;r² (of log-log model, not really relevant)&quot;, xlab = &quot;time&quot;, xaxt = &quot;n&quot;, pch = 20) +
+abline(v = seq(1, 168, 24)) </code></pre>
+<p><img src="/post/2018-07-25-smartpop-dynamic-population-mapping-part-3_files/figure-html/unnamed-chunk-18-1.png" width="672" /></p>
+<pre><code>## numeric(0)</code></pre>
+<pre class="r"><code>plot(df$i, df$rmse, type = &quot;o&quot;, ylab = &quot;RMSE (inhab./km²)&quot;, xlab = &quot;time&quot;, xaxt = &quot;n&quot;, pch = 20) +
 axis(1, at = seq(13, 168, 24), labels = c(&quot;Mon&quot;, &quot;Tue&quot;, &quot;Wed&quot;, &quot;Thu&quot;, &quot;Fri&quot;, &quot;Sat&quot;, &quot;Sun&quot;)) +
 abline(v = seq(1, 168, 24)) </code></pre>
+<p><img src="/post/2018-07-25-smartpop-dynamic-population-mapping-part-3_files/figure-html/unnamed-chunk-18-2.png" width="672" /></p>
+<pre><code>## numeric(0)</code></pre>
+<pre class="r"><code>plot(df$i, df$r2, type = &quot;o&quot;, ylab = &quot;r² (of log-log model, not really relevant)&quot;, xlab = &quot;time&quot;, xaxt = &quot;n&quot;, pch = 20) +
+axis(1, at = seq(13, 168, 24), labels = c(&quot;Mon&quot;, &quot;Tue&quot;, &quot;Wed&quot;, &quot;Thu&quot;, &quot;Fri&quot;, &quot;Sat&quot;, &quot;Sun&quot;)) +
+abline(v = seq(1, 168, 24)) </code></pre>
+<p><img src="/post/2018-07-25-smartpop-dynamic-population-mapping-part-3_files/figure-html/unnamed-chunk-18-3.png" width="672" /></p>
+<pre><code>## numeric(0)</code></pre>
 <p>Regarding correlation (the 3 measures are highly correlated), we observe:</p>
 <ul>
 <li>in average, a decrease in correlation along the week (monday to saturday), then an increase sunday.</li>
@@ -344,15 +349,19 @@ for (i in 1:168) {
 
 plot(df$i, df$r, type = &quot;o&quot;, ylab = &quot;pearson correlation&quot;, xlab = &quot;time&quot;, xaxt = &quot;n&quot;, pch = 20) +
 axis(1, at = seq(13, 168, 24), labels = c(&quot;Mon&quot;, &quot;Tue&quot;, &quot;Wed&quot;, &quot;Thu&quot;, &quot;Fri&quot;, &quot;Sat&quot;, &quot;Sun&quot;)) +
-abline(v = seq(1, 168, 24)) 
-
-plot(df$i, df$rmse, type = &quot;o&quot;, ylab = &quot;RMSE (inhab./km²)&quot;, xlab = &quot;time&quot;, xaxt = &quot;n&quot;, pch = 20) +
-axis(1, at = seq(13, 168, 24), labels = c(&quot;Mon&quot;, &quot;Tue&quot;, &quot;Wed&quot;, &quot;Thu&quot;, &quot;Fri&quot;, &quot;Sat&quot;, &quot;Sun&quot;)) +
-abline(v = seq(1, 168, 24)) 
-
-plot(df$i, df$r2, type = &quot;o&quot;, ylab = &quot;r² (of log-log model, not really relevant)&quot;, xlab = &quot;time&quot;, xaxt = &quot;n&quot;, pch = 20) +
+abline(v = seq(1, 168, 24)) </code></pre>
+<p><img src="/post/2018-07-25-smartpop-dynamic-population-mapping-part-3_files/figure-html/unnamed-chunk-19-1.png" width="672" /></p>
+<pre><code>## numeric(0)</code></pre>
+<pre class="r"><code>plot(df$i, df$rmse, type = &quot;o&quot;, ylab = &quot;RMSE (inhab./km²)&quot;, xlab = &quot;time&quot;, xaxt = &quot;n&quot;, pch = 20) +
 axis(1, at = seq(13, 168, 24), labels = c(&quot;Mon&quot;, &quot;Tue&quot;, &quot;Wed&quot;, &quot;Thu&quot;, &quot;Fri&quot;, &quot;Sat&quot;, &quot;Sun&quot;)) +
 abline(v = seq(1, 168, 24)) </code></pre>
+<p><img src="/post/2018-07-25-smartpop-dynamic-population-mapping-part-3_files/figure-html/unnamed-chunk-19-2.png" width="672" /></p>
+<pre><code>## numeric(0)</code></pre>
+<pre class="r"><code>plot(df$i, df$r2, type = &quot;o&quot;, ylab = &quot;r² (of log-log model, not really relevant)&quot;, xlab = &quot;time&quot;, xaxt = &quot;n&quot;, pch = 20) +
+axis(1, at = seq(13, 168, 24), labels = c(&quot;Mon&quot;, &quot;Tue&quot;, &quot;Wed&quot;, &quot;Thu&quot;, &quot;Fri&quot;, &quot;Sat&quot;, &quot;Sun&quot;)) +
+abline(v = seq(1, 168, 24)) </code></pre>
+<p><img src="/post/2018-07-25-smartpop-dynamic-population-mapping-part-3_files/figure-html/unnamed-chunk-19-3.png" width="672" /></p>
+<pre><code>## numeric(0)</code></pre>
 <p>Compare to standard regression, we observe:</p>
 <ul>
 <li>higher correlation.</li>
@@ -401,15 +410,19 @@ for (i in 1:168) {
 
 plot(df$i, df$r, type = &quot;o&quot;, ylab = &quot;pearson correlation&quot;, xlab = &quot;time&quot;, xaxt = &quot;n&quot;, pch = 20) +
 axis(1, at = seq(13, 168, 24), labels = c(&quot;Mon&quot;, &quot;Tue&quot;, &quot;Wed&quot;, &quot;Thu&quot;, &quot;Fri&quot;, &quot;Sat&quot;, &quot;Sun&quot;)) +
-abline(v = seq(1, 168, 24)) 
-
-plot(df$i, df$rmse, type = &quot;o&quot;, ylab = &quot;RMSE (inhab./km²)&quot;, xlab = &quot;time&quot;, xaxt = &quot;n&quot;, pch = 20) +
-axis(1, at = seq(13, 168, 24), labels = c(&quot;Mon&quot;, &quot;Tue&quot;, &quot;Wed&quot;, &quot;Thu&quot;, &quot;Fri&quot;, &quot;Sat&quot;, &quot;Sun&quot;)) +
-abline(v = seq(1, 168, 24)) 
-
-plot(df$i, df$r2, type = &quot;o&quot;, ylab = &quot;r²&quot;, xlab = &quot;time&quot;, xaxt = &quot;n&quot;, pch = 20) +
+abline(v = seq(1, 168, 24)) </code></pre>
+<p><img src="/post/2018-07-25-smartpop-dynamic-population-mapping-part-3_files/figure-html/unnamed-chunk-20-1.png" width="672" /></p>
+<pre><code>## numeric(0)</code></pre>
+<pre class="r"><code>plot(df$i, df$rmse, type = &quot;o&quot;, ylab = &quot;RMSE (inhab./km²)&quot;, xlab = &quot;time&quot;, xaxt = &quot;n&quot;, pch = 20) +
 axis(1, at = seq(13, 168, 24), labels = c(&quot;Mon&quot;, &quot;Tue&quot;, &quot;Wed&quot;, &quot;Thu&quot;, &quot;Fri&quot;, &quot;Sat&quot;, &quot;Sun&quot;)) +
 abline(v = seq(1, 168, 24)) </code></pre>
+<p><img src="/post/2018-07-25-smartpop-dynamic-population-mapping-part-3_files/figure-html/unnamed-chunk-20-2.png" width="672" /></p>
+<pre><code>## numeric(0)</code></pre>
+<pre class="r"><code>plot(df$i, df$r2, type = &quot;o&quot;, ylab = &quot;r²&quot;, xlab = &quot;time&quot;, xaxt = &quot;n&quot;, pch = 20) +
+axis(1, at = seq(13, 168, 24), labels = c(&quot;Mon&quot;, &quot;Tue&quot;, &quot;Wed&quot;, &quot;Thu&quot;, &quot;Fri&quot;, &quot;Sat&quot;, &quot;Sun&quot;)) +
+abline(v = seq(1, 168, 24)) </code></pre>
+<p><img src="/post/2018-07-25-smartpop-dynamic-population-mapping-part-3_files/figure-html/unnamed-chunk-20-3.png" width="672" /></p>
+<pre><code>## numeric(0)</code></pre>
 <p>Compare to unweighted regression, we observe:</p>
 <ul>
 <li>similar correlation.</li>
@@ -418,9 +431,68 @@ abline(v = seq(1, 168, 24)) </code></pre>
 </div>
 <div id="residual-analysis" class="section level3">
 <h3>Residual analysis</h3>
-<div id="relationship-between-residuals-and-area-and-absolute-population" class="section level4">
-<h4>Relationship between residuals and area and absolute population</h4>
+<div id="relationship-between-residuals-area-and-absolute-population" class="section level4">
+<h4>Relationship between residuals, area and absolute population</h4>
 <pre class="r"><code>i = 24
+
+y &lt;- as.numeric(log(popVoro[-1,2]/1000)) 
+x &lt;- as.numeric(log((WeekWorkingDays[,i])/(zoneShp$area/1000000)))
+index &lt;- which(x == -Inf | y == -Inf)
+y &lt;- y[-index]
+x &lt;- x[-index]
+
+lm.model &lt;- lm(y ~ x) 
+
+# x &lt;- as.numeric(log((WeekWorkingDays[,i])/(zoneShp$area/1000000)))
+predData &lt;- exp(lm.model$coefficients[1] + lm.model$coefficients[2]*x)
+predData &lt;- predData * popTotal/sum(predData * (zoneShp$area[-index]/1000000))
+
+residuals &lt;- (popVoro[-1,2][-index]/1000) - predData
+
+cor(residuals, zoneShp$area[-index])</code></pre>
+<pre><code>## [1] -0.04282584</code></pre>
+<pre class="r"><code>cor(abs(residuals), zoneShp$area[-index])</code></pre>
+<pre><code>## [1] -0.2777075</code></pre>
+<pre class="r"><code>cor(log(abs(residuals)), log(1/(zoneShp$area[-index])))</code></pre>
+<pre><code>## [1] 0.8134295</code></pre>
+<pre class="r"><code>cor(residuals, exp(y))</code></pre>
+<pre><code>## [1] 0.294242</code></pre>
+<pre class="r"><code>cor(abs(residuals), exp(y))</code></pre>
+<pre><code>## [1] 0.6706924</code></pre>
+<pre class="r"><code>cor(log(abs(residuals)), y)</code></pre>
+<pre><code>## [1] 0.7505862</code></pre>
+<pre class="r"><code>cor(exp(y), zoneShp$area[-index])</code></pre>
+<pre><code>## [1] -0.3953842</code></pre>
+<pre class="r"><code>cor(exp(y), 1/(zoneShp$area[-index]))</code></pre>
+<pre><code>## [1] 0.4453043</code></pre>
+<pre class="r"><code>cor(y, log(1/(zoneShp$area[-index])))</code></pre>
+<pre><code>## [1] 0.8176677</code></pre>
+<pre class="r"><code>par(mfrow = c(1,2))
+plot(exp(y), abs(residuals), xlab = &quot;population density&quot;, ylab = &quot;|residuals|&quot;)
+plot(y, log(abs(residuals)), xlab = &quot;log(population density)&quot;, ylab = &quot;log(|residuals|)&quot;)</code></pre>
+<p><img src="/post/2018-07-25-smartpop-dynamic-population-mapping-part-3_files/figure-html/unnamed-chunk-21-1.png" width="672" /></p>
+<pre class="r"><code>par(mfrow = c(1,2))
+plot(1/zoneShp$area[-index], abs(residuals), xlab = &quot;1/area&quot;, ylab = &quot;|residuals|&quot;)
+plot(log(1/(zoneShp$area[-index])), log(abs(residuals)), xlab = &quot;log(1/area)&quot;, ylab = &quot;log(|residuals|)&quot;)</code></pre>
+<p><img src="/post/2018-07-25-smartpop-dynamic-population-mapping-part-3_files/figure-html/unnamed-chunk-21-2.png" width="672" /></p>
+<pre class="r"><code>par(mfrow = c(1,2))
+plot(1/zoneShp$area[-index], exp(y), xlab = &quot;1/area&quot;, ylab = &quot;population density&quot;)
+plot(log(1/(zoneShp$area[-index])), y, xlab = &quot;log(1/area)&quot;, ylab = &quot;log(population density)&quot;)</code></pre>
+<p><img src="/post/2018-07-25-smartpop-dynamic-population-mapping-part-3_files/figure-html/unnamed-chunk-21-3.png" width="672" /></p>
+</div>
+<div id="relationship-between-residuals-and-age-group" class="section level4">
+<h4>Relationship between residuals and age group</h4>
+</div>
+</div>
+<div id="mapping-of-residuals" class="section level3">
+<h3>Mapping of residuals</h3>
+<p>We observe higher residuals (positive and negative) in urban areas.</p>
+<pre class="r"><code>library(raster)
+library(rasterVis)
+library(classInt)
+
+# Residuals
+i = 24
 
 y &lt;- as.numeric(log(popVoro[-1,2]/1000)) 
 x &lt;- as.numeric(log((WeekWorkingDays[,i])/(zoneShp$area/1000000)))
@@ -436,53 +508,18 @@ predData &lt;- predData * popTotal/sum(predData * (zoneShp$area/1000000))
 
 residuals &lt;- (popVoro[-1,2]/1000) - predData
 
-cor(residuals, zoneShp$area[-index])
-cor(abs(residuals), zoneShp$area[-index])
-
-cor(residuals, exp(y))
-cor(abs(residuals), exp(y))
-
-cor(log(1/(zoneShp$area[-index])), log(abs(residuals)))
-plot(log(1/(zoneShp$area[-index])), log(abs(residuals)), xlab = &quot;log(1/area)&quot;, ylab = &quot;log(|residuals|)&quot;)
-plot(1/zoneShp$area[-index], abs(residuals), xlab = &quot;1/area&quot;, ylab = &quot;|residuals|&quot;)</code></pre>
-</div>
-<div id="relationship-between-residuals-and-age-group" class="section level4">
-<h4>Relationship between residuals and age group</h4>
-<pre class="r"><code>load(&quot;/media/ubuntu/DATA/Data/Smartpop/Population/popClassVoro.Rda&quot;)
-
-lm.residuals &lt;- lm(residuals ~ popClassVoro[[1]][-1,2] +
-               popClassVoro[[2]][-1,2] +
-               popClassVoro[[3]][-1,2] +
-               popClassVoro[[4]][-1,2] +
-               popClassVoro[[5]][-1,2] +
-               popClassVoro[[6]][-1,2] +
-               popClassVoro[[7]][-1,2] +
-               popClassVoro[[8]][-1,2] +
-               popClassVoro[[9]][-1,2] +
-               popClassVoro[[10]][-1,2])
-summary(lm.residuals)</code></pre>
-</div>
-</div>
-<div id="mapping-of-residuals" class="section level3">
-<h3>Mapping of residuals</h3>
-<pre class="r"><code>library(raster)
-library(rasterVis)
-library(classInt)
-
-# Residuals
-
 zoneShp$residuals &lt;- residuals/sd(popVoro[-1,2])
 
-my.palette &lt;- brewer.pal(n = 9, name = &quot;Spectral&quot;)
-breaks &lt;- classIntervals(zoneShp$residuals, n = 9, style = &quot;quantile&quot;)
+my.palette &lt;- brewer.pal(n = 5, name = &quot;Spectral&quot;)
+breaks &lt;- classIntervals(zoneShp$residuals, n = 5, style = &quot;quantile&quot;)
 zoneShp$brks &lt;- cut(zoneShp$residuals, breaks = breaks$brks)
   
 spplot(zoneShp, &quot;residuals&quot;, at = breaks$brks,
        col.regions = my.palette, 
        col = &quot;transparent&quot;, usePolypath = FALSE,
-       main = &quot;residuals&quot;)
-
-# Absolute residuals
+       main = &quot;residuals&quot;)</code></pre>
+<p><img src="/post/2018-07-25-smartpop-dynamic-population-mapping-part-3_files/figure-html/unnamed-chunk-23-1.png" width="672" /></p>
+<pre class="r"><code># Absolute residuals
 
 zoneShp$residuals &lt;- abs(residuals)
 
@@ -493,7 +530,7 @@ breaks &lt;- classIntervals(abs(residuals), n = 9, style = &quot;quantile&quot;)
 spplot(zoneShp, &quot;residuals&quot;, at = breaks$brk,
        col.regions = my.palette, col = &quot;transparent&quot;, cuts = 8,  usePolypath = FALSE,
        main = &quot;absolute residuals&quot;)</code></pre>
-<p>We observe higher residuals (positive and negative) in urban areas.</p>
+<p><img src="/post/2018-07-25-smartpop-dynamic-population-mapping-part-3_files/figure-html/unnamed-chunk-23-2.png" width="672" /> ## Spatial regression model</p>
 <div id="dynamic-exploration-with-leaflet." class="section level4">
 <h4>Dynamic exploration with leaflet.</h4>
 <pre class="r"><code>library(leaflet)
@@ -642,6 +679,7 @@ zstat_reg &lt;- zstat_reg[-1, c(1,5)]
 colnames(zstat_reg) &lt;- c(&quot;z&quot;, &quot;reg&quot;)</code></pre>
 <pre class="r"><code>df &lt;- data.frame(residuals = residuals, cl = zstat_reg$reg)
 boxplot(residuals ~ cl, df)</code></pre>
+<p><img src="/post/2018-07-25-smartpop-dynamic-population-mapping-part-3_files/figure-html/unnamed-chunk-30-1.png" width="672" /></p>
 </div>
 <div id="mixed-effect-model-with-random-intercept-and-slope" class="section level5">
 <h5>Mixed effect model with random intercept and slope</h5>
@@ -654,7 +692,6 @@ zoneShp &lt;- readOGR(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m.shp&q
 
 df &lt;- data.frame(i = 1:168, 
                  r = rep(0, 168),
-                 r2 = rep(0, 168),
                  rmse = rep(0, 168))
 index &lt;- c(3:15)
 index0 &lt;- c(3:15)
@@ -688,15 +725,14 @@ for (i in (1:168)[-index]) {
 
 plot(df$i, df$r, type = &quot;o&quot;, ylab = &quot;pearson correlation&quot;, xlab = &quot;time&quot;, xaxt = &quot;n&quot;, pch = 20) +
 axis(1, at = seq(13, 168, 24), labels = c(&quot;Mon&quot;, &quot;Tue&quot;, &quot;Wed&quot;, &quot;Thu&quot;, &quot;Fri&quot;, &quot;Sat&quot;, &quot;Sun&quot;)) +
-abline(v = seq(1, 168, 24)) 
-
-plot(df$i, df$rmse, type = &quot;o&quot;, ylab = &quot;RMSE (inhab./km²)&quot;, xlab = &quot;time&quot;, xaxt = &quot;n&quot;, pch = 20) +
-axis(1, at = seq(13, 168, 24), labels = c(&quot;Mon&quot;, &quot;Tue&quot;, &quot;Wed&quot;, &quot;Thu&quot;, &quot;Fri&quot;, &quot;Sat&quot;, &quot;Sun&quot;)) +
-abline(v = seq(1, 168, 24)) 
-
-plot(df$i, df$r2, type = &quot;o&quot;, ylab = &quot;r² (of log-log model, not really relevant)&quot;, xlab = &quot;time&quot;, xaxt = &quot;n&quot;, pch = 20) +
+abline(v = seq(1, 168, 24)) </code></pre>
+<p><img src="/post/2018-07-25-smartpop-dynamic-population-mapping-part-3_files/figure-html/unnamed-chunk-31-1.png" width="672" /></p>
+<pre><code>## numeric(0)</code></pre>
+<pre class="r"><code>plot(df$i, df$rmse, type = &quot;o&quot;, ylab = &quot;RMSE (inhab./km²)&quot;, xlab = &quot;time&quot;, xaxt = &quot;n&quot;, pch = 20) +
 axis(1, at = seq(13, 168, 24), labels = c(&quot;Mon&quot;, &quot;Tue&quot;, &quot;Wed&quot;, &quot;Thu&quot;, &quot;Fri&quot;, &quot;Sat&quot;, &quot;Sun&quot;)) +
 abline(v = seq(1, 168, 24)) </code></pre>
+<p><img src="/post/2018-07-25-smartpop-dynamic-population-mapping-part-3_files/figure-html/unnamed-chunk-31-2.png" width="672" /></p>
+<pre><code>## numeric(0)</code></pre>
 <p>We will work with 9 pm as it gives the best results in average for each day of the week.</p>
 <pre class="r"><code>output &lt;- data.frame(h = 0:23, cor = rep(0,24))
 
@@ -705,6 +741,7 @@ for (i in 1:24) {
 }
 
 plot(output$h,  output$cor, ylim = c(0.5,0.7), xlab = &quot;hour&quot;, ulab = &quot;pearson correlation&quot;)</code></pre>
+<p><img src="/post/2018-07-25-smartpop-dynamic-population-mapping-part-3_files/figure-html/unnamed-chunk-32-1.png" width="672" /></p>
 </div>
 </div>
 </div>
