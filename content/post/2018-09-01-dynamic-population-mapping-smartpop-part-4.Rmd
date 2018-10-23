@@ -87,7 +87,6 @@ Smaller polygons are in Brussels
 
 ```{r}
 # region code (1: Wallonia, 2: Flanders, 3: Brussels)
-
 df  <- cbind(table(zstat_reg$reg[order(AREA.df$area)][1:100]),
              table(zstat_reg$reg[order(AREA.df$area)][101:200]),
              table(zstat_reg$reg[order(AREA.df$area)][201:300]),
@@ -251,55 +250,29 @@ for (i in 1:n) {
 load("~/Dropbox/Research/Projects/SMARTPOP/Data/MergeArea/MergeArea.RData")
 ```
 
-```{r}
-plot(df$area[1:1000], 
-     df$r.lmer[1:1000], 
+```{r, fig.width = 8, fig.height = 3.5}
+par(mfrow = c(1,2))
+plot(df$area[seq(1,1001,10)], 
+     df$r.lmer[seq(1,1001,10)], 
      type = "l", 
      pch = 20, 
      col = "red", 
      ylim = c(0.58, 0.9), 
      xlab = "Smallest Area (km²)", 
      ylab = "Pearson correlation", lwd = 2) +
-lines(df$area[1:1000], 
-      df$r[1:1000], 
+lines(df$area[seq(1,1001,10)], 
+      df$r[seq(1,1001,10)], 
       type = "l", 
       pch = 20, lwd = 2)
-legend("bottomright",
-       c("Standard model",
-         "Mixed model"),
-       lwd = 2,
-       col = 1:2,
-       bty = "n")
 
-plot(df$area[1:1000], 
-     df$rmse[1:1000], 
+plot(df$area[seq(1,1001,10)], 
+     df$rmse[seq(1,1001,10)], 
      type = "l", 
      pch = 20, 
      xlab = "Smallest Area (km²)", 
-     ylab = "Pearson correlation", lwd = 2) +
-lines(df$area[1:1000], 
-      df$rmse.lmer[1:1000], 
-      type = "l", 
-      col = "red", 
-      pch = 20, lwd = 2)
-legend("topright",
-       c("Standard model",
-         "Mixed model"),
-       lwd = 2,
-       col = 1:2,
-       bty = "n")
-
-
-plot(df$area[1:1000], 
-     df$rmse[1:1000], 
-     type = "l", 
-     pch = 20, 
-    ylim = c(750, 1300),
-     xlim = c(0.5, 1.2),
-     xlab = "Smallest Area (km²)", 
-     ylab = "Pearson correlation", lwd = 2) +
-lines(df$area[1:1000], 
-      df$rmse.lmer[1:1000], 
+     ylab = "RMSE (inhab./km²)", lwd = 2) +
+lines(df$area[seq(1,1001,10)], 
+      df$rmse.lmer[seq(1,1001,10)], 
       type = "l", 
       col = "red", 
       pch = 20, lwd = 2)
@@ -406,6 +379,7 @@ table(cl[,2])[-which(table(cl[,2]) %in% c(1,2))][order(table(cl[,2])[-which(tabl
 zone.new <- reclassify(zone, cl)
 plot(zone.new)
 ```
+
 ```{r, eval = F, echo = F}
 writeRaster(zone.new, "/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2.tif")
 ```
@@ -451,25 +425,93 @@ for (i in unique(TabArea[, 1])) {
 ```{r, echo = F, eval = F}
 fwrite(db.new, "/media/ubuntu/DATA/Data/Smartpop/FinalDB/FinalDB_085km2.csv")
 ```
+
 ```{r, echo = F}
 db.new <- fread("/media/ubuntu/DATA/Data/Smartpop/FinalDB/FinalDB_085km2.csv")
 ```
 
 ### Recompute time series decomposition
 
-```{r}
-load("/media/ubuntu/DATA/Data/Smartpop/Dates/Dates_vec.Rda")
+Better than arbitrary define sub-groups (holidays, working days), we have decided to use kmeans clustering (2 clusters) on daily data. As shown on the plots, these two clusters correspond to week-end and holidays VS working days. In the working days period, we also find some holidays including:
 
-holidays <- dates[c(62:123,179:185,235:248,289:297, 340:353, 1:4,29:32,38:40,192:195)]
-whichHolidays <- which(substr(unique(db.new$DATE_HOUR), 1, 10) %in% as.character(holidays))
-workingDays <- dates[-c(62:123,179:185,235:248,289:297, 340:353, 1:4,29:32,38:40,192:195)]
-whichWorkingDays <- which(substr(unique(db.new$DATE_HOUR), 1, 10) %in% as.character(workingDays))
+```{r, fig.width = 8, fig.height = 3}
+library(ggplot2)
+library(Rmisc)
+library(dplyr)
+
+load("/media/ubuntu/DATA/Data/Smartpop/Dates/Dates_vec.Rda")
 
 Mat_BE <- dcast(ID_Grid ~  DATE_HOUR, 
                 data = db.new, 
                 value.var = "NBR_SIM_BE")
 Mat_BE <- as.matrix(Mat_BE)[, -1]
-colnames(Mat_BE) <- c(73:(24*7), rep(1:(24*7), 51), 1:95)
+colnames(Mat_BE) <- c(rep(1:364, each = 24), rep(365, 23))
+
+# Temporal kmeans
+Mat_BE_scales <- t(scrime::rowScales(t(Mat_BE)))
+Mat_BE_VectorPerDay <- matrix(rep(0, 365*79608), nrow = 365, ncol = 79608)
+
+for (i in 1:364) {
+  Mat_BE_VectorPerDay[i, ] <- as.numeric(Mat_BE_scales[, colnames(Mat_BE_scales) == i])
+}
+
+set.seed(2)
+test <- kmeans(Mat_BE_VectorPerDay, 2)
+df <- data.frame(cl = test$cluster, col = "working days", stringsAsFactors = F)
+df$week <- c(4:7, rep(1:7, 51), 1:4)
+df$WE <- "week"
+df$WE[df$week == 6] <- "saturday"
+df$WE[df$week == 7] <- "sunday"
+df$col[c(62:123,179:185,235:248,289:297, 340:353, 1:4,29:32,38:40,192:195)] <- "holidays"
+df$col[df$week %in% c(6,7)] <- "WE"
+
+# Plot
+
+d2 <- df %>% 
+  group_by(cl, WE) %>% 
+  summarise(count=n()) %>% 
+  mutate(perc=count/sum(count))
+
+g1 <- ggplot(d2, aes(x = as.factor(cl), y = perc, fill = as.factor(WE))) + 
+          geom_bar(stat = "identity") +
+          xlab("Cluster") +
+          ylab("Frequency") +
+          theme_bw() + 
+          guides(fill = guide_legend(title = ""))
+
+d2 <- df %>% 
+  group_by(cl,col) %>% 
+  summarise(count=n()) %>% 
+  mutate(perc=count/sum(count))
+
+g2 <- ggplot(d2, aes(x = as.factor(cl), y = perc, fill = as.factor(col))) + 
+          geom_bar(stat = "identity") +
+          xlab("Cluster") +
+          ylab("Frequency") +
+          theme_bw() + 
+          guides(fill = guide_legend(title = ""))
+
+multiplot(g1, g2, cols = 2)
+
+dates[c(62:123,179:185,235:248,289:297, 340:353, 1:4,29:32,38:40,192:195)][dates[c(62:123,179:185,235:248,289:297, 340:353, 1:4,29:32,38:40,192:195)] %in% dates[which(df$cl == 2)]]
+
+source("/home/ubuntu/Dropbox/Research/scriptR/Function/calendarHeat.R")
+calendarHeat(dates = dates, values = df$cl, date.form="%Y-%m-%d",  ncolors=99, 
+             color = "r2b", title = "Temporal Clustering")
+```
+
+```{r, fig.width = 8, fig.height = 5}
+column.names <- c(73:(24*7), rep(1:(24*7), 51), 1:96)
+column.names <- column.names[-7971]
+colnames(Mat_BE) <- column.names
+
+# holidays <- dates[c(62:123,179:185,235:248,289:297, 340:353, 1:4,29:32,38:40,192:195)]
+holidays <- dates[which(df$cl == 1)]
+whichHolidays <- which(substr(unique(db.new$DATE_HOUR), 1, 10) %in% as.character(holidays))
+
+# workingDays <- dates[-c(62:123,179:185,235:248,289:297, 340:353, 1:4,29:32,38:40,192:195)]
+workingDays <- dates[which(df$cl == 2)]
+whichWorkingDays <- which(substr(unique(db.new$DATE_HOUR), 1, 10) %in% as.character(workingDays))
 
 Mat_BE_holidays <- Mat_BE[, whichHolidays]
 Mat_BE_workingDays <- Mat_BE[, whichWorkingDays]
@@ -483,34 +525,51 @@ WeekWorkingDays <- vapply(1:(24*7), function(x)
   numeric(nrow(Mat_BE_workingDays)) )
 
 # Example plot
-n = 1
-plot(WeekWorkingDays[n,], type = "o", 
-     ylim = c(0, 750), pch = 20, lwd = 2,
-     ylab = "SIM", xlab = "time", 
+library(scrime)
+area <- fread("/media/ubuntu/DATA/Data/Smartpop/Zone/area_085_inKm2.csv")  
+
+par(mfrow = c(2, 1))
+par(mar = c(1, 5, 2, 1))
+plot(colMeans(rowScales(WeekWorkingDays/area$`area(km2)`)), type = "o", 
+     ylim = c(-1.8, 1.8), pch = 20, lwd = 1,
+     ylab = "SIM density (z-score)", xlab = "time", 
      xaxt = "n") +
 axis(1, at = seq(13, 168, 24), 
      labels = c("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")) +
-abline(v = seq(1, 168, 24), lwd = 2) +
-lines(WeekHolidays[n,], col = "red", lwd = 2,  
+abline(v = seq(1, 168, 24), lwd = 2, lty = 2) +
+lines(colMeans(rowScales(WeekHolidays/area$`area(km2)`)), col = "red", lwd = 1,  
       type = "o", pch = 20)
 legend("topright",
        c("Working Days", "Holidays"),
        col = c("black", "red"),
-       lty = 1, lwd = 2)
+       lty = 1, lwd = 2, cex = 0.75)
+
+par(mar = c(2, 5, 2, 1))
+plot(colMeans(rowScales(WeekWorkingDays/area$`area(km2)`)) - 
+     colMeans(rowScales(WeekHolidays/area$`area(km2)`)), type = "o", 
+     ylim = c(-0.8, 0.8), pch = 20, lwd = 1,
+     ylab = "working days - holidays\nSIM density (z-score)", xlab = "time", 
+     xaxt = "n") +
+axis(1, at = seq(13, 168, 24), 
+     labels = c("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"))
+abline(v = seq(1, 168, 24), lwd = 2, lty = 2) +
+abline(h = 0, lwd = 1, lty = 3) 
 ```
 
 The seasonal values are removed, and the remainder loess smoothed to find the trend component (local regression,  weighted least square, 2nd degree poly, tricubing weighting, 10% of the points).
 
 ```{r, eval = FALSE}
-# remove seasonnal component
-for (i in 1:ncol(Mat_BE)){
-  print(i)
-  if (substr(db$DATE_HOUR[i], 1, 10) %in% dates[c(62:123,179:185,235:248,289:297, 340:353, 1:4,29:32,38:40,192:195)]) {
-    Mat_BE[,i] =  Mat_BE[,i] - WeekHolidays[, as.numeric(colnames(Mat_BE)[i])] 
-  } else {
-    Mat_BE[,i] =  Mat_BE[,i] - WeekWorkingDays[, as.numeric(colnames(Mat_BE)[i])] 
-  }
-}
+# remove seasonal component
+indexHolidays <- which(substr(unique(db.new$DATE_HOUR), 1, 10) 
+                       %in% as.character(dates[c(62:123,179:185,235:248,289:297, 340:353, 1:4,29:32,38:40,192:195)]))
+indexHolidays <- whichHolidays
+
+Mat_BE_copy <- Mat_BE
+Mat_BE[, indexHolidays] <- Mat_BE[, indexHolidays] - 
+                           WeekHolidays[, as.numeric(colnames(Mat_BE)[indexHolidays])] 
+Mat_BE[, -indexHolidays] <- Mat_BE[, -indexHolidays] - 
+                            WeekWorkingDays[, as.numeric(colnames(Mat_BE)[-indexHolidays])] 
+
 
 # compute trend
 library(foreach)
@@ -523,11 +582,107 @@ trend <- foreach(i = 1:nrow(Mat_BE), .combine = rbind) %dopar% {
   z  #return value for the iterations
 }
 ```
+
+```{r, eval = F, echo = F}
+save(trend, file = "/media/ubuntu/DATA/Data/Smartpop/Matrix/trend_085km2.Rda")
+```
+
+```{r, echo = F}
+load("/media/ubuntu/DATA/Data/Smartpop/Matrix/trend_085km2.Rda")
+```
+
+
+```{r, fig.width = 8, fig.height = 3}
+# Example plot
+plot(colMeans(rowScales(trend/area$`area(km2)`)), type = "l", 
+      pch = 20, lwd = 2,
+     ylab = "SIM density (z-score)", xlab = "time", 
+     xaxt = "n") +
+axis(1, at = seq(24*15,365*24, 24*30), 
+     labels = c("May", "Jun.", "Jul.", "Aug.", "Sep.", "Oct.", 
+                "Nov.", "Dec.", "Jan.", "Feb.", "Mar", "Apr.")) +
+abline(h = 0, lwd = 1, lty = 3) +
+abline(v = as.numeric(cumsum(table(substr(dates, 6,7)))*24), lwd = 2, lty = 2)
+```
+
+
 The trend is removed to get the remainder component.
 
 ```{r, eval = FALSE}
 remainder = Mat_BE - trend
 ```
+
+```{r, eval = F, echo = F}
+save(remainder, file = "/media/ubuntu/DATA/Data/Smartpop/Matrix/remainder_085km2.Rda")
+```
+
+```{r, echo = FALSE}
+load("/media/ubuntu/DATA/Data/Smartpop/Matrix/remainder_085km2.Rda")
+```
+
+```{r, fig.width = 12, fig.height = 10}
+df <- data.frame(date = apply(expand.grid(dates, c("00","01","02","03","04","05","06",
+                                                   "07","08","09","10","11","12",
+                                                   "13","14","15","16","17","18",
+                                                   "19","20","21","22","23")), 1, 
+                              paste, collapse = " ")[order(apply(expand.grid(dates, 
+                                                 c("00","01","02","03","04","05","06",
+                                                   "07","08","09","10","11","12",
+                                                   "13","14","15","16","17","18",
+                                                   "19","20","21","22","23")), 
+                                                                 1, paste, collapse = ""))][-8760], 
+                 remainder_mean = colMeans(rowScales(remainder/area$`area(km2)`)),
+                 stringsAsFactors = F)
+
+df$Date <- substr(df$date, 1,10)
+df$Hour <- substr(df$date, 12,13)
+# 
+# # Example plot
+# plot(colMeans(rowScales(remainder/area$`area(km2)`)), type = "l", 
+#       pch = 20, lwd = 2,
+#      ylab = "SIM density (z-score)", xlab = "time", 
+#      xaxt = "n") +
+# axis(1, at = seq(24*15,365*24, 24*30), 
+#      labels = c("May", "Jun.", "Jul.", "Aug.", "Sep.", "Oct.", 
+#                 "Nov.", "Dec.", "Jan.", "Feb.", "Mar", "Apr.")) +
+# abline(h = 0, lwd = 1, lty = 3) +
+# abline(v = as.numeric(cumsum(table(substr(dates, 6,7)))*24), lwd = 2, lty = 2)
+
+library(ggplot2)
+
+temperature <- rev(c('#67001f','#b2182b','#d6604d','#f4a582',
+                 '#fddbc7','#f7f7f7','#d1e5f0','#92c5de',
+                 '#4393c3','#2166ac','#053061'))
+
+g <- list()
+
+start <- c(1,122,244)
+end <- c(121,243,365)
+
+df$remainder_mean[df$remainder_mean > 2.5] <- 2.5
+df$remainder_mean[df$remainder_mean < -2.5] <- -2.5
+
+for (i in 1:3) {
+  g[[i]] <- ggplot(data =  df[which(df$Date %in% 
+                                      as.character(dates[start[i]:end[i]])),], 
+               aes(y = Hour, x = Date)) + 
+    geom_raster(aes(fill = (remainder_mean))) +
+    scale_fill_gradientn(colours = temperature,
+                         name = "z-score") +
+    theme(
+      plot.background = element_blank(),
+      panel.grid.minor = element_blank(),
+      panel.grid.major = element_blank(),
+      panel.background = element_blank(),
+      panel.border = element_blank(),
+      axis.text.x = element_text(angle = 90)) 
+}
+
+library(Rmisc)
+multiplot(g[[1]], g[[2]], g[[3]])
+
+```
+
 
 ```{r, eval = FALSE, echo = FALSE}
 save(remainder, file = "/media/ubuntu/DATA/Data/Smartpop/Matrix/remainder_085km2.Rda")

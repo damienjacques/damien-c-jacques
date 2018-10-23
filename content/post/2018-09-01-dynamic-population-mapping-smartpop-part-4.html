@@ -81,7 +81,6 @@ cor(SIM_Wd)</code></pre>
 WeekWorkingDays &lt;- data.frame(ID = AREA.df$ID, SIM = WeekWorkingDays[,22])</code></pre>
 <p>Smaller polygons are in Brussels</p>
 <pre class="r"><code># region code (1: Wallonia, 2: Flanders, 3: Brussels)
-
 df  &lt;- cbind(table(zstat_reg$reg[order(AREA.df$area)][1:100]),
              table(zstat_reg$reg[order(AREA.df$area)][101:200]),
              table(zstat_reg$reg[order(AREA.df$area)][201:300]),
@@ -235,34 +234,28 @@ for (i in 1:n) {
   df$NewID[i] &lt;- NewID
 }</code></pre>
 <pre class="r"><code>load(&quot;~/Dropbox/Research/Projects/SMARTPOP/Data/MergeArea/MergeArea.RData&quot;)</code></pre>
-<pre class="r"><code>plot(df$area[1:1000], 
-     df$r.lmer[1:1000], 
+<pre class="r"><code>par(mfrow = c(1,2))
+plot(df$area[seq(1,1001,10)], 
+     df$r.lmer[seq(1,1001,10)], 
      type = &quot;l&quot;, 
      pch = 20, 
      col = &quot;red&quot;, 
      ylim = c(0.58, 0.9), 
      xlab = &quot;Smallest Area (km²)&quot;, 
      ylab = &quot;Pearson correlation&quot;, lwd = 2) +
-lines(df$area[1:1000], 
-      df$r[1:1000], 
+lines(df$area[seq(1,1001,10)], 
+      df$r[seq(1,1001,10)], 
       type = &quot;l&quot;, 
       pch = 20, lwd = 2)</code></pre>
 <pre><code>## integer(0)</code></pre>
-<pre class="r"><code>legend(&quot;bottomright&quot;,
-       c(&quot;Standard model&quot;,
-         &quot;Mixed model&quot;),
-       lwd = 2,
-       col = 1:2,
-       bty = &quot;n&quot;)</code></pre>
-<p><img src="/post/2018-09-01-dynamic-population-mapping-smartpop-part-4_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
-<pre class="r"><code>plot(df$area[1:1000], 
-     df$rmse[1:1000], 
+<pre class="r"><code>plot(df$area[seq(1,1001,10)], 
+     df$rmse[seq(1,1001,10)], 
      type = &quot;l&quot;, 
      pch = 20, 
      xlab = &quot;Smallest Area (km²)&quot;, 
-     ylab = &quot;Pearson correlation&quot;, lwd = 2) +
-lines(df$area[1:1000], 
-      df$rmse.lmer[1:1000], 
+     ylab = &quot;RMSE (inhab./km²)&quot;, lwd = 2) +
+lines(df$area[seq(1,1001,10)], 
+      df$rmse.lmer[seq(1,1001,10)], 
       type = &quot;l&quot;, 
       col = &quot;red&quot;, 
       pch = 20, lwd = 2)</code></pre>
@@ -273,28 +266,7 @@ lines(df$area[1:1000],
        lwd = 2,
        col = 1:2,
        bty = &quot;n&quot;)</code></pre>
-<p><img src="/post/2018-09-01-dynamic-population-mapping-smartpop-part-4_files/figure-html/unnamed-chunk-5-2.png" width="672" /></p>
-<pre class="r"><code>plot(df$area[1:1000], 
-     df$rmse[1:1000], 
-     type = &quot;l&quot;, 
-     pch = 20, 
-    ylim = c(750, 1300),
-     xlim = c(0.5, 1.2),
-     xlab = &quot;Smallest Area (km²)&quot;, 
-     ylab = &quot;Pearson correlation&quot;, lwd = 2) +
-lines(df$area[1:1000], 
-      df$rmse.lmer[1:1000], 
-      type = &quot;l&quot;, 
-      col = &quot;red&quot;, 
-      pch = 20, lwd = 2)</code></pre>
-<pre><code>## integer(0)</code></pre>
-<pre class="r"><code>legend(&quot;topright&quot;,
-       c(&quot;Standard model&quot;,
-         &quot;Mixed model&quot;),
-       lwd = 2,
-       col = 1:2,
-       bty = &quot;n&quot;)</code></pre>
-<p><img src="/post/2018-09-01-dynamic-population-mapping-smartpop-part-4_files/figure-html/unnamed-chunk-5-3.png" width="672" /></p>
+<p><img src="/post/2018-09-01-dynamic-population-mapping-smartpop-part-4_files/figure-html/unnamed-chunk-5-1.png" width="768" /></p>
 <pre class="r"><code>library(ggplot2)
 library(gridExtra)
 library(animation)
@@ -416,18 +388,84 @@ for (i in unique(TabArea[, 1])) {
 </div>
 <div id="recompute-time-series-decomposition" class="section level3">
 <h3>Recompute time series decomposition</h3>
-<pre class="r"><code>load(&quot;/media/ubuntu/DATA/Data/Smartpop/Dates/Dates_vec.Rda&quot;)
+<p>Better than arbitrary define sub-groups (holidays, working days), we have decided to use kmeans clustering (2 clusters) on daily data. As shown on the plots, these two clusters correspond to week-end and holidays VS working days. In the working days period, we also find some holidays including:</p>
+<pre class="r"><code>library(ggplot2)
+library(Rmisc)
+library(dplyr)
 
-holidays &lt;- dates[c(62:123,179:185,235:248,289:297, 340:353, 1:4,29:32,38:40,192:195)]
-whichHolidays &lt;- which(substr(unique(db.new$DATE_HOUR), 1, 10) %in% as.character(holidays))
-workingDays &lt;- dates[-c(62:123,179:185,235:248,289:297, 340:353, 1:4,29:32,38:40,192:195)]
-whichWorkingDays &lt;- which(substr(unique(db.new$DATE_HOUR), 1, 10) %in% as.character(workingDays))
+load(&quot;/media/ubuntu/DATA/Data/Smartpop/Dates/Dates_vec.Rda&quot;)
 
 Mat_BE &lt;- dcast(ID_Grid ~  DATE_HOUR, 
                 data = db.new, 
                 value.var = &quot;NBR_SIM_BE&quot;)
 Mat_BE &lt;- as.matrix(Mat_BE)[, -1]
-colnames(Mat_BE) &lt;- c(73:(24*7), rep(1:(24*7), 51), 1:95)
+colnames(Mat_BE) &lt;- c(rep(1:364, each = 24), rep(365, 23))
+
+# Temporal kmeans
+Mat_BE_scales &lt;- t(scrime::rowScales(t(Mat_BE)))
+Mat_BE_VectorPerDay &lt;- matrix(rep(0, 365*79608), nrow = 365, ncol = 79608)
+
+for (i in 1:364) {
+  Mat_BE_VectorPerDay[i, ] &lt;- as.numeric(Mat_BE_scales[, colnames(Mat_BE_scales) == i])
+}
+
+set.seed(2)
+test &lt;- kmeans(Mat_BE_VectorPerDay, 2)
+df &lt;- data.frame(cl = test$cluster, col = &quot;working days&quot;, stringsAsFactors = F)
+df$week &lt;- c(4:7, rep(1:7, 51), 1:4)
+df$WE &lt;- &quot;week&quot;
+df$WE[df$week == 6] &lt;- &quot;saturday&quot;
+df$WE[df$week == 7] &lt;- &quot;sunday&quot;
+df$col[c(62:123,179:185,235:248,289:297, 340:353, 1:4,29:32,38:40,192:195)] &lt;- &quot;holidays&quot;
+df$col[df$week %in% c(6,7)] &lt;- &quot;WE&quot;
+
+# Plot
+
+d2 &lt;- df %&gt;% 
+  group_by(cl, WE) %&gt;% 
+  summarise(count=n()) %&gt;% 
+  mutate(perc=count/sum(count))
+
+g1 &lt;- ggplot(d2, aes(x = as.factor(cl), y = perc, fill = as.factor(WE))) + 
+          geom_bar(stat = &quot;identity&quot;) +
+          xlab(&quot;Cluster&quot;) +
+          ylab(&quot;Frequency&quot;) +
+          theme_bw() + 
+          guides(fill = guide_legend(title = &quot;&quot;))
+
+d2 &lt;- df %&gt;% 
+  group_by(cl,col) %&gt;% 
+  summarise(count=n()) %&gt;% 
+  mutate(perc=count/sum(count))
+
+g2 &lt;- ggplot(d2, aes(x = as.factor(cl), y = perc, fill = as.factor(col))) + 
+          geom_bar(stat = &quot;identity&quot;) +
+          xlab(&quot;Cluster&quot;) +
+          ylab(&quot;Frequency&quot;) +
+          theme_bw() + 
+          guides(fill = guide_legend(title = &quot;&quot;))
+
+multiplot(g1, g2, cols = 2)</code></pre>
+<p><img src="/post/2018-09-01-dynamic-population-mapping-smartpop-part-4_files/figure-html/unnamed-chunk-13-1.png" width="768" /></p>
+<pre class="r"><code>dates[c(62:123,179:185,235:248,289:297, 340:353, 1:4,29:32,38:40,192:195)][dates[c(62:123,179:185,235:248,289:297, 340:353, 1:4,29:32,38:40,192:195)] %in% dates[which(df$cl == 2)]]</code></pre>
+<pre><code>##  [1] &quot;2014-10-27&quot; &quot;2014-10-28&quot; &quot;2014-10-29&quot; &quot;2014-10-30&quot; &quot;2014-10-31&quot;
+##  [6] &quot;2015-02-13&quot; &quot;2015-02-17&quot; &quot;2015-02-18&quot; &quot;2015-02-19&quot; &quot;2015-02-20&quot;
+## [11] &quot;2015-04-17&quot; &quot;2014-05-02&quot; &quot;2014-11-10&quot; &quot;2014-11-11&quot;</code></pre>
+<pre class="r"><code>source(&quot;/home/ubuntu/Dropbox/Research/scriptR/Function/calendarHeat.R&quot;)
+calendarHeat(dates = dates, values = df$cl, date.form=&quot;%Y-%m-%d&quot;,  ncolors=99, 
+             color = &quot;r2b&quot;, title = &quot;Temporal Clustering&quot;)</code></pre>
+<p><img src="/post/2018-09-01-dynamic-population-mapping-smartpop-part-4_files/figure-html/unnamed-chunk-13-2.png" width="768" /></p>
+<pre class="r"><code>column.names &lt;- c(73:(24*7), rep(1:(24*7), 51), 1:96)
+column.names &lt;- column.names[-7971]
+colnames(Mat_BE) &lt;- column.names
+
+# holidays &lt;- dates[c(62:123,179:185,235:248,289:297, 340:353, 1:4,29:32,38:40,192:195)]
+holidays &lt;- dates[which(df$cl == 1)]
+whichHolidays &lt;- which(substr(unique(db.new$DATE_HOUR), 1, 10) %in% as.character(holidays))
+
+# workingDays &lt;- dates[-c(62:123,179:185,235:248,289:297, 340:353, 1:4,29:32,38:40,192:195)]
+workingDays &lt;- dates[which(df$cl == 2)]
+whichWorkingDays &lt;- which(substr(unique(db.new$DATE_HOUR), 1, 10) %in% as.character(workingDays))
 
 Mat_BE_holidays &lt;- Mat_BE[, whichHolidays]
 Mat_BE_workingDays &lt;- Mat_BE[, whichWorkingDays]
@@ -441,32 +479,51 @@ WeekWorkingDays &lt;- vapply(1:(24*7), function(x)
   numeric(nrow(Mat_BE_workingDays)) )
 
 # Example plot
-n = 1
-plot(WeekWorkingDays[n,], type = &quot;o&quot;, 
-     ylim = c(0, 750), pch = 20, lwd = 2,
-     ylab = &quot;SIM&quot;, xlab = &quot;time&quot;, 
+library(scrime)
+area &lt;- fread(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/area_085_inKm2.csv&quot;)  
+
+par(mfrow = c(2, 1))
+par(mar = c(1, 5, 2, 1))
+plot(colMeans(rowScales(WeekWorkingDays/area$`area(km2)`)), type = &quot;o&quot;, 
+     ylim = c(-1.8, 1.8), pch = 20, lwd = 1,
+     ylab = &quot;SIM density (z-score)&quot;, xlab = &quot;time&quot;, 
      xaxt = &quot;n&quot;) +
 axis(1, at = seq(13, 168, 24), 
      labels = c(&quot;Mon&quot;, &quot;Tue&quot;, &quot;Wed&quot;, &quot;Thu&quot;, &quot;Fri&quot;, &quot;Sat&quot;, &quot;Sun&quot;)) +
-abline(v = seq(1, 168, 24), lwd = 2) +
-lines(WeekHolidays[n,], col = &quot;red&quot;, lwd = 2,  
+abline(v = seq(1, 168, 24), lwd = 2, lty = 2) +
+lines(colMeans(rowScales(WeekHolidays/area$`area(km2)`)), col = &quot;red&quot;, lwd = 1,  
       type = &quot;o&quot;, pch = 20)</code></pre>
 <pre><code>## numeric(0)</code></pre>
 <pre class="r"><code>legend(&quot;topright&quot;,
        c(&quot;Working Days&quot;, &quot;Holidays&quot;),
        col = c(&quot;black&quot;, &quot;red&quot;),
-       lty = 1, lwd = 2)</code></pre>
-<p><img src="/post/2018-09-01-dynamic-population-mapping-smartpop-part-4_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
+       lty = 1, lwd = 2, cex = 0.75)
+
+par(mar = c(2, 5, 2, 1))
+plot(colMeans(rowScales(WeekWorkingDays/area$`area(km2)`)) - 
+     colMeans(rowScales(WeekHolidays/area$`area(km2)`)), type = &quot;o&quot;, 
+     ylim = c(-0.8, 0.8), pch = 20, lwd = 1,
+     ylab = &quot;working days - holidays\nSIM density (z-score)&quot;, xlab = &quot;time&quot;, 
+     xaxt = &quot;n&quot;) +
+axis(1, at = seq(13, 168, 24), 
+     labels = c(&quot;Mon&quot;, &quot;Tue&quot;, &quot;Wed&quot;, &quot;Thu&quot;, &quot;Fri&quot;, &quot;Sat&quot;, &quot;Sun&quot;))</code></pre>
+<pre><code>## numeric(0)</code></pre>
+<pre class="r"><code>abline(v = seq(1, 168, 24), lwd = 2, lty = 2) +
+abline(h = 0, lwd = 1, lty = 3) </code></pre>
+<p><img src="/post/2018-09-01-dynamic-population-mapping-smartpop-part-4_files/figure-html/unnamed-chunk-14-1.png" width="768" /></p>
+<pre><code>## integer(0)</code></pre>
 <p>The seasonal values are removed, and the remainder loess smoothed to find the trend component (local regression, weighted least square, 2nd degree poly, tricubing weighting, 10% of the points).</p>
-<pre class="r"><code># remove seasonnal component
-for (i in 1:ncol(Mat_BE)){
-  print(i)
-  if (substr(db$DATE_HOUR[i], 1, 10) %in% dates[c(62:123,179:185,235:248,289:297, 340:353, 1:4,29:32,38:40,192:195)]) {
-    Mat_BE[,i] =  Mat_BE[,i] - WeekHolidays[, as.numeric(colnames(Mat_BE)[i])] 
-  } else {
-    Mat_BE[,i] =  Mat_BE[,i] - WeekWorkingDays[, as.numeric(colnames(Mat_BE)[i])] 
-  }
-}
+<pre class="r"><code># remove seasonal component
+indexHolidays &lt;- which(substr(unique(db.new$DATE_HOUR), 1, 10) 
+                       %in% as.character(dates[c(62:123,179:185,235:248,289:297, 340:353, 1:4,29:32,38:40,192:195)]))
+indexHolidays &lt;- whichHolidays
+
+Mat_BE_copy &lt;- Mat_BE
+Mat_BE[, indexHolidays] &lt;- Mat_BE[, indexHolidays] - 
+                           WeekHolidays[, as.numeric(colnames(Mat_BE)[indexHolidays])] 
+Mat_BE[, -indexHolidays] &lt;- Mat_BE[, -indexHolidays] - 
+                            WeekWorkingDays[, as.numeric(colnames(Mat_BE)[-indexHolidays])] 
+
 
 # compute trend
 library(foreach)
@@ -478,6 +535,78 @@ trend &lt;- foreach(i = 1:nrow(Mat_BE), .combine = rbind) %dopar% {
   z &lt;- predict(loess(Mat_BE[i,] ~ x, span = 0.1, degree = 2))
   z  #return value for the iterations
 }</code></pre>
+<pre class="r"><code># Example plot
+plot(colMeans(rowScales(trend/area$`area(km2)`)), type = &quot;l&quot;, 
+      pch = 20, lwd = 2,
+     ylab = &quot;SIM density (z-score)&quot;, xlab = &quot;time&quot;, 
+     xaxt = &quot;n&quot;) +
+axis(1, at = seq(24*15,365*24, 24*30), 
+     labels = c(&quot;May&quot;, &quot;Jun.&quot;, &quot;Jul.&quot;, &quot;Aug.&quot;, &quot;Sep.&quot;, &quot;Oct.&quot;, 
+                &quot;Nov.&quot;, &quot;Dec.&quot;, &quot;Jan.&quot;, &quot;Feb.&quot;, &quot;Mar&quot;, &quot;Apr.&quot;)) +
+abline(h = 0, lwd = 1, lty = 3) +
+abline(v = as.numeric(cumsum(table(substr(dates, 6,7)))*24), lwd = 2, lty = 2)</code></pre>
+<p><img src="/post/2018-09-01-dynamic-population-mapping-smartpop-part-4_files/figure-html/unnamed-chunk-18-1.png" width="768" /></p>
+<pre><code>## numeric(0)</code></pre>
 <p>The trend is removed to get the remainder component.</p>
 <pre class="r"><code>remainder = Mat_BE - trend</code></pre>
+<pre class="r"><code>df &lt;- data.frame(date = apply(expand.grid(dates, c(&quot;00&quot;,&quot;01&quot;,&quot;02&quot;,&quot;03&quot;,&quot;04&quot;,&quot;05&quot;,&quot;06&quot;,
+                                                   &quot;07&quot;,&quot;08&quot;,&quot;09&quot;,&quot;10&quot;,&quot;11&quot;,&quot;12&quot;,
+                                                   &quot;13&quot;,&quot;14&quot;,&quot;15&quot;,&quot;16&quot;,&quot;17&quot;,&quot;18&quot;,
+                                                   &quot;19&quot;,&quot;20&quot;,&quot;21&quot;,&quot;22&quot;,&quot;23&quot;)), 1, 
+                              paste, collapse = &quot; &quot;)[order(apply(expand.grid(dates, 
+                                                 c(&quot;00&quot;,&quot;01&quot;,&quot;02&quot;,&quot;03&quot;,&quot;04&quot;,&quot;05&quot;,&quot;06&quot;,
+                                                   &quot;07&quot;,&quot;08&quot;,&quot;09&quot;,&quot;10&quot;,&quot;11&quot;,&quot;12&quot;,
+                                                   &quot;13&quot;,&quot;14&quot;,&quot;15&quot;,&quot;16&quot;,&quot;17&quot;,&quot;18&quot;,
+                                                   &quot;19&quot;,&quot;20&quot;,&quot;21&quot;,&quot;22&quot;,&quot;23&quot;)), 
+                                                                 1, paste, collapse = &quot;&quot;))][-8760], 
+                 remainder_mean = colMeans(rowScales(remainder/area$`area(km2)`)),
+                 stringsAsFactors = F)
+
+df$Date &lt;- substr(df$date, 1,10)
+df$Hour &lt;- substr(df$date, 12,13)
+# 
+# # Example plot
+# plot(colMeans(rowScales(remainder/area$`area(km2)`)), type = &quot;l&quot;, 
+#       pch = 20, lwd = 2,
+#      ylab = &quot;SIM density (z-score)&quot;, xlab = &quot;time&quot;, 
+#      xaxt = &quot;n&quot;) +
+# axis(1, at = seq(24*15,365*24, 24*30), 
+#      labels = c(&quot;May&quot;, &quot;Jun.&quot;, &quot;Jul.&quot;, &quot;Aug.&quot;, &quot;Sep.&quot;, &quot;Oct.&quot;, 
+#                 &quot;Nov.&quot;, &quot;Dec.&quot;, &quot;Jan.&quot;, &quot;Feb.&quot;, &quot;Mar&quot;, &quot;Apr.&quot;)) +
+# abline(h = 0, lwd = 1, lty = 3) +
+# abline(v = as.numeric(cumsum(table(substr(dates, 6,7)))*24), lwd = 2, lty = 2)
+
+library(ggplot2)
+
+temperature &lt;- rev(c(&#39;#67001f&#39;,&#39;#b2182b&#39;,&#39;#d6604d&#39;,&#39;#f4a582&#39;,
+                 &#39;#fddbc7&#39;,&#39;#f7f7f7&#39;,&#39;#d1e5f0&#39;,&#39;#92c5de&#39;,
+                 &#39;#4393c3&#39;,&#39;#2166ac&#39;,&#39;#053061&#39;))
+
+g &lt;- list()
+
+start &lt;- c(1,122,244)
+end &lt;- c(121,243,365)
+
+df$remainder_mean[df$remainder_mean &gt; 2.5] &lt;- 2.5
+df$remainder_mean[df$remainder_mean &lt; -2.5] &lt;- -2.5
+
+for (i in 1:3) {
+  g[[i]] &lt;- ggplot(data =  df[which(df$Date %in% 
+                                      as.character(dates[start[i]:end[i]])),], 
+               aes(y = Hour, x = Date)) + 
+    geom_raster(aes(fill = (remainder_mean))) +
+    scale_fill_gradientn(colours = temperature,
+                         name = &quot;z-score&quot;) +
+    theme(
+      plot.background = element_blank(),
+      panel.grid.minor = element_blank(),
+      panel.grid.major = element_blank(),
+      panel.background = element_blank(),
+      panel.border = element_blank(),
+      axis.text.x = element_text(angle = 90)) 
+}
+
+library(Rmisc)
+multiplot(g[[1]], g[[2]], g[[3]])</code></pre>
+<p><img src="/post/2018-09-01-dynamic-population-mapping-smartpop-part-4_files/figure-html/unnamed-chunk-22-1.png" width="1152" /></p>
 </div>
