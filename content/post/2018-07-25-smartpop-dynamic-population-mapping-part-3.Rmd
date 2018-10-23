@@ -21,6 +21,7 @@ knitr::opts_chunk$set(warning = FALSE,
                       message = FALSE,
                       eval = T)
 ```
+
 ### Decompose time series
 
 We decompose the SIM time series in seasonnal (weekly), trend and remainder component. The seasonnal component is obtained by taking the average value for a week. Working days and holidays are considered independently. 
@@ -239,13 +240,13 @@ pop <- raster("/media/ubuntu/DATA/Data/Smartpop/Population/pop_10_100.tif")
 pop[zone == 0] <- NA
 
 levelplot(pop/1000, col.regions = colorRampPalette(brewer.pal(9, 'Blues')),
-          margin = FALSE, main = 'Population density (inhab./m²) -- Normal breaks')
+          margin = FALSE, main = 'Population density (inhab./km²) -- Normal breaks')
 
 breaks <- classIntervals(values(pop)/1000, n = 20, style = "quantile")
 
 levelplot(pop/1000, at = c(0, breaks$brks[breaks$brks > 0]), 
           col.regions = colorRampPalette(brewer.pal(9, 'Blues')),
-          margin = FALSE, main = 'Population density (inhab./m²) -- Quantile breaks')
+          margin = FALSE, main = 'Population density (inhab./km²) -- Quantile breaks')
 ```
 Average population density in Belgium (> 10 y) is 322.2 inhab./km².
 
@@ -278,7 +279,7 @@ breaks <- classIntervals(values(popZone)/1000, n = 20, style = "quantile")
 
 levelplot(popZone/1000, at = c(0, breaks$brks[breaks$brks > 0]), 
           col.regions = colorRampPalette(brewer.pal(9, 'Blues')),
-          margin = FALSE, main = 'Population density (inhab./m²) -- Quantile breaks')
+          margin = FALSE, main = 'Population density (inhab./km²) -- Quantile breaks')
 ```
 
 #### Compute age group proportion foe each polygon
@@ -344,7 +345,7 @@ save(popClassVoro, file = "/media/ubuntu/DATA/Data/Smartpop/Population/popClassV
 
 ### Population model with OLS regression (simple linear regression)
 
-```{r, warning = FALSE, message = FALSE}
+```{r, warning = FALSE, message = FALSE, fig.width = 6, fig.height = 3.5}
 library(rgdal)
 library(Metrics)
 library(data.table)
@@ -401,7 +402,7 @@ Regarding correlation (the 3 measures are highly correlated), we observe:
 ### Population model with OLS regression (linear regression with log-log transformation)
 
 
-```{r, warning = FALSE, message = FALSE}
+```{r, warning = FALSE, message = FALSE, fig.width = 6, fig.height = 3.5}
 library(rgdal)
 library(Metrics)
 library(data.table)
@@ -461,7 +462,7 @@ Weighted regression are used to reduce heteroscedasticity However, if the hetero
 From [here](http://blog.minitab.com/blog/adventures-in-statistics-2/curing-heteroscedasticity-with-weighted-regression-in-minitab-statistical-software).
 
 
-```{r, warning = FALSE, message = FALSE}
+```{r, warning = FALSE, message = FALSE, fig.width = 6, fig.height = 3.5}
 library(rgdal)
 library(Metrics)
 
@@ -629,7 +630,7 @@ spplot(zoneShp, "residuals", at = breaks$brk,
 ```
 ## Spatial regression model
 
-```{r, echo = F, eval = F}
+```{r, echo = F, eval = F, fig.width = 6, fig.height = 3.5}
 # Residuals
 i = 24
 
@@ -899,7 +900,7 @@ save(zstat_reg, file = "/media/ubuntu/DATA/Data/Smartpop/Belgiumzstat_reg.Rda")
 ```{r, echo = F}
 load("/media/ubuntu/DATA/Data/Smartpop/Belgiumzstat_reg.Rda")
 ```
-```{r}
+```{r, fig.width = 6, fig.height = 3.5}
 df <- data.frame(residuals = residuals, cl = zstat_reg$reg)
 boxplot(residuals ~ cl, df)
 ```
@@ -907,7 +908,7 @@ boxplot(residuals ~ cl, df)
 ##### Mixed effect model with random intercept and slope
 
 
-```{r}
+```{r, fig.width = 6, fig.height = 3.5}
 library(lme4)
 library(rgdal)
 library(Metrics)
@@ -959,14 +960,16 @@ abline(v = seq(1, 168, 24))
 
 We will work with 9 pm as it gives the best results in average for each day of the week.
 
-```{r}
+```{r, fig.width = 4, fig.height = 3.5}
 output <- data.frame(h = 0:23, cor = rep(0,24))
 
 for (i in 1:24) {
   output[i, 2] <- mean(df$r[seq(i,168,24)])
 }
 
-plot(output$h,  output$cor, ylim = c(0.5,0.7), xlab = "hour", ulab = "pearson correlation")
+plot(output$h,  output$cor, 
+     xlim = c(16,23), ylim = c(0.6,0.7), 
+     xlab = "hour", ylab = "pearson correlation", type = "o")
 ```
 
 
