@@ -972,6 +972,27 @@ plot(output$h,  output$cor,
      xlab = "hour", ylab = "pearson correlation", type = "o")
 ```
 
+```{r, echo = F, eval = F}
+### Heteroskedasticity
+i = 22
+y <- as.numeric(log(popVoro[-1,2]/1000)) 
+x <- as.numeric(log((WeekWorkingDays[,i])/zoneShp$area/1000000))
+index <- which(x == -Inf | y == -Inf)
+y <- y[-index]
+x <- x[-index]
+
+data <- data.frame(x = x, y = y, cl = zstat_reg$reg[-index])
+
+lm.model <- lm(y ~ x, data = data)
+lmer.model <- lmer(y ~ x + (1 + x | cl), data = data)
+
+plot(lm.model)
+plot(lmer.model)
+qqnorm(residuals(lmer.model))
+plot(residuals(lmer.model), residuals(lm.model))
+
+```
+
 
   
 

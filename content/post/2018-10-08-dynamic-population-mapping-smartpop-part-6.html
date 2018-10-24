@@ -32,6 +32,13 @@ shp &lt;- shp[order(shp$DN),]  # needed to correctly cbind matrix data
 colnames(shp)[1] &lt;- &quot;ID_Grid&quot; 
 shp_dissolve &lt;- shp %&gt;% group_by(ID_Grid) %&gt;% summarize() # remove small polygons
 st_write(shp_dissolve, &quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp&quot;)</code></pre>
+<pre><code>## Reading layer `zone_50m_0.85km2_dissolve&#39; from data source `/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp&#39; using driver `ESRI Shapefile&#39;
+## Simple feature collection with 3317 features and 1 field
+## geometry type:  MULTIPOLYGON
+## dimension:      XY
+## bbox:           xmin: 23052 ymin: 21127 xmax: 295252 ymax: 243827
+## epsg (SRID):    NA
+## proj4string:    NA</code></pre>
 <div id="population" class="section level2">
 <h2>Population</h2>
 <pre class="r"><code>library(raster)
@@ -167,18 +174,57 @@ for (randomID in randomIDs) {
   OutputSpatialCV$intercept[OutputSpatialCV$randomID == randomID] &lt;- lm.model$coefficients[1]
   OutputSpatialCV$slope[OutputSpatialCV$randomID == randomID] &lt;- lm.model$coefficients[2]
 }</code></pre>
+<pre class="r"><code>par(mfrow = c(1,2))
+boxplot(OutputSpatialCV$intercept, ylab = &quot;Alpha&quot;)
+boxplot(OutputSpatialCV$slope, ylab = &quot;Beta&quot;)</code></pre>
+<p><img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-10-1.png" width="576" /></p>
+<pre class="r"><code>par(mfrow = c(1,2))
+boxplot(OutputSpatialCV$cor, ylab = &quot;Pearson correlation&quot;)
+boxplot(OutputSpatialCV$rmse, ylab = &quot;RMSE (inhab./km²)&quot;)</code></pre>
+<p><img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-10-2.png" width="576" /></p>
 </div>
 <div id="mapping-uncertainty" class="section level2">
 <h2>Mapping uncertainty</h2>
 <pre class="r"><code>library(GADMTools)
-map &lt;- gadm.loadCountries(c(&quot;BEL&quot;), level = 5, basefile = &quot;./&quot;)
+map &lt;- gadm.loadCountries(c(&quot;BEL&quot;), level = 4, basefile = &quot;./&quot;)
 plotmap(map)</code></pre>
+<p><img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
+</div>
+<div id="load-shapefile-for-subsetting-and-plotting" class="section level2">
+<h2>Load shapefile for subsetting and plotting</h2>
+<pre class="r"><code>region &lt;- st_read(&quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Belgium_Adm/BEL_adm_shp/BEL_adm3.shp&quot;)</code></pre>
+<pre><code>## Reading layer `BEL_adm3&#39; from data source `/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Belgium_Adm/BEL_adm_shp/BEL_adm3.shp&#39; using driver `ESRI Shapefile&#39;
+## Simple feature collection with 44 features and 15 fields
+## geometry type:  MULTIPOLYGON
+## dimension:      XY
+## bbox:           xmin: 2.555356 ymin: 49.49722 xmax: 6.40787 ymax: 51.50382
+## epsg (SRID):    4326
+## proj4string:    +proj=longlat +datum=WGS84 +no_defs</code></pre>
+<pre class="r"><code>region &lt;- st_transform(region, st_crs(shp))
+
+commune &lt;- st_read(&quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Belgium_Adm/BEL_adm_shp/BEL_adm4.shp&quot;)</code></pre>
+<pre><code>## Reading layer `BEL_adm4&#39; from data source `/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Belgium_Adm/BEL_adm_shp/BEL_adm4.shp&#39; using driver `ESRI Shapefile&#39;
+## Simple feature collection with 589 features and 16 fields
+## geometry type:  MULTIPOLYGON
+## dimension:      XY
+## bbox:           xmin: 2.555356 ymin: 49.49722 xmax: 6.40787 ymax: 51.50382
+## epsg (SRID):    4326
+## proj4string:    +proj=longlat +datum=WGS84 +no_defs</code></pre>
+<pre class="r"><code>commune &lt;- st_transform(commune, st_crs(shp))</code></pre>
 <pre class="r"><code>library(matrixStats)
+library(cartography)
 
 UncertaintySpatialCV_mean &lt;- rowSds(as.matrix(UncertaintySpatialCV[, -1]), na.rm = T)
 
-shp &lt;- st_read(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp&quot;)
-st_crs(shp) &lt;- &quot;+proj=lcc +lat_1=51.16666723333333 +lat_2=49.8333339 +lat_0=90 +lon_0=4.367486666666666 +x_0=150000.013
+shp &lt;- st_read(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp&quot;)</code></pre>
+<pre><code>## Reading layer `zone_50m_0.85km2_dissolve&#39; from data source `/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp&#39; using driver `ESRI Shapefile&#39;
+## Simple feature collection with 3317 features and 1 field
+## geometry type:  MULTIPOLYGON
+## dimension:      XY
+## bbox:           xmin: 23052 ymin: 21127 xmax: 295252 ymax: 243827
+## epsg (SRID):    NA
+## proj4string:    NA</code></pre>
+<pre class="r"><code>st_crs(shp) &lt;- &quot;+proj=lcc +lat_1=51.16666723333333 +lat_2=49.8333339 +lat_0=90 +lon_0=4.367486666666666 +x_0=150000.013
 +y_0=5400088.438 +ellps=intl +units=m +no_defs&quot;
 
 shp &lt;- cbind(shp, UncertaintySpatialCV_mean)
@@ -188,7 +234,7 @@ layout(matrix(c(1,1,2,1,1,3, 4, 5,6), 3, 3, byrow = TRUE))
 
 # quantization breaks of the rate
 bks &lt;- getBreaks(v = shp[[&quot;UncertaintySpatialCV_mean&quot;]], method = &quot;quantile&quot;, nclass = 5)
-bks &lt;- seq(1, 150, 150/5)
+bks &lt;- seq(0, 150, 150/5)
 bks[6] &lt;- max(shp[[&quot;UncertaintySpatialCV_mean&quot;]])
 
 # get a color palette
@@ -196,12 +242,12 @@ cols &lt;- c(&#39;#ffffb2&#39;,&#39;#fecc5c&#39;,&#39;#fd8d3c&#39;,&#39;#f03b20&
 
 choroLayer(x = shp, var = &quot;UncertaintySpatialCV_mean&quot;, breaks = bks, col = cols,
            border = &quot;khaki&quot;, lwd = 0.001, 
-           legend.title.txt = &quot;Uncertainty of population density prediction&quot;, 
+           legend.title.txt = &quot;Uncertainty of population\ndensity prediction (inhab./km²)&quot;, 
            legend.pos = &#39;bottomleft&#39;, legend.values.rnd = 0)
-layoutLayer(title = paste0(&quot;Population density in Belgium during working days (&quot;, colname, &quot;h)&quot;), 
+layoutLayer(title = paste0(&quot;Uncertainty of population density prediction based on spatial cross-validation results (inhab./km²)&quot;), 
             sources = &quot;&quot;, north = TRUE, 
             scale = 50, tabtitle = TRUE,
-            frame = FALSE,  
+            frame = T,  
             author = &quot;*model based on mobile phone data&quot;)
 
 for (city in c(&quot;Brussel&quot;, &quot;Antwerpen&quot;, &quot;Leuven&quot;, &quot;Liège&quot; ,&quot;Namur&quot;)) {
@@ -209,69 +255,28 @@ for (city in c(&quot;Brussel&quot;, &quot;Antwerpen&quot;, &quot;Leuven&quot;, &
                var = &quot;UncertaintySpatialCV_mean&quot;, breaks = bks, col = cols,
                lwd = 0.001, 
                legend.pos = &#39;n&#39;)
-    plot(as(commune, &quot;Spatial&quot;), border = &quot;black&quot;, lwd = 0.8, add = TRUE)
+    plot(as(commune, &quot;Spatial&quot;), border = &quot;black&quot;, lwd = 0.5, add = TRUE)
     layoutLayer(title = paste0(&quot;Zoom over &quot;, city), 
                 sources = &quot;&quot;, scale = 5, tabtitle = TRUE,
                 frame = T,  
                 author = &quot;&quot;)
 }</code></pre>
-<pre class="r"><code>library(matrixStats)
-
-popVoro[1531,] &lt;- 1  #replace 0 by 1
-UncertaintySpatialCV_mean_normalized &lt;- UncertaintySpatialCV_mean/popVoro$pop
-
-shp &lt;- st_read(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp&quot;)
-st_crs(shp) &lt;- &quot;+proj=lcc +lat_1=51.16666723333333 +lat_2=49.8333339 +lat_0=90 +lon_0=4.367486666666666 +x_0=150000.013
-+y_0=5400088.438 +ellps=intl +units=m +no_defs&quot;
-
-shp &lt;- cbind(shp, UncertaintySpatialCV_mean_normalized)
-
-shp[[&quot;UncertaintySpatialCV_mean_normalized&quot;]] &lt;- shp[[&quot;UncertaintySpatialCV_mean_normalized&quot;]]*100
-
-par(mar = c(0,0,1.5,0))
-layout(matrix(c(1,1,2,1,1,3, 4, 5,6), 3, 3, byrow = TRUE))
-
-# quantization breaks of the rate
-bks &lt;- getBreaks(v = shp[[&quot;UncertaintySpatialCV_mean_normalized&quot;]], method = &quot;quantile&quot;, nclass = 5)
-bks &lt;- seq(0, 50, 100/10)
-bks[6] &lt;- max(shp[[&quot;UncertaintySpatialCV_mean_normalized&quot;]])
-
-# get a color palette
-cols &lt;- c(&#39;#ffffb2&#39;,&#39;#fecc5c&#39;,&#39;#fd8d3c&#39;,&#39;#f03b20&#39;,&#39;#bd0026&#39;)
-
-choroLayer(x = shp, var = &quot;UncertaintySpatialCV_mean_normalized&quot;, breaks = bks, col = cols,
-           border = &quot;khaki&quot;, lwd = 0.001, 
-           legend.title.txt = &quot;Uncertainty of population density prediction&quot;, 
-           legend.pos = &#39;bottomleft&#39;, legend.values.rnd = 0)
-layoutLayer(title = paste0(&quot;Population density in Belgium during working days (&quot;, colname, &quot;h)&quot;), 
-            sources = &quot;&quot;, north = TRUE, 
-            scale = 50, tabtitle = TRUE,
-            frame = FALSE,  
-            author = &quot;*model based on mobile phone data&quot;)
-
-for (city in c(&quot;Brussel&quot;, &quot;Antwerpen&quot;, &quot;Leuven&quot;, &quot;Liège&quot; ,&quot;Namur&quot;)) {
-    choroLayer(x = st_crop(shp, region[region$NAME_3 == city,]),
-               var = &quot;UncertaintySpatialCV_mean_normalized&quot;, breaks = bks, col = cols,
-               lwd = 0.001, 
-               legend.pos = &#39;n&#39;)
-    plot(as(commune, &quot;Spatial&quot;), border = &quot;black&quot;, lwd = 0.8, add = TRUE)
-    layoutLayer(title = paste0(&quot;Zoom over &quot;, city), 
-                sources = &quot;&quot;, scale = 5, tabtitle = TRUE,
-                frame = T,  
-                author = &quot;&quot;)
-}</code></pre>
+<p><img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-13-1.png" width="768" /></p>
+<pre class="r"><code># plot(popVoro$pop, UncertaintySpatialCV_mean, xlab = &quot;Population density (inhab./km²)&quot;, 
+#      ylab = &quot;Uncertainty (inhab./km²)&quot;)</code></pre>
+<p>We can make similar map with relative uncertainty.</p>
+<pre><code>## Reading layer `zone_50m_0.85km2_dissolve&#39; from data source `/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp&#39; using driver `ESRI Shapefile&#39;
+## Simple feature collection with 3317 features and 1 field
+## geometry type:  MULTIPOLYGON
+## dimension:      XY
+## bbox:           xmin: 23052 ymin: 21127 xmax: 295252 ymax: 243827
+## epsg (SRID):    NA
+## proj4string:    NA</code></pre>
+<p><img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-14-1.png" width="768" /></p>
 </div>
 </div>
 <div id="mapping" class="section level1">
 <h1>Mapping</h1>
-<div id="load-shapefile-for-subsetting-and-plotting" class="section level2">
-<h2>Load shapefile for subsetting and plotting</h2>
-<pre class="r"><code>region &lt;- st_read(&quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Belgium_Adm/BEL_adm_shp/BEL_adm3.shp&quot;)
-region &lt;- st_transform(region, st_crs(shp))
-
-commune &lt;- st_read(&quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Belgium_Adm/BEL_adm_shp/BEL_adm4.shp&quot;)
-commune &lt;- st_transform(commune, st_crs(shp))</code></pre>
-</div>
 <div id="make-animated-map" class="section level2">
 <h2>Make animated map</h2>
 <pre class="r"><code>library(cartography)
@@ -323,42 +328,168 @@ saveVideo(movie.name = &quot;/media/ubuntu/DATA/Data/Smartpop/Map/SIM_workingDay
     }
   }
 })</code></pre>
-<pre class="r"><code>library(splancs)
+</div>
+<div id="risk-map" class="section level2">
+<h2>Risk map</h2>
+<pre class="r"><code>library(matrixStats)
 
-shp_grid &lt;- getGridLayer(x = shp, cellsize = 5e+06,
- type = &quot;hexagonal&quot;, var = &quot;X15&quot;)
+PopWorkingDays_WE &lt;- WeekWorkingDays
+WeekWorkingDays_WE &lt;- WeekWorkingDays
+WeekWorkingDays_WE[is.na(WeekWorkingDays_WE)] &lt;- WeekHolidays[is.na(WeekWorkingDays_WE)]
+for (i in 1:168) {
+  predData &lt;- exp(mean(OutputSpatialCV$intercept) + mean(OutputSpatialCV$slope) * log(WeekWorkingDays_WE[, i]))
+  PopWorkingDays_WE[, i] &lt;- predData * popTotal/sum(predData * area$`area(km2)`)
+}
 
-choroLayer(x = shp_grid,
-           var = &quot;X15&quot;, breaks = bks, col = cols,
-           lwd = 0.01, 
-           legend.title.txt = &quot;Population\ndensity&quot;, 
-           legend.pos = &#39;n&#39;)
-layoutLayer(title = &quot;Population density in Belgium during working days&quot;, 
-            sources = &quot;&quot;, north = TRUE, 
-            scale = 5, tabtitle = TRUE,
-            frame = FALSE,  
-            author = &quot;*per 100,000 live births. Source: North Carolina SIDS data set&quot;)
-choroLayer(x = shp,
-           var = &quot;X15&quot;, breaks = bks, col = cols,
-           lwd = 0.01, 
-           legend.title.txt = &quot;Population\ndensity&quot;, 
-           legend.pos = &#39;n&#39;)</code></pre>
-<pre class="r"><code>nc &lt;- cartogram_cont(shp, &quot;X15&quot;)
+PopWorkingDays_WE_DiffRef_Mean &lt;- (PopWorkingDays_WE[, 22] - rowMeans(PopWorkingDays_WE)) * 100 / PopWorkingDays_WE[, 22] 
+PopWorkingDays_WE_DiffRef_CV &lt;- rowSds(PopWorkingDays_WE) * 100 / rowMeans(PopWorkingDays_WE)
 
-# quantization breaks of the rate
-bks &lt;- getBreaks(v = nc$share, method = &quot;quantile&quot;, nclass = 5)
-# correct the breaks to use the global rate as limit of class 
-bks[4] &lt;- global_rate
-# get a color palette
-cols &lt;- carto.pal(pal1 = &quot;green.pal&quot;, n1 = 3, 
-                  pal2 = &quot;wine.pal&quot;, n2 = 2)
-## Choropleth layer
-# set figure margins and background color
-par(mar = c(0,0,1.2,0), bg = &quot;lemonchiffon&quot;)
-# display the sudden infant deaths per 1000 births
-choroLayer(x = nc,var = &quot;X15&quot;, breaks = bks, col = cols,
-           border = &quot;khaki&quot;, lwd = 0.5, 
-           legend.title.txt = &quot;Sudden infant death syndrome rate*&quot;, 
-           legend.pos = &#39;topleft&#39;, legend.values.rnd = 0)</code></pre>
+
+PopWeekHolidays_WE &lt;- WeekWorkingDays
+for (i in 1:168) {
+  predData &lt;- exp(mean(OutputSpatialCV$intercept) + mean(OutputSpatialCV$slope) * log(WeekHolidays[, i]))
+  PopWeekHolidays_WE[, i] &lt;- predData * popTotal/sum(predData * area$`area(km2)`)
+}
+
+PopWeekHolidays_WE_DiffRef_Mean &lt;- (PopWeekHolidays_WE[, 22] - rowMeans(PopWeekHolidays_WE)) * 100 / PopWeekHolidays_WE[, 22] 
+PopWeekHolidays_WE_DiffRef_CV &lt;- rowSds(PopWeekHolidays_WE) * 100 / rowMeans(PopWeekHolidays_WE)
+
+Pop &lt;- list(PopWorkingDays_WE_DiffRef_Mean, PopWeekHolidays_WE_DiffRef_Mean, PopWorkingDays_WE_DiffRef_CV, PopWeekHolidays_WE_DiffRef_CV)
+names(Pop) &lt;- c(&quot;PopWorkingDays_WE_DiffRef_Mean&quot;, &quot;PopWeekHolidays_WE_DiffRef_Mean&quot;, 
+                &quot;PopWorkingDays_WE_DiffRef_CV&quot;, &quot;PopWeekHolidays_WE_DiffRef_CV&quot;)</code></pre>
+<pre><code>## Reading layer `zone_50m_0.85km2_dissolve&#39; from data source `/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp&#39; using driver `ESRI Shapefile&#39;
+## Simple feature collection with 3317 features and 1 field
+## geometry type:  MULTIPOLYGON
+## dimension:      XY
+## bbox:           xmin: 23052 ymin: 21127 xmax: 295252 ymax: 243827
+## epsg (SRID):    NA
+## proj4string:    NA</code></pre>
+<p><img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-17-1.png" width="768" /></p>
+<pre><code>## Reading layer `zone_50m_0.85km2_dissolve&#39; from data source `/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp&#39; using driver `ESRI Shapefile&#39;
+## Simple feature collection with 3317 features and 1 field
+## geometry type:  MULTIPOLYGON
+## dimension:      XY
+## bbox:           xmin: 23052 ymin: 21127 xmax: 295252 ymax: 243827
+## epsg (SRID):    NA
+## proj4string:    NA</code></pre>
+<p><img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-17-2.png" width="768" /></p>
+<pre><code>## Reading layer `zone_50m_0.85km2_dissolve&#39; from data source `/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp&#39; using driver `ESRI Shapefile&#39;
+## Simple feature collection with 3317 features and 1 field
+## geometry type:  MULTIPOLYGON
+## dimension:      XY
+## bbox:           xmin: 23052 ymin: 21127 xmax: 295252 ymax: 243827
+## epsg (SRID):    NA
+## proj4string:    NA</code></pre>
+<p><img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-18-1.png" width="768" /></p>
+<pre><code>## Reading layer `zone_50m_0.85km2_dissolve&#39; from data source `/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp&#39; using driver `ESRI Shapefile&#39;
+## Simple feature collection with 3317 features and 1 field
+## geometry type:  MULTIPOLYGON
+## dimension:      XY
+## bbox:           xmin: 23052 ymin: 21127 xmax: 295252 ymax: 243827
+## epsg (SRID):    NA
+## proj4string:    NA</code></pre>
+<p><img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-18-2.png" width="768" /></p>
+<pre class="r"><code>library(raster)
+
+raster_ref &lt;- raster(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2.tif&quot;)
+
+shp &lt;- st_read(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp&quot;)
+st_crs(shp) &lt;- &quot;+proj=lcc +lat_1=51.16666723333333 +lat_2=49.8333339 +lat_0=90 +lon_0=4.367486666666666 +x_0=150000.013
++y_0=5400088.438 +ellps=intl +units=m +no_defs&quot;
+
+shp &lt;- cbind(shp, Pop[[1]])
+colnames(shp)[2] &lt;- names(Pop)[1]
+st_write(shp, &quot;/media/ubuntu/DATA/Data/Smartpop/Risk/PopWorkingDays_WE_DiffRef_Mean.shp&quot;)
+
+ext&lt;-extent(raster_ref)
+ext&lt;-paste(ext[1], ext[3], ext[2], ext[4])
+
+res&lt;-paste(res(raster_ref)[1], res(raster_ref)[2])
+
+path.in &lt;- &quot;/media/ubuntu/DATA/Data/Smartpop/Risk/PopWorkingDays_WE_DiffRef_Mean.shp&quot;
+path.out &lt;- &quot;/media/ubuntu/DATA/Data/Smartpop/Risk/PopWorkingDays_WE_DiffRef_Mean.tif&quot;
+
+attribute&lt;-&quot;PWD_WE_&quot;
+
+command&lt;-&#39;gdal_rasterize&#39;
+command&lt;-paste(command, &quot;--config GDAL_CACHEMAX 2000&quot;) #Speed-up with more cache (avice: max 1/3 of your total RAM)
+command&lt;-paste(command, &quot;-a&quot;, attribute) #Identifies an attribute field on the features to be used for a burn in value. The value will be burned into all output bands.
+command&lt;-paste(command, &quot;-te&quot;, ext) #(GDAL &gt;= 1.8.0) set georeferenced extents. The values must be expressed in georeferenced units. If not specified, the extent of the output file will be the extent of the vector layers.
+command&lt;-paste(command, &quot;-tr&quot;, res) #(GDAL &gt;= 1.8.0) set target resolution. The values must be expressed in georeferenced units. Both must be positive values.
+command&lt;-paste(command, &quot;-ot Int32&quot;)
+command&lt;-paste(command, path.in)
+command&lt;-paste(command, path.out)
+
+system(command)
+
+st_write(commune, &quot;/media/ubuntu/DATA/Data/Smartpop/Risk/commune.shp&quot;)
+
+path.in &lt;- &quot;/media/ubuntu/DATA/Data/Smartpop/Risk/commune.shp&quot;
+path.out &lt;- &quot;/media/ubuntu/DATA/Data/Smartpop/Risk/commune.tif&quot;
+
+attribute&lt;-&quot;ID_4&quot;
+
+command&lt;-&#39;gdal_rasterize&#39;
+command&lt;-paste(command, &quot;--config GDAL_CACHEMAX 2000&quot;) #Speed-up with more cache (avice: max 1/3 of your total RAM)
+command&lt;-paste(command, &quot;-a&quot;, attribute) #Identifies an attribute field on the features to be used for a burn in value. The value will be burned into all output bands.
+command&lt;-paste(command, &quot;-te&quot;, ext) #(GDAL &gt;= 1.8.0) set georeferenced extents. The values must be expressed in georeferenced units. If not specified, the extent of the output file will be the extent of the vector layers.
+command&lt;-paste(command, &quot;-tr&quot;, res) #(GDAL &gt;= 1.8.0) set target resolution. The values must be expressed in georeferenced units. Both must be positive values.
+command&lt;-paste(command, &quot;-ot Int32&quot;)
+command&lt;-paste(command, path.in)
+command&lt;-paste(command, path.out)
+
+system(command)</code></pre>
+<pre class="r"><code>library(raster)
+myZonal &lt;- function (x, z, stat, digits = 0, na.rm = TRUE, 
+                     ...) { 
+  # source: https://stat.ethz.ch/pipermail/r-sig-geo/2013-February/017475.html
+  library(data.table)
+  fun &lt;- match.fun(stat) 
+  vals &lt;- getValues(x) 
+  zones &lt;- round(getValues(z), digits = digits) 
+  rDT &lt;- data.table(vals, z=zones) 
+  setkey(rDT, z) 
+  rDT[, lapply(.SD, fun, na.rm = TRUE), by=z] 
+} 
+
+zone &lt;- raster(&quot;/media/ubuntu/DATA/Data/Smartpop/Risk/commune.tif&quot;)
+r &lt;- raster(&quot;/media/ubuntu/DATA/Data/Smartpop/Risk/PopWorkingDays_WE_DiffRef_Mean.tif&quot;)
+zstat &lt;- myZonal(r, zone, &quot;mean&quot;)
+zstat &lt;- data.frame(zstat)
+colnames(zstat) &lt;- c(&quot;ID_4&quot;, &quot;PopWorkingDays_WE_DiffRef_Mean&quot;)
+
+commune &lt;- st_read(&quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Belgium_Adm/BEL_adm_shp/BEL_adm4.shp&quot;)</code></pre>
+<pre><code>## Reading layer `BEL_adm4&#39; from data source `/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Belgium_Adm/BEL_adm_shp/BEL_adm4.shp&#39; using driver `ESRI Shapefile&#39;
+## Simple feature collection with 589 features and 16 fields
+## geometry type:  MULTIPOLYGON
+## dimension:      XY
+## bbox:           xmin: 2.555356 ymin: 49.49722 xmax: 6.40787 ymax: 51.50382
+## epsg (SRID):    4326
+## proj4string:    +proj=longlat +datum=WGS84 +no_defs</code></pre>
+<pre class="r"><code>commune &lt;- st_transform(commune, st_crs(shp))
+commune$PopWorkingDays_WE_DiffRef_Mean &lt;- zstat$PopWorkingDays_WE_DiffRef_Mean[-1]</code></pre>
+<p><img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-21-1.png" width="768" /></p>
+<pre><code>##             NAME_4 PopWorkingDays_WE_DiffRef_Mean
+## 293 Spiere-Helkijn                     -297.70485
+## 427          Engis                     -132.67484
+## 356     Brugelette                     -129.06147
+## 471          Eupen                     -119.32127
+## 529     Tenneville                     -100.82244
+## 338       La Hulpe                      -73.51151
+## 468         Baelen                      -71.74226
+## 352          Wavre                      -66.54473
+## 482         Raeren                      -65.97945
+## 209      Hoeilaart                      -65.65789</code></pre>
+<pre><code>##         NAME_4 PopWorkingDays_WE_DiffRef_Mean
+## 448     Dalhem                       14.43200
+## 506  Wasseiges                       13.61977
+## 181   Horebeke                       12.88050
+## 190      Zwalm                       12.61103
+## 479       Olne                       12.54462
+## 144 Buggenhout                       12.03437
+## 547     Musson                       12.03094
+## 30        Hove                       11.96039
+## 329    Chastre                       11.94522
+## 204 Galmaarden                       11.87807</code></pre>
 </div>
 </div>
