@@ -13,7 +13,6 @@ tags:
 header:
   caption: ''
   image: ''
-draft: true
 ---
 
 
@@ -26,19 +25,12 @@ shp &lt;- gdal_polygonizeR(r, &quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_5
 <pre class="r"><code>library(sf)
 library(dplyr)
 
-shp &lt;- st_read(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2.shp&quot;)
+shp &lt;- st_read(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2.shp&quot;, quiet = T)
 shp &lt;- shp[!(shp$DN == 0), ]
 shp &lt;- shp[order(shp$DN),]  # needed to correctly cbind matrix data
 colnames(shp)[1] &lt;- &quot;ID_Grid&quot; 
 shp_dissolve &lt;- shp %&gt;% group_by(ID_Grid) %&gt;% summarize() # remove small polygons
 st_write(shp_dissolve, &quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp&quot;)</code></pre>
-<pre><code>## Reading layer `zone_50m_0.85km2_dissolve&#39; from data source `/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp&#39; using driver `ESRI Shapefile&#39;
-## Simple feature collection with 3317 features and 1 field
-## geometry type:  MULTIPOLYGON
-## dimension:      XY
-## bbox:           xmin: 23052 ymin: 21127 xmax: 295252 ymax: 243827
-## epsg (SRID):    NA
-## proj4string:    NA</code></pre>
 <div id="population" class="section level2">
 <h2>Population</h2>
 <pre class="r"><code>library(raster)
@@ -75,7 +67,7 @@ fwrite(area, &quot;/media/ubuntu/DATA/Data/Smartpop/Zone/area_085_inKm2.csv&quot
 <pre class="r"><code>library(reshape)
 library(geosphere)
 
-shp &lt;- st_read(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp&quot;)
+shp &lt;- st_read(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp&quot;, quiet = T)
 st_crs(shp) &lt;- &quot;+proj=lcc +lat_1=51.16666723333333 +lat_2=49.8333339 +lat_0=90 +lon_0=4.367486666666666 +x_0=150000.013
 +y_0=5400088.438 +ellps=intl +units=m +no_defs&quot;
 
@@ -192,39 +184,18 @@ plotmap(map)</code></pre>
 </div>
 <div id="load-shapefile-for-subsetting-and-plotting" class="section level2">
 <h2>Load shapefile for subsetting and plotting</h2>
-<pre class="r"><code>region &lt;- st_read(&quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Belgium_Adm/BEL_adm_shp/BEL_adm3.shp&quot;)</code></pre>
-<pre><code>## Reading layer `BEL_adm3&#39; from data source `/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Belgium_Adm/BEL_adm_shp/BEL_adm3.shp&#39; using driver `ESRI Shapefile&#39;
-## Simple feature collection with 44 features and 15 fields
-## geometry type:  MULTIPOLYGON
-## dimension:      XY
-## bbox:           xmin: 2.555356 ymin: 49.49722 xmax: 6.40787 ymax: 51.50382
-## epsg (SRID):    4326
-## proj4string:    +proj=longlat +datum=WGS84 +no_defs</code></pre>
-<pre class="r"><code>region &lt;- st_transform(region, st_crs(shp))
+<pre class="r"><code>region &lt;- st_read(&quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Belgium_Adm/BEL_adm_shp/BEL_adm3.shp&quot;, quiet = T)
+region &lt;- st_transform(region, st_crs(shp))
 
-commune &lt;- st_read(&quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Belgium_Adm/BEL_adm_shp/BEL_adm4.shp&quot;)</code></pre>
-<pre><code>## Reading layer `BEL_adm4&#39; from data source `/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Belgium_Adm/BEL_adm_shp/BEL_adm4.shp&#39; using driver `ESRI Shapefile&#39;
-## Simple feature collection with 589 features and 16 fields
-## geometry type:  MULTIPOLYGON
-## dimension:      XY
-## bbox:           xmin: 2.555356 ymin: 49.49722 xmax: 6.40787 ymax: 51.50382
-## epsg (SRID):    4326
-## proj4string:    +proj=longlat +datum=WGS84 +no_defs</code></pre>
-<pre class="r"><code>commune &lt;- st_transform(commune, st_crs(shp))</code></pre>
+commune &lt;- st_read(&quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Belgium_Adm/BEL_adm_shp/BEL_adm4.shp&quot;, quiet = T)
+commune &lt;- st_transform(commune, st_crs(shp))</code></pre>
 <pre class="r"><code>library(matrixStats)
 library(cartography)
 
 UncertaintySpatialCV_mean &lt;- rowSds(as.matrix(UncertaintySpatialCV[, -1]), na.rm = T)
 
-shp &lt;- st_read(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp&quot;)</code></pre>
-<pre><code>## Reading layer `zone_50m_0.85km2_dissolve&#39; from data source `/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp&#39; using driver `ESRI Shapefile&#39;
-## Simple feature collection with 3317 features and 1 field
-## geometry type:  MULTIPOLYGON
-## dimension:      XY
-## bbox:           xmin: 23052 ymin: 21127 xmax: 295252 ymax: 243827
-## epsg (SRID):    NA
-## proj4string:    NA</code></pre>
-<pre class="r"><code>st_crs(shp) &lt;- &quot;+proj=lcc +lat_1=51.16666723333333 +lat_2=49.8333339 +lat_0=90 +lon_0=4.367486666666666 +x_0=150000.013
+shp &lt;- st_read(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp&quot;, quiet = T)
+st_crs(shp) &lt;- &quot;+proj=lcc +lat_1=51.16666723333333 +lat_2=49.8333339 +lat_0=90 +lon_0=4.367486666666666 +x_0=150000.013
 +y_0=5400088.438 +ellps=intl +units=m +no_defs&quot;
 
 shp &lt;- cbind(shp, UncertaintySpatialCV_mean)
@@ -265,13 +236,6 @@ for (city in c(&quot;Brussel&quot;, &quot;Antwerpen&quot;, &quot;Leuven&quot;, &
 <pre class="r"><code># plot(popVoro$pop, UncertaintySpatialCV_mean, xlab = &quot;Population density (inhab./km²)&quot;, 
 #      ylab = &quot;Uncertainty (inhab./km²)&quot;)</code></pre>
 <p>We can make similar map with relative uncertainty.</p>
-<pre><code>## Reading layer `zone_50m_0.85km2_dissolve&#39; from data source `/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp&#39; using driver `ESRI Shapefile&#39;
-## Simple feature collection with 3317 features and 1 field
-## geometry type:  MULTIPOLYGON
-## dimension:      XY
-## bbox:           xmin: 23052 ymin: 21127 xmax: 295252 ymax: 243827
-## epsg (SRID):    NA
-## proj4string:    NA</code></pre>
 <p><img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-14-1.png" width="768" /></p>
 </div>
 </div>
@@ -333,6 +297,11 @@ saveVideo(movie.name = &quot;/media/ubuntu/DATA/Data/Smartpop/Map/SIM_workingDay
 <h2>Risk map</h2>
 <pre class="r"><code>library(matrixStats)
 
+datesWeek &lt;- outer(c(&quot;Mon.&quot;, &quot;Tue.&quot;, &quot;Wed.&quot;, &quot;Thu.&quot;, &quot;Fri.&quot;, &quot;Sat.&quot;, &quot;Sun.&quot;), 0:23, FUN = &quot;paste0&quot;)
+datesWeek &lt;- t(datesWeek)
+dim(datesWeek) &lt;- NULL
+hours &lt;- rep(0:23, 7)
+
 PopWorkingDays_WE &lt;- WeekWorkingDays
 WeekWorkingDays_WE &lt;- WeekWorkingDays
 WeekWorkingDays_WE[is.na(WeekWorkingDays_WE)] &lt;- WeekHolidays[is.na(WeekWorkingDays_WE)]
@@ -343,7 +312,20 @@ for (i in 1:168) {
 
 PopWorkingDays_WE_DiffRef_Mean &lt;- (PopWorkingDays_WE[, 22] - rowMeans(PopWorkingDays_WE)) * 100 / PopWorkingDays_WE[, 22] 
 PopWorkingDays_WE_DiffRef_CV &lt;- rowSds(PopWorkingDays_WE) * 100 / rowMeans(PopWorkingDays_WE)
+PopWorkingDays_WE_DiffRef_which.max_day &lt;- datesWeek[apply(PopWorkingDays_WE,1,which.max)]
+PopWorkingDays_WE_DiffRef_which.max_hour &lt;- hours[apply(PopWorkingDays_WE,1,which.max)]
 
+colnames(PopWorkingDays_WE) &lt;- hours
+res &lt;- as.data.frame( # sapply returns a list here, so we convert it to a data.frame
+    sapply(unique(colnames(PopWorkingDays_WE)), # for each unique column name
+       function(col) rowMeans(PopWorkingDays_WE[,colnames(PopWorkingDays_WE) == col]) # calculate row means
+    )
+  )
+
+PopWorkingDays_WE_DiffRef_which.max_hour &lt;- c(0:23)[apply(res,1,which.max)]
+PopWorkingDays_WE_DiffRef_diff_morning_evening &lt;- (rowMeans(res[,11:17]) - rowMeans(res[,22:24])) * 100 / ((rowMeans(res[,11:17]) +rowMeans(res[,22:24]))/2)
+
+#################
 
 PopWeekHolidays_WE &lt;- WeekWorkingDays
 for (i in 1:168) {
@@ -353,47 +335,35 @@ for (i in 1:168) {
 
 PopWeekHolidays_WE_DiffRef_Mean &lt;- (PopWeekHolidays_WE[, 22] - rowMeans(PopWeekHolidays_WE)) * 100 / PopWeekHolidays_WE[, 22] 
 PopWeekHolidays_WE_DiffRef_CV &lt;- rowSds(PopWeekHolidays_WE) * 100 / rowMeans(PopWeekHolidays_WE)
+PopWeekHolidays_WE_DiffRef_which.max_day &lt;- datesWeek[apply(PopWeekHolidays_WE,1,which.max)]
+PopWeekHolidays_WE_DiffRef_which.max_hour &lt;- hours[apply(PopWeekHolidays_WE,1,which.max)]
 
-Pop &lt;- list(PopWorkingDays_WE_DiffRef_Mean, PopWeekHolidays_WE_DiffRef_Mean, PopWorkingDays_WE_DiffRef_CV, PopWeekHolidays_WE_DiffRef_CV)
+colnames(PopWeekHolidays_WE) &lt;- hours
+res &lt;- as.data.frame( # sapply returns a list here, so we convert it to a data.frame
+    sapply(unique(colnames(PopWeekHolidays_WE)), # for each unique column name
+       function(col) rowMeans(PopWeekHolidays_WE[,colnames(PopWeekHolidays_WE) == col]) # calculate row means
+    )
+  )
+
+PopWeekHolidays_WE_DiffRef_which.max_hour &lt;- c(0:23)[apply(res,1,which.max)]
+PopWeekHolidays_WE_DiffRef_diff_morning_evening &lt;- (rowMeans(res[,11:17]) - rowMeans(res[,22:24])) * 100 / ((rowMeans(res[,11:17]) +rowMeans(res[,22:24]))/2)
+
+#################
+Pop &lt;- list(PopWorkingDays_WE_DiffRef_Mean, PopWeekHolidays_WE_DiffRef_Mean, 
+            PopWorkingDays_WE_DiffRef_CV, PopWeekHolidays_WE_DiffRef_CV, 
+            PopWorkingDays_WE_DiffRef_which.max_hour, PopWeekHolidays_WE_DiffRef_which.max_hour,
+            PopWorkingDays_WE_DiffRef_diff_morning_evening, PopWeekHolidays_WE_DiffRef_diff_morning_evening)
 names(Pop) &lt;- c(&quot;PopWorkingDays_WE_DiffRef_Mean&quot;, &quot;PopWeekHolidays_WE_DiffRef_Mean&quot;, 
-                &quot;PopWorkingDays_WE_DiffRef_CV&quot;, &quot;PopWeekHolidays_WE_DiffRef_CV&quot;)</code></pre>
-<pre><code>## Reading layer `zone_50m_0.85km2_dissolve&#39; from data source `/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp&#39; using driver `ESRI Shapefile&#39;
-## Simple feature collection with 3317 features and 1 field
-## geometry type:  MULTIPOLYGON
-## dimension:      XY
-## bbox:           xmin: 23052 ymin: 21127 xmax: 295252 ymax: 243827
-## epsg (SRID):    NA
-## proj4string:    NA</code></pre>
-<p><img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-17-1.png" width="768" /></p>
-<pre><code>## Reading layer `zone_50m_0.85km2_dissolve&#39; from data source `/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp&#39; using driver `ESRI Shapefile&#39;
-## Simple feature collection with 3317 features and 1 field
-## geometry type:  MULTIPOLYGON
-## dimension:      XY
-## bbox:           xmin: 23052 ymin: 21127 xmax: 295252 ymax: 243827
-## epsg (SRID):    NA
-## proj4string:    NA</code></pre>
-<p><img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-17-2.png" width="768" /></p>
-<pre><code>## Reading layer `zone_50m_0.85km2_dissolve&#39; from data source `/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp&#39; using driver `ESRI Shapefile&#39;
-## Simple feature collection with 3317 features and 1 field
-## geometry type:  MULTIPOLYGON
-## dimension:      XY
-## bbox:           xmin: 23052 ymin: 21127 xmax: 295252 ymax: 243827
-## epsg (SRID):    NA
-## proj4string:    NA</code></pre>
-<p><img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-18-1.png" width="768" /></p>
-<pre><code>## Reading layer `zone_50m_0.85km2_dissolve&#39; from data source `/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp&#39; using driver `ESRI Shapefile&#39;
-## Simple feature collection with 3317 features and 1 field
-## geometry type:  MULTIPOLYGON
-## dimension:      XY
-## bbox:           xmin: 23052 ymin: 21127 xmax: 295252 ymax: 243827
-## epsg (SRID):    NA
-## proj4string:    NA</code></pre>
-<p><img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-18-2.png" width="768" /></p>
+                &quot;PopWorkingDays_WE_DiffRef_CV&quot;, &quot;PopWeekHolidays_WE_DiffRef_CV&quot;,
+                &quot;PopWorkingDays_WE_DiffRef_which.max_hour&quot;, &quot;PopWeekHolidays_WE_DiffRef_which.max_hour&quot;,
+                &quot;PopWorkingDays_WE_DiffRef_diff_morning_evening&quot;, &quot;PopWeekHolidays_WE_DiffRef_diff_morning_evening&quot;)</code></pre>
+<p><img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-17-1.png" width="768" /><img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-17-2.png" width="768" /> <img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-18-1.png" width="768" /><img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-18-2.png" width="768" /></p>
+<p><img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-19-1.png" width="768" /><img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-19-2.png" width="768" /> <img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-20-1.png" width="768" /><img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-20-2.png" width="768" /></p>
 <pre class="r"><code>library(raster)
 
 raster_ref &lt;- raster(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2.tif&quot;)
 
-shp &lt;- st_read(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp&quot;)
+shp &lt;- st_read(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp&quot;, quiet = T)
 st_crs(shp) &lt;- &quot;+proj=lcc +lat_1=51.16666723333333 +lat_2=49.8333339 +lat_0=90 +lon_0=4.367486666666666 +x_0=150000.013
 +y_0=5400088.438 +ellps=intl +units=m +no_defs&quot;
 
@@ -458,17 +428,10 @@ zstat &lt;- myZonal(r, zone, &quot;mean&quot;)
 zstat &lt;- data.frame(zstat)
 colnames(zstat) &lt;- c(&quot;ID_4&quot;, &quot;PopWorkingDays_WE_DiffRef_Mean&quot;)
 
-commune &lt;- st_read(&quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Belgium_Adm/BEL_adm_shp/BEL_adm4.shp&quot;)</code></pre>
-<pre><code>## Reading layer `BEL_adm4&#39; from data source `/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Belgium_Adm/BEL_adm_shp/BEL_adm4.shp&#39; using driver `ESRI Shapefile&#39;
-## Simple feature collection with 589 features and 16 fields
-## geometry type:  MULTIPOLYGON
-## dimension:      XY
-## bbox:           xmin: 2.555356 ymin: 49.49722 xmax: 6.40787 ymax: 51.50382
-## epsg (SRID):    4326
-## proj4string:    +proj=longlat +datum=WGS84 +no_defs</code></pre>
-<pre class="r"><code>commune &lt;- st_transform(commune, st_crs(shp))
+commune &lt;- st_read(&quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Belgium_Adm/BEL_adm_shp/BEL_adm4.shp&quot;, quiet = T)
+commune &lt;- st_transform(commune, st_crs(shp))
 commune$PopWorkingDays_WE_DiffRef_Mean &lt;- zstat$PopWorkingDays_WE_DiffRef_Mean[-1]</code></pre>
-<p><img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-21-1.png" width="768" /></p>
+<p><img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-23-1.png" width="768" /></p>
 <pre><code>##             NAME_4 PopWorkingDays_WE_DiffRef_Mean
 ## 293 Spiere-Helkijn                     -297.70485
 ## 427          Engis                     -132.67484

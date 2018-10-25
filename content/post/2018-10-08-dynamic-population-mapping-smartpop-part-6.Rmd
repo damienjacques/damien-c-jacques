@@ -13,7 +13,6 @@ tags:
 header:
   caption: ''
   image: ''
-draft: true
 ---
 
 ```{r global_options, include = FALSE}
@@ -41,7 +40,7 @@ shp <- gdal_polygonizeR(r, "/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85k
 library(sf)
 library(dplyr)
 
-shp <- st_read("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2.shp")
+shp <- st_read("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2.shp", quiet = T)
 shp <- shp[!(shp$DN == 0), ]
 shp <- shp[order(shp$DN),]  # needed to correctly cbind matrix data
 colnames(shp)[1] <- "ID_Grid" 
@@ -52,7 +51,7 @@ st_write(shp_dissolve, "/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_d
 ```{r, echo = F}
 library(sf)
 
-shp <- st_read("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp")
+shp <- st_read("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp", quiet = T)
 st_crs(shp) <- "+proj=lcc +lat_1=51.16666723333333 +lat_2=49.8333339 +lat_0=90 +lon_0=4.367486666666666 +x_0=150000.013
 +y_0=5400088.438 +ellps=intl +units=m +no_defs"
 ```
@@ -103,7 +102,7 @@ area <- fread("/media/ubuntu/DATA/Data/Smartpop/Zone/area_085_inKm2.csv")
 library(reshape)
 library(geosphere)
 
-shp <- st_read("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp")
+shp <- st_read("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp", quiet = T)
 st_crs(shp) <- "+proj=lcc +lat_1=51.16666723333333 +lat_2=49.8333339 +lat_0=90 +lon_0=4.367486666666666 +x_0=150000.013
 +y_0=5400088.438 +ellps=intl +units=m +no_defs"
 
@@ -234,10 +233,10 @@ plotmap(map)
 
 ## Load shapefile for subsetting and plotting
 ```{r}
-region <- st_read("/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Belgium_Adm/BEL_adm_shp/BEL_adm3.shp")
+region <- st_read("/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Belgium_Adm/BEL_adm_shp/BEL_adm3.shp", quiet = T)
 region <- st_transform(region, st_crs(shp))
 
-commune <- st_read("/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Belgium_Adm/BEL_adm_shp/BEL_adm4.shp")
+commune <- st_read("/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Belgium_Adm/BEL_adm_shp/BEL_adm4.shp", quiet = T)
 commune <- st_transform(commune, st_crs(shp))
 ```
 
@@ -247,7 +246,7 @@ library(cartography)
 
 UncertaintySpatialCV_mean <- rowSds(as.matrix(UncertaintySpatialCV[, -1]), na.rm = T)
 
-shp <- st_read("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp")
+shp <- st_read("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp", quiet = T)
 st_crs(shp) <- "+proj=lcc +lat_1=51.16666723333333 +lat_2=49.8333339 +lat_0=90 +lon_0=4.367486666666666 +x_0=150000.013
 +y_0=5400088.438 +ellps=intl +units=m +no_defs"
 
@@ -300,7 +299,7 @@ UncertaintySpatialCV_mean <- rowSds(as.matrix(UncertaintySpatialCV[, -1]), na.rm
 UncertaintySpatialCV_mean <- UncertaintySpatialCV_mean * 100 / popVoro$pop
 UncertaintySpatialCV_mean[UncertaintySpatialCV_mean == Inf] <- 0
 
-shp <- st_read("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp")
+shp <- st_read("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp", quiet = T)
 st_crs(shp) <- "+proj=lcc +lat_1=51.16666723333333 +lat_2=49.8333339 +lat_0=90 +lon_0=4.367486666666666 +x_0=150000.013
 +y_0=5400088.438 +ellps=intl +units=m +no_defs"
 
@@ -405,6 +404,11 @@ saveVideo(movie.name = "/media/ubuntu/DATA/Data/Smartpop/Map/SIM_workingDays.mp4
 ```{r}
 library(matrixStats)
 
+datesWeek <- outer(c("Mon.", "Tue.", "Wed.", "Thu.", "Fri.", "Sat.", "Sun."), 0:23, FUN = "paste0")
+datesWeek <- t(datesWeek)
+dim(datesWeek) <- NULL
+hours <- rep(0:23, 7)
+
 PopWorkingDays_WE <- WeekWorkingDays
 WeekWorkingDays_WE <- WeekWorkingDays
 WeekWorkingDays_WE[is.na(WeekWorkingDays_WE)] <- WeekHolidays[is.na(WeekWorkingDays_WE)]
@@ -415,7 +419,20 @@ for (i in 1:168) {
 
 PopWorkingDays_WE_DiffRef_Mean <- (PopWorkingDays_WE[, 22] - rowMeans(PopWorkingDays_WE)) * 100 / PopWorkingDays_WE[, 22] 
 PopWorkingDays_WE_DiffRef_CV <- rowSds(PopWorkingDays_WE) * 100 / rowMeans(PopWorkingDays_WE)
+PopWorkingDays_WE_DiffRef_which.max_day <- datesWeek[apply(PopWorkingDays_WE,1,which.max)]
+PopWorkingDays_WE_DiffRef_which.max_hour <- hours[apply(PopWorkingDays_WE,1,which.max)]
 
+colnames(PopWorkingDays_WE) <- hours
+res <- as.data.frame( # sapply returns a list here, so we convert it to a data.frame
+    sapply(unique(colnames(PopWorkingDays_WE)), # for each unique column name
+       function(col) rowMeans(PopWorkingDays_WE[,colnames(PopWorkingDays_WE) == col]) # calculate row means
+    )
+  )
+
+PopWorkingDays_WE_DiffRef_which.max_hour <- c(0:23)[apply(res,1,which.max)]
+PopWorkingDays_WE_DiffRef_diff_morning_evening <- (rowMeans(res[,11:17]) - rowMeans(res[,22:24])) * 100 / ((rowMeans(res[,11:17]) +rowMeans(res[,22:24]))/2)
+
+#################
 
 PopWeekHolidays_WE <- WeekWorkingDays
 for (i in 1:168) {
@@ -425,15 +442,33 @@ for (i in 1:168) {
 
 PopWeekHolidays_WE_DiffRef_Mean <- (PopWeekHolidays_WE[, 22] - rowMeans(PopWeekHolidays_WE)) * 100 / PopWeekHolidays_WE[, 22] 
 PopWeekHolidays_WE_DiffRef_CV <- rowSds(PopWeekHolidays_WE) * 100 / rowMeans(PopWeekHolidays_WE)
+PopWeekHolidays_WE_DiffRef_which.max_day <- datesWeek[apply(PopWeekHolidays_WE,1,which.max)]
+PopWeekHolidays_WE_DiffRef_which.max_hour <- hours[apply(PopWeekHolidays_WE,1,which.max)]
 
-Pop <- list(PopWorkingDays_WE_DiffRef_Mean, PopWeekHolidays_WE_DiffRef_Mean, PopWorkingDays_WE_DiffRef_CV, PopWeekHolidays_WE_DiffRef_CV)
+colnames(PopWeekHolidays_WE) <- hours
+res <- as.data.frame( # sapply returns a list here, so we convert it to a data.frame
+    sapply(unique(colnames(PopWeekHolidays_WE)), # for each unique column name
+       function(col) rowMeans(PopWeekHolidays_WE[,colnames(PopWeekHolidays_WE) == col]) # calculate row means
+    )
+  )
+
+PopWeekHolidays_WE_DiffRef_which.max_hour <- c(0:23)[apply(res,1,which.max)]
+PopWeekHolidays_WE_DiffRef_diff_morning_evening <- (rowMeans(res[,11:17]) - rowMeans(res[,22:24])) * 100 / ((rowMeans(res[,11:17]) +rowMeans(res[,22:24]))/2)
+
+#################
+Pop <- list(PopWorkingDays_WE_DiffRef_Mean, PopWeekHolidays_WE_DiffRef_Mean, 
+            PopWorkingDays_WE_DiffRef_CV, PopWeekHolidays_WE_DiffRef_CV, 
+            PopWorkingDays_WE_DiffRef_which.max_hour, PopWeekHolidays_WE_DiffRef_which.max_hour,
+            PopWorkingDays_WE_DiffRef_diff_morning_evening, PopWeekHolidays_WE_DiffRef_diff_morning_evening)
 names(Pop) <- c("PopWorkingDays_WE_DiffRef_Mean", "PopWeekHolidays_WE_DiffRef_Mean", 
-                "PopWorkingDays_WE_DiffRef_CV", "PopWeekHolidays_WE_DiffRef_CV")
+                "PopWorkingDays_WE_DiffRef_CV", "PopWeekHolidays_WE_DiffRef_CV",
+                "PopWorkingDays_WE_DiffRef_which.max_hour", "PopWeekHolidays_WE_DiffRef_which.max_hour",
+                "PopWorkingDays_WE_DiffRef_diff_morning_evening", "PopWeekHolidays_WE_DiffRef_diff_morning_evening")
 ```
 
 ```{r, fig.width = 8, fig.heigth = 8, echo = F}
 for (i in 1:2) {
-  shp <- st_read("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp")
+  shp <- st_read("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp", quiet = T)
   st_crs(shp) <- "+proj=lcc +lat_1=51.16666723333333 +lat_2=49.8333339 +lat_0=90 +lon_0=4.367486666666666 +x_0=150000.013
   +y_0=5400088.438 +ellps=intl +units=m +no_defs"
   
@@ -453,7 +488,7 @@ for (i in 1:2) {
              border = "khaki", lwd = 0.001, 
              legend.title.txt = "", 
              legend.pos = 'bottomleft', legend.values.rnd = 0)
-  layoutLayer(title = paste0("Relative difference between residential population density and average population density over a working week (%)"), 
+  layoutLayer(title = paste0("Relative difference between residential population density and average population density during ", ifelse(i == 1, "working days", "holidays"), " (%)"), 
               sources = "", north = TRUE, 
               scale = 50, tabtitle = TRUE,
               frame = T,  
@@ -474,7 +509,7 @@ for (i in 1:2) {
 ```
 ```{r, fig.width = 8, fig.heigth = 8, echo = F}
 for (i in 3:4) {
-  shp <- st_read("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp")
+  shp <- st_read("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp", quiet = T)
   st_crs(shp) <- "+proj=lcc +lat_1=51.16666723333333 +lat_2=49.8333339 +lat_0=90 +lon_0=4.367486666666666 +x_0=150000.013
   +y_0=5400088.438 +ellps=intl +units=m +no_defs"
   
@@ -485,16 +520,16 @@ for (i in 3:4) {
   layout(matrix(c(1,1,2,1,1,3, 4, 5,6), 3, 3, byrow = TRUE))
   
   # quantization breaks of the rate
-  bks <- c(0,5,10,15,20, max(shp[[names(Pop)[i]]]))
+  bks <- c(0,5,10,15,20,25,30, max(shp[[names(Pop)[i]]]))
 
   # get a color palette
-  cols <- c('#f2f0f7','#cbc9e2','#9e9ac8','#756bb1','#54278f')
+  cols <- c('#000000','#4c170a','#951b0b','#e60e04','#ff7400','#ffbf00','#ffff00')
   
   choroLayer(x = shp, var = names(Pop)[i], breaks = bks, col = cols,
              border = "khaki", lwd = 0.001, 
              legend.title.txt = "Coefficient of variation (%)", 
              legend.pos = 'bottomleft', legend.values.rnd = 0)
-  layoutLayer(title = paste0("Coefficient of variation of population density over a working week (%)"), 
+  layoutLayer(title = paste0("Coefficient of variation of population density during ", ifelse(i == 3, "working days", "holidays"), " (%)"), 
               sources = "", north = TRUE, 
               scale = 50, tabtitle = TRUE,
               frame = T,  
@@ -514,13 +549,95 @@ for (i in 3:4) {
 }
 ```
 
+```{r, fig.width = 8, fig.heigth = 8, echo = F}
+for (i in 5:6) {
+  shp <- st_read("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp", quiet = T)
+  st_crs(shp) <- "+proj=lcc +lat_1=51.16666723333333 +lat_2=49.8333339 +lat_0=90 +lon_0=4.367486666666666 +x_0=150000.013
+  +y_0=5400088.438 +ellps=intl +units=m +no_defs"
+  
+  shp <- cbind(shp, Pop[[i]])
+  colnames(shp)[2] <- names(Pop)[i]
+  
+  par(mar = c(0,0,1.5,0))
+  layout(matrix(c(1,1,2,1,1,3, 4, 5,6), 3, 3, byrow = TRUE))
+  
+  # quantization breaks of the rate
+  bks <- 0:24
+
+  # get a color palette
+  cols <- c('#0000ff','#5e25f1','#823de2','#9b52d4','#ae67c5','#bf7bb6','#cd8fa6','#d9a395','#e4b883','#edcc6e','#f5e055','#fcf530','#fff700','#ffe700','#ffd700','#ffc700','#ffb700','#ffa600','#ff9400','#ff8200','#ff6e00','#ff5800','#ff3c00','#ff0000')
+  
+  choroLayer(x = shp, var = names(Pop)[i], breaks = bks, col = cols,
+             border = "khaki", lwd = 0.001, 
+             legend.title.txt = "Hour", 
+             legend.pos = 'bottomleft', legend.values.rnd = 0)
+  layoutLayer(title = paste0("Hour with in average the highest populaiton density during ", ifelse(i == 5, "working days", "holidays")), 
+              sources = "", north = TRUE, 
+              scale = 50, tabtitle = TRUE,
+              frame = T,  
+              author = "*model based on mobile phone data")
+  
+  for (city in c("Brussel", "Antwerpen", "Leuven", "Liège" ,"Namur")) {
+      choroLayer(x = st_crop(shp, region[region$NAME_3 == city,]),
+                 var = names(Pop)[i], breaks = bks, col = cols,
+                 lwd = 0.001, 
+                 legend.pos = 'n')
+      plot(as(commune, "Spatial"), border = "black", lwd = 0.5, add = TRUE)
+      layoutLayer(title = paste0("Zoom over ", city), 
+                  sources = "", scale = 5, tabtitle = TRUE,
+                  frame = T,  
+                  author = "")
+  }
+}
+```
+```{r, fig.width = 8, fig.heigth = 8, echo = F}
+for (i in 7:8) {
+  shp <- st_read("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp", quiet = T)
+  st_crs(shp) <- "+proj=lcc +lat_1=51.16666723333333 +lat_2=49.8333339 +lat_0=90 +lon_0=4.367486666666666 +x_0=150000.013
+  +y_0=5400088.438 +ellps=intl +units=m +no_defs"
+  
+  shp <- cbind(shp, Pop[[i]])
+  colnames(shp)[2] <- names(Pop)[i]
+  
+  par(mar = c(0,0,1.5,0))
+  layout(matrix(c(1,1,2,1,1,3, 4, 5,6), 3, 3, byrow = TRUE))
+  
+  # quantization breaks of the rate
+  bks <- c(min(shp[[names(Pop)[i]]]), -35, -25, -15, -5, 0, 5, 15, 25, 35, max(shp[[names(Pop)[i]]]))
+
+  # get a color palette
+  cols <- c('#67001f','#b2182b','#d6604d','#f4a582','#fddbc7','#d1e5f0','#92c5de','#4393c3','#2166ac','#053061')
+  
+  choroLayer(x = shp, var = names(Pop)[i], breaks = bks, col = cols,
+             border = "khaki", lwd = 0.001, 
+             legend.title.txt = "", 
+             legend.pos = 'bottomleft', legend.values.rnd = 0)
+  layoutLayer(title = paste0("Relative difference between residential population density and average population density during ", ifelse(i == 7, "working days", "holidays"), " (%)"), 
+              sources = "", north = TRUE, 
+              scale = 50, tabtitle = TRUE,
+              frame = T,  
+              author = "*model based on mobile phone data")
+  
+  for (city in c("Brussel", "Antwerpen", "Leuven", "Liège" ,"Namur")) {
+      choroLayer(x = st_crop(shp, region[region$NAME_3 == city,]),
+                 var = names(Pop)[i], breaks = bks, col = cols,
+                 lwd = 0.001, 
+                 legend.pos = 'n')
+      plot(as(commune, "Spatial"), border = "black", lwd = 0.5, add = TRUE)
+      layoutLayer(title = paste0("Zoom over ", city), 
+                  sources = "", scale = 5, tabtitle = TRUE,
+                  frame = T,  
+                  author = "")
+  }
+}
+```
 
 ```{r, eval = F}
 library(raster)
 
 raster_ref <- raster("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2.tif")
 
-shp <- st_read("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp")
+shp <- st_read("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp", quiet = T)
 st_crs(shp) <- "+proj=lcc +lat_1=51.16666723333333 +lat_2=49.8333339 +lat_0=90 +lon_0=4.367486666666666 +x_0=150000.013
 +y_0=5400088.438 +ellps=intl +units=m +no_defs"
 
@@ -588,7 +705,7 @@ zstat <- myZonal(r, zone, "mean")
 zstat <- data.frame(zstat)
 colnames(zstat) <- c("ID_4", "PopWorkingDays_WE_DiffRef_Mean")
 
-commune <- st_read("/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Belgium_Adm/BEL_adm_shp/BEL_adm4.shp")
+commune <- st_read("/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Belgium_Adm/BEL_adm_shp/BEL_adm4.shp", quiet = T)
 commune <- st_transform(commune, st_crs(shp))
 commune$PopWorkingDays_WE_DiffRef_Mean <- zstat$PopWorkingDays_WE_DiffRef_Mean[-1]
 ```
