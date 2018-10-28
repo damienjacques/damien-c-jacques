@@ -445,15 +445,17 @@ Mat_BE <- dcast(ID_Grid ~  DATE_HOUR,
                 data = db.new, 
                 value.var = "NBR_SIM_BE")
 Mat_BE <- as.matrix(Mat_BE)[, -1]
-colnames(Mat_BE) <- c(rep(1:364, each = 24), rep(365, 23))
+colnames(Mat_BE) <- rep(1:365, each = 24)[-7971]
 
 # Temporal kmeans
 Mat_BE_scales <- t(scrime::rowScales(t(Mat_BE)))
 Mat_BE_VectorPerDay <- matrix(rep(0, 365*79608), nrow = 365, ncol = 79608)
 
-for (i in 1:364) {
+for (i in (1:365)[-333]) {
   Mat_BE_VectorPerDay[i, ] <- as.numeric(Mat_BE_scales[, colnames(Mat_BE_scales) == i])
 }
+
+Mat_BE_VectorPerDay[333, ] <- Mat_BE_VectorPerDay[332, ]
 
 set.seed(2)
 test <- kmeans(Mat_BE_VectorPerDay, 2)
@@ -469,7 +471,7 @@ df$col[df$week %in% c(6,7)] <- "WE"
 
 d2 <- df %>% 
   group_by(cl, WE) %>% 
-  summarise(count=n()) %>% 
+  dplyr::summarise(count=n()) %>% 
   mutate(perc=count/sum(count))
 
 g1 <- ggplot(d2, aes(x = as.factor(cl), y = perc, fill = as.factor(WE))) + 
@@ -481,7 +483,7 @@ g1 <- ggplot(d2, aes(x = as.factor(cl), y = perc, fill = as.factor(WE))) +
 
 d2 <- df %>% 
   group_by(cl,col) %>% 
-  summarise(count=n()) %>% 
+  dplyr::summarise(count=n()) %>% 
   mutate(perc=count/sum(count))
 
 g2 <- ggplot(d2, aes(x = as.factor(cl), y = perc, fill = as.factor(col))) + 
@@ -524,7 +526,7 @@ WeekWorkingDays <- vapply(1:(24*7), function(x)
   rowMeans(Mat_BE_workingDays[,colnames(Mat_BE_workingDays) == x, drop = FALSE], na.rm = TRUE),
   numeric(nrow(Mat_BE_workingDays)) )
 
-# Example plot
+# Plot
 library(scrime)
 area <- fread("/media/ubuntu/DATA/Data/Smartpop/Zone/area_085_inKm2.csv")  
 

@@ -1,0 +1,154 @@
+This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2018.10.13)  27 OCT 2018 10:06
+entering extended mode
+ restricted \write18 enabled.
+ %&-line parsing enabled.
+**animation.tex
+(./animation.tex
+LaTeX2e <2016/02/01>
+Babel <3.9q> and hyphenation patterns for 5 language(s) loaded.
+(/usr/share/texlive/texmf-dist/tex/latex/base/article.cls
+Document Class: article 2014/09/29 v1.4h Standard LaTeX document class
+(/usr/share/texlive/texmf-dist/tex/latex/base/size10.clo
+File: size10.clo 2014/09/29 v1.4h Standard LaTeX file (size option)
+)
+\c@part=\count79
+\c@section=\count80
+\c@subsection=\count81
+\c@subsubsection=\count82
+\c@paragraph=\count83
+\c@subparagraph=\count84
+\c@figure=\count85
+\c@table=\count86
+\abovecaptionskip=\skip41
+\belowcaptionskip=\skip42
+\bibindent=\dimen102
+) (./animate.sty
+Package: animate 2010/09/28 PDF animations from files and inline graphics
+
+(/usr/share/texlive/texmf-dist/tex/latex/graphics/keyval.sty
+Package: keyval 2014/10/28 v1.15 key=value parser (DPC)
+\KV@toks@=\toks14
+)
+(/usr/share/texlive/texmf-dist/tex/latex/base/ifthen.sty
+Package: ifthen 2014/09/29 v1.1c Standard LaTeX ifthen package (DPC)
+)
+(/usr/share/texlive/texmf-dist/tex/generic/oberdiek/ifpdf.sty
+Package: ifpdf 2011/01/30 v2.3 Provides the ifpdf switch (HO)
+Package ifpdf Info: pdfTeX in PDF mode is detected.
+)
+(/usr/share/texlive/texmf-dist/tex/latex/oberdiek/ifdraft.sty
+Package: ifdraft 2008/08/11 v1.3 Detect class options draft and final (HO)
+)
+(/usr/share/texlive/texmf-dist/tex/latex/tools/calc.sty
+Package: calc 2014/10/28 v4.3 Infix arithmetic (KKT,FJ)
+\calc@Acount=\count87
+\calc@Bcount=\count88
+\calc@Adimen=\dimen103
+\calc@Bdimen=\dimen104
+\calc@Askip=\skip43
+\calc@Bskip=\skip44
+LaTeX Info: Redefining \setlength on input line 80.
+LaTeX Info: Redefining \addtolength on input line 81.
+\calc@Ccount=\count89
+\calc@Cskip=\skip45
+) (./animfp.sty
+Package: animfp 2009/07/23 fixed point addition for animate.sty
+\afp@xs=\count90
+\afp@xia=\count91
+\afp@xib=\count92
+\afp@xfa=\count93
+\afp@xfb=\count94
+\afp@rega=\count95
+\afp@regb=\count96
+\afp@regs=\count97
+)
+(/usr/share/texlive/texmf-dist/tex/context/base/supp-pdf.mkii
+[Loading MPS to PDF converter (version 2006.09.02).]
+\scratchcounter=\count98
+\scratchdimen=\dimen105
+\scratchbox=\box26
+\nofMPsegments=\count99
+\nofMParguments=\count100
+\everyMPshowfont=\toks15
+\MPscratchCnt=\count101
+\MPscratchDim=\dimen106
+\MPnumerator=\count102
+\makeMPintoPDFobject=\count103
+\everyMPtoPDFconversion=\toks16
+)
+\@anim@@fields=\count104
+\@anim@@ocgs=\count105
+\@anim@@posterocgs=\count106
+\@anim@box=\box27
+\@anim@tmpdima=\dimen107
+\@anim@tmpdimb=\dimen108
+\@anim@num=\count107
+\@anim@curframe=\count108
+\@anim@curframe@zb=\count109
+\@anim@resize=\count110
+\@anim@skipfram=\count111
+\@anim@mulframecnt=\count112
+\@anim@@tmlnfile=\read1
+\@anim@tmpcnt=\count113
+\c@@anim@tmpcnt=\count114
+\@anim@curlayer=\count115
+\@anim@lineno=\count116
+\@anim@begin=\toks17
+\@anim@end=\toks18
+)
+No file animation.aux.
+\openout1 = `animation.aux'.
+
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 3.
+LaTeX Font Info:    ... okay on input line 3.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 3.
+LaTeX Font Info:    ... okay on input line 3.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 3.
+LaTeX Font Info:    ... okay on input line 3.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 3.
+LaTeX Font Info:    ... okay on input line 3.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 3.
+LaTeX Font Info:    ... okay on input line 3.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 3.
+LaTeX Font Info:    ... okay on input line 3.
+ </media/ubuntu/DATA/Data/Smartpop/Map/pop_workingDays_commune.tex1.png (PNG co
+py)> </media/ubuntu/DATA/Data/Smartpop/Map/pop_workingDays_commune.tex2.png (PN
+G copy)> </media/ubuntu/DATA/Data/Smartpop/Map/pop_workingDays_commune.tex3.png
+ (PNG copy)> </media/ubuntu/DATA/Data/Smartpop/Map/pop_workingDays_commune.tex4
+.png (PNG copy)> </media/ubuntu/DATA/Data/Smartpop/Map/pop_workingDays_commune.
+tex5.png (PNG copy)> </media/ubuntu/DATA/Data/Smartpop/Map/pop_workingDays_comm
+une.tex6.png (PNG copy)> </media/ubuntu/DATA/Data/Smartpop/Map/pop_workingDays_
+commune.tex7.png (PNG copy)> </media/ubuntu/DATA/Data/Smartpop/Map/pop_workingD
+ays_commune.tex8.png (PNG copy)> </media/ubuntu/DATA/Data/Smartpop/Map/pop_work
+ingDays_commune.tex9.png (PNG copy)> </media/ubuntu/DATA/Data/Smartpop/Map/pop_
+workingDays_commune.tex10.png (PNG copy)> </media/ubuntu/DATA/Data/Smartpop/Map
+/pop_workingDays_commune.tex11.png (PNG copy)> </media/ubuntu/DATA/Data/Smartpo
+p/Map/pop_workingDays_commune.tex12.png (PNG copy)> </media/ubuntu/DATA/Data/Sm
+artpop/Map/pop_workingDays_commune.tex13.png (PNG copy)> </media/ubuntu/DATA/Da
+ta/Smartpop/Map/pop_workingDays_commune.tex14.png (PNG copy)> </media/ubuntu/DA
+TA/Data/Smartpop/Map/pop_workingDays_commune.tex15.png (PNG copy)> </media/ubun
+tu/DATA/Data/Smartpop/Map/pop_workingDays_commune.tex16.png (PNG copy)> </media
+/ubuntu/DATA/Data/Smartpop/Map/pop_workingDays_commune.tex17.png (PNG copy)> </
+media/ubuntu/DATA/Data/Smartpop/Map/pop_workingDays_commune.tex18.png (PNG copy
+)> </media/ubuntu/DATA/Data/Smartpop/Map/pop_workingDays_commune.tex19.png (PNG
+ copy)> </media/ubuntu/DATA/Data/Smartpop/Map/pop_workingDays_commune.tex20.png
+ (PNG copy)> </media/ubuntu/DATA/Data/Smartpop/Map/pop_workingDays_commune.tex2
+1.png (PNG copy)> [1{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}]
+(./animation.aux) ) 
+Here is how much of TeX's memory you used:
+ 1229 strings out of 494910
+ 17874 string characters out of 6179835
+ 78237 words of memory out of 5000000
+ 4550 multiletter control sequences out of 15000+600000
+ 3640 words of font info for 14 fonts, out of 8000000 for 9000
+ 36 hyphenation exceptions out of 8191
+ 23i,4n,23p,192b,222s stack positions out of 5000i,500n,10000p,200000b,80000s
+</usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/c
+m/cmr10.pfb>
+Output written on animation.pdf (1 page, 1699516 bytes).
+PDF statistics:
+ 169 PDF objects out of 1000 (max. 8388607)
+ 87 compressed objects within 1 object stream
+ 0 named destinations out of 1000 (max. 500000)
+ 442 words of extra memory for PDF output out of 10000 (max. 10000000)
+

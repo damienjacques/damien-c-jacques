@@ -399,15 +399,17 @@ Mat_BE &lt;- dcast(ID_Grid ~  DATE_HOUR,
                 data = db.new, 
                 value.var = &quot;NBR_SIM_BE&quot;)
 Mat_BE &lt;- as.matrix(Mat_BE)[, -1]
-colnames(Mat_BE) &lt;- c(rep(1:364, each = 24), rep(365, 23))
+colnames(Mat_BE) &lt;- rep(1:365, each = 24)[-7971]
 
 # Temporal kmeans
 Mat_BE_scales &lt;- t(scrime::rowScales(t(Mat_BE)))
 Mat_BE_VectorPerDay &lt;- matrix(rep(0, 365*79608), nrow = 365, ncol = 79608)
 
-for (i in 1:364) {
+for (i in (1:365)[-333]) {
   Mat_BE_VectorPerDay[i, ] &lt;- as.numeric(Mat_BE_scales[, colnames(Mat_BE_scales) == i])
 }
+
+Mat_BE_VectorPerDay[333, ] &lt;- Mat_BE_VectorPerDay[332, ]
 
 set.seed(2)
 test &lt;- kmeans(Mat_BE_VectorPerDay, 2)
@@ -423,7 +425,7 @@ df$col[df$week %in% c(6,7)] &lt;- &quot;WE&quot;
 
 d2 &lt;- df %&gt;% 
   group_by(cl, WE) %&gt;% 
-  summarise(count=n()) %&gt;% 
+  dplyr::summarise(count=n()) %&gt;% 
   mutate(perc=count/sum(count))
 
 g1 &lt;- ggplot(d2, aes(x = as.factor(cl), y = perc, fill = as.factor(WE))) + 
@@ -435,7 +437,7 @@ g1 &lt;- ggplot(d2, aes(x = as.factor(cl), y = perc, fill = as.factor(WE))) +
 
 d2 &lt;- df %&gt;% 
   group_by(cl,col) %&gt;% 
-  summarise(count=n()) %&gt;% 
+  dplyr::summarise(count=n()) %&gt;% 
   mutate(perc=count/sum(count))
 
 g2 &lt;- ggplot(d2, aes(x = as.factor(cl), y = perc, fill = as.factor(col))) + 
@@ -450,7 +452,7 @@ multiplot(g1, g2, cols = 2)</code></pre>
 <pre class="r"><code>dates[c(62:123,179:185,235:248,289:297, 340:353, 1:4,29:32,38:40,192:195)][dates[c(62:123,179:185,235:248,289:297, 340:353, 1:4,29:32,38:40,192:195)] %in% dates[which(df$cl == 2)]]</code></pre>
 <pre><code>##  [1] &quot;2014-10-27&quot; &quot;2014-10-28&quot; &quot;2014-10-29&quot; &quot;2014-10-30&quot; &quot;2014-10-31&quot;
 ##  [6] &quot;2015-02-13&quot; &quot;2015-02-17&quot; &quot;2015-02-18&quot; &quot;2015-02-19&quot; &quot;2015-02-20&quot;
-## [11] &quot;2015-04-17&quot; &quot;2014-05-02&quot; &quot;2014-11-10&quot; &quot;2014-11-11&quot;</code></pre>
+## [11] &quot;2014-05-02&quot; &quot;2014-11-10&quot; &quot;2014-11-11&quot;</code></pre>
 <pre class="r"><code>source(&quot;/home/ubuntu/Dropbox/Research/scriptR/Function/calendarHeat.R&quot;)
 calendarHeat(dates = dates, values = df$cl, date.form=&quot;%Y-%m-%d&quot;,  ncolors=99, 
              color = &quot;r2b&quot;, title = &quot;Temporal Clustering&quot;)</code></pre>
@@ -478,7 +480,7 @@ WeekWorkingDays &lt;- vapply(1:(24*7), function(x)
   rowMeans(Mat_BE_workingDays[,colnames(Mat_BE_workingDays) == x, drop = FALSE], na.rm = TRUE),
   numeric(nrow(Mat_BE_workingDays)) )
 
-# Example plot
+# Plot
 library(scrime)
 area &lt;- fread(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/area_085_inKm2.csv&quot;)  
 

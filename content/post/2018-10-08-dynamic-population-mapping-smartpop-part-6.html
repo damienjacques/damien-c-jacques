@@ -241,22 +241,98 @@ for (city in c(&quot;Brussel&quot;, &quot;Antwerpen&quot;, &quot;Leuven&quot;, &
 </div>
 <div id="mapping" class="section level1">
 <h1>Mapping</h1>
-<div id="make-animated-map" class="section level2">
-<h2>Make animated map</h2>
+<div id="risk-map" class="section level2">
+<h2>Risk map</h2>
+<pre class="r"><code>library(matrixStats)
+
+datesWeek &lt;- outer(c(&quot;Mon.&quot;, &quot;Tue.&quot;, &quot;Wed.&quot;, &quot;Thu.&quot;, &quot;Fri.&quot;, &quot;Sat.&quot;, &quot;Sun.&quot;), 0:23, FUN = &quot;paste0&quot;)
+datesWeek &lt;- t(datesWeek)
+dim(datesWeek) &lt;- NULL
+h &lt;- c(8:22)
+hours &lt;- rep(h, 7)
+
+index &lt;- c(1:8, 24)
+for (i in 1:6)  {
+  index &lt;- c(index, (1 + i*24) : (8 + i*24), 24 + i*24)  
+}
+
+PopWorkingDays_WE &lt;- WeekWorkingDays[, -index]
+WeekWorkingDays_WE &lt;- WeekWorkingDays[, -index]
+WeekWorkingDays_WE[is.na(WeekWorkingDays_WE)] &lt;- WeekHolidays[is.na(WeekWorkingDays_WE)]
+for (i in 1:ncol(PopWorkingDays_WE)) {
+  predData &lt;- exp(mean(OutputSpatialCV$intercept) + mean(OutputSpatialCV$slope) * log(WeekWorkingDays_WE[, i]))
+  PopWorkingDays_WE[, i] &lt;- predData * popTotal/sum(predData * area$`area(km2)`)
+}
+
+PopWorkingDays_WE_DiffRef_Mean &lt;- (PopWorkingDays_WE[, 14] - rowMeans(PopWorkingDays_WE)) * 100 / PopWorkingDays_WE[, 14] 
+PopWorkingDays_WE_DiffRef_CV &lt;- rowSds(PopWorkingDays_WE) * 100 / rowMeans(PopWorkingDays_WE)
+PopWorkingDays_WE_DiffRef_which.max_day &lt;- datesWeek[apply(PopWorkingDays_WE,1,which.max)]
+PopWorkingDays_WE_DiffRef_which.max_hour &lt;- hours[apply(PopWorkingDays_WE,1,which.max)]
+
+colnames(PopWorkingDays_WE) &lt;- hours
+res &lt;- as.data.frame( # sapply returns a list here, so we convert it to a data.frame
+    sapply(unique(colnames(PopWorkingDays_WE)), # for each unique column name
+       function(col) rowMeans(PopWorkingDays_WE[,colnames(PopWorkingDays_WE) == col]) # calculate row means
+    )
+  )
+
+PopWorkingDays_WE_DiffRef_which.max_hour &lt;- h[apply(res,1,which.max)]
+# PopWorkingDays_WE_DiffRef_diff_morning_evening &lt;- (rowMeans(res[,11:17]) - rowMeans(res[,22:24])) * 100 / ((rowMeans(res[,11:17]) +rowMeans(res[,22:24]))/2)
+
+#################
+
+PopWeekHolidays_WE &lt;- WeekWorkingDays[, -index]
+for (i in 1:ncol(PopWorkingDays_WE)) {
+  predData &lt;- exp(mean(OutputSpatialCV$intercept) + mean(OutputSpatialCV$slope) * log(WeekHolidays[, i]))
+  PopWeekHolidays_WE[, i] &lt;- predData * popTotal/sum(predData * area$`area(km2)`)
+}
+
+PopWeekHolidays_WE_DiffRef_Mean &lt;- (PopWorkingDays_WE[, 14] - rowMeans(PopWeekHolidays_WE)) * 100 / PopWorkingDays_WE[, 14] 
+PopWeekHolidays_WE_DiffRef_CV &lt;- rowSds(PopWeekHolidays_WE) * 100 / rowMeans(PopWeekHolidays_WE)
+PopWeekHolidays_WE_DiffRef_which.max_day &lt;- datesWeek[apply(PopWeekHolidays_WE,1,which.max)]
+PopWeekHolidays_WE_DiffRef_which.max_hour &lt;- hours[apply(PopWeekHolidays_WE,1,which.max)]
+
+colnames(PopWeekHolidays_WE) &lt;- hours
+res &lt;- as.data.frame( # sapply returns a list here, so we convert it to a data.frame
+    sapply(unique(colnames(PopWeekHolidays_WE)), # for each unique column name
+       function(col) rowMeans(PopWeekHolidays_WE[,colnames(PopWeekHolidays_WE) == col]) # calculate row means
+    )
+  )
+
+PopWeekHolidays_WE_DiffRef_which.max_hour &lt;- h[apply(res,1,which.max)]
+# PopWeekHolidays_WE_DiffRef_diff_morning_evening &lt;- (rowMeans(res[,11:17]) - rowMeans(res[,22:24])) * 100 / ((rowMeans(res[,11:17]) +rowMeans(res[,22:24]))/2)
+
+#################
+Pop &lt;- list(PopWorkingDays_WE_DiffRef_Mean, PopWeekHolidays_WE_DiffRef_Mean, 
+            PopWorkingDays_WE_DiffRef_CV, PopWeekHolidays_WE_DiffRef_CV, 
+            PopWorkingDays_WE_DiffRef_which.max_hour, PopWeekHolidays_WE_DiffRef_which.max_hour)
+names(Pop) &lt;- c(&quot;PopWorkingDays_WE_DiffRef_Mean&quot;, &quot;PopWeekHolidays_WE_DiffRef_Mean&quot;, 
+                &quot;PopWorkingDays_WE_DiffRef_CV&quot;, &quot;PopWeekHolidays_WE_DiffRef_CV&quot;,
+                &quot;PopWorkingDays_WE_DiffRef_which.max_hour&quot;, &quot;PopWeekHolidays_WE_DiffRef_which.max_hour&quot;)</code></pre>
 <pre class="r"><code>library(cartography)
 library(cartogram)
 library(animation)
 library(sp)
 
+shp &lt;- st_read(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp&quot;, quiet = T)
+st_crs(shp) &lt;- &quot;+proj=lcc +lat_1=51.16666723333333 +lat_2=49.8333339 +lat_0=90 +lon_0=4.367486666666666 +x_0=150000.013
++y_0=5400088.438 +ellps=intl +units=m +no_defs&quot;
+
 # Plot data
-shp &lt;- cbind(shp, WeekHolidays)
+shp &lt;- cbind(shp, PopWorkingDays_WE)
 
 ani.options(interval = .10,
-            ani.width = 800, 
-            ani.height = 800)
+            ani.width = 400, 
+            ani.height = 400)
 
-saveVideo(movie.name = &quot;/media/ubuntu/DATA/Data/Smartpop/Map/SIM_workingDays.mp4&quot;, { 
-  for (colname in colnames(shp)[2:5]) {
+datesWeek &lt;- outer(c(&quot;Mon.&quot;, &quot;Tue.&quot;, &quot;Wed.&quot;, &quot;Thu.&quot;, &quot;Fri.&quot;, &quot;Sat.&quot;, &quot;Sun.&quot;), paste(0:23, &quot;h&quot;), FUN = &quot;paste&quot;)
+datesWeek &lt;- t(datesWeek)
+dim(datesWeek) &lt;- NULL
+
+i = 0
+saveGIF(movie.name = &quot;/media/ubuntu/DATA/Data/Smartpop/Map/pop_workingDays.gif&quot;, { 
+  for (colname in colnames(shp)[2:24]) {
+    i = i + 1
     bks &lt;- getBreaks(v = shp[[colname]], method = &quot;quantile&quot;, nclass = 5)
     # figdim &lt;- getFigDim(x = shp, width = 1000, mar = c(0,0,1.2,0), res = 100)
     
@@ -264,15 +340,15 @@ saveVideo(movie.name = &quot;/media/ubuntu/DATA/Data/Smartpop/Map/SIM_workingDay
     layout(matrix(c(1,1,2,1,1,3, 4, 5,6), 3, 3, byrow = TRUE))
     
     # quantization breaks of the rate
-    bks &lt;- getBreaks(v = shp[[colname]], method = &quot;quantile&quot;, nclass = 5)
+    bks &lt;- getBreaks(v = PopWorkingDays_WE, method = &quot;quantile&quot;, nclass = 9)
     # get a color palette
-    cols &lt;- c(&#39;#d7191c&#39;,&#39;#fdae61&#39;,&#39;#ffffbf&#39;,&#39;#abdda4&#39;,&#39;#2b83ba&#39;)
+    cols &lt;- c(&#39;#000000&#39;,&#39;#361307&#39;,&#39;#661a0c&#39;,&#39;#9b1b0b&#39;,&#39;#d11507&#39;,&#39;#ff3100&#39;,&#39;#ff7e00&#39;,&#39;#ffb100&#39;,&#39;#ffdf00&#39;)
     
     choroLayer(x = shp,var = colname, breaks = bks, col = cols,
                border = &quot;khaki&quot;, lwd = 0.01, 
                legend.title.txt = &quot;Population\ndensity&quot;, 
                legend.pos = &#39;bottomleft&#39;, legend.values.rnd = 0)
-    layoutLayer(title = paste0(&quot;Population density in Belgium during working days (&quot;, colname, &quot;h)&quot;), 
+    layoutLayer(title = paste0(&quot;Population density in Belgium during working days (&quot;, datesWeek[i], &quot;h)&quot;), 
                 sources = &quot;&quot;, north = TRUE, 
                 scale = 50, tabtitle = TRUE,
                 frame = FALSE,  
@@ -292,123 +368,9 @@ saveVideo(movie.name = &quot;/media/ubuntu/DATA/Data/Smartpop/Map/SIM_workingDay
     }
   }
 })</code></pre>
-</div>
-<div id="risk-map" class="section level2">
-<h2>Risk map</h2>
-<pre class="r"><code>library(matrixStats)
-
-datesWeek &lt;- outer(c(&quot;Mon.&quot;, &quot;Tue.&quot;, &quot;Wed.&quot;, &quot;Thu.&quot;, &quot;Fri.&quot;, &quot;Sat.&quot;, &quot;Sun.&quot;), 0:23, FUN = &quot;paste0&quot;)
-datesWeek &lt;- t(datesWeek)
-dim(datesWeek) &lt;- NULL
-hours &lt;- rep(0:23, 7)
-
-PopWorkingDays_WE &lt;- WeekWorkingDays
-WeekWorkingDays_WE &lt;- WeekWorkingDays
-WeekWorkingDays_WE[is.na(WeekWorkingDays_WE)] &lt;- WeekHolidays[is.na(WeekWorkingDays_WE)]
-for (i in 1:168) {
-  predData &lt;- exp(mean(OutputSpatialCV$intercept) + mean(OutputSpatialCV$slope) * log(WeekWorkingDays_WE[, i]))
-  PopWorkingDays_WE[, i] &lt;- predData * popTotal/sum(predData * area$`area(km2)`)
-}
-
-PopWorkingDays_WE_DiffRef_Mean &lt;- (PopWorkingDays_WE[, 22] - rowMeans(PopWorkingDays_WE)) * 100 / PopWorkingDays_WE[, 22] 
-PopWorkingDays_WE_DiffRef_CV &lt;- rowSds(PopWorkingDays_WE) * 100 / rowMeans(PopWorkingDays_WE)
-PopWorkingDays_WE_DiffRef_which.max_day &lt;- datesWeek[apply(PopWorkingDays_WE,1,which.max)]
-PopWorkingDays_WE_DiffRef_which.max_hour &lt;- hours[apply(PopWorkingDays_WE,1,which.max)]
-
-colnames(PopWorkingDays_WE) &lt;- hours
-res &lt;- as.data.frame( # sapply returns a list here, so we convert it to a data.frame
-    sapply(unique(colnames(PopWorkingDays_WE)), # for each unique column name
-       function(col) rowMeans(PopWorkingDays_WE[,colnames(PopWorkingDays_WE) == col]) # calculate row means
-    )
-  )
-
-PopWorkingDays_WE_DiffRef_which.max_hour &lt;- c(0:23)[apply(res,1,which.max)]
-PopWorkingDays_WE_DiffRef_diff_morning_evening &lt;- (rowMeans(res[,11:17]) - rowMeans(res[,22:24])) * 100 / ((rowMeans(res[,11:17]) +rowMeans(res[,22:24]))/2)
-
-#################
-
-PopWeekHolidays_WE &lt;- WeekWorkingDays
-for (i in 1:168) {
-  predData &lt;- exp(mean(OutputSpatialCV$intercept) + mean(OutputSpatialCV$slope) * log(WeekHolidays[, i]))
-  PopWeekHolidays_WE[, i] &lt;- predData * popTotal/sum(predData * area$`area(km2)`)
-}
-
-PopWeekHolidays_WE_DiffRef_Mean &lt;- (PopWeekHolidays_WE[, 22] - rowMeans(PopWeekHolidays_WE)) * 100 / PopWeekHolidays_WE[, 22] 
-PopWeekHolidays_WE_DiffRef_CV &lt;- rowSds(PopWeekHolidays_WE) * 100 / rowMeans(PopWeekHolidays_WE)
-PopWeekHolidays_WE_DiffRef_which.max_day &lt;- datesWeek[apply(PopWeekHolidays_WE,1,which.max)]
-PopWeekHolidays_WE_DiffRef_which.max_hour &lt;- hours[apply(PopWeekHolidays_WE,1,which.max)]
-
-colnames(PopWeekHolidays_WE) &lt;- hours
-res &lt;- as.data.frame( # sapply returns a list here, so we convert it to a data.frame
-    sapply(unique(colnames(PopWeekHolidays_WE)), # for each unique column name
-       function(col) rowMeans(PopWeekHolidays_WE[,colnames(PopWeekHolidays_WE) == col]) # calculate row means
-    )
-  )
-
-PopWeekHolidays_WE_DiffRef_which.max_hour &lt;- c(0:23)[apply(res,1,which.max)]
-PopWeekHolidays_WE_DiffRef_diff_morning_evening &lt;- (rowMeans(res[,11:17]) - rowMeans(res[,22:24])) * 100 / ((rowMeans(res[,11:17]) +rowMeans(res[,22:24]))/2)
-
-#################
-Pop &lt;- list(PopWorkingDays_WE_DiffRef_Mean, PopWeekHolidays_WE_DiffRef_Mean, 
-            PopWorkingDays_WE_DiffRef_CV, PopWeekHolidays_WE_DiffRef_CV, 
-            PopWorkingDays_WE_DiffRef_which.max_hour, PopWeekHolidays_WE_DiffRef_which.max_hour,
-            PopWorkingDays_WE_DiffRef_diff_morning_evening, PopWeekHolidays_WE_DiffRef_diff_morning_evening)
-names(Pop) &lt;- c(&quot;PopWorkingDays_WE_DiffRef_Mean&quot;, &quot;PopWeekHolidays_WE_DiffRef_Mean&quot;, 
-                &quot;PopWorkingDays_WE_DiffRef_CV&quot;, &quot;PopWeekHolidays_WE_DiffRef_CV&quot;,
-                &quot;PopWorkingDays_WE_DiffRef_which.max_hour&quot;, &quot;PopWeekHolidays_WE_DiffRef_which.max_hour&quot;,
-                &quot;PopWorkingDays_WE_DiffRef_diff_morning_evening&quot;, &quot;PopWeekHolidays_WE_DiffRef_diff_morning_evening&quot;)</code></pre>
-<p><img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-17-1.png" width="768" /><img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-17-2.png" width="768" /> <img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-18-1.png" width="768" /><img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-18-2.png" width="768" /></p>
-<p><img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-19-1.png" width="768" /><img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-19-2.png" width="768" /> <img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-20-1.png" width="768" /><img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-20-2.png" width="768" /></p>
-<pre class="r"><code>library(raster)
-
-raster_ref &lt;- raster(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2.tif&quot;)
-
-shp &lt;- st_read(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp&quot;, quiet = T)
-st_crs(shp) &lt;- &quot;+proj=lcc +lat_1=51.16666723333333 +lat_2=49.8333339 +lat_0=90 +lon_0=4.367486666666666 +x_0=150000.013
-+y_0=5400088.438 +ellps=intl +units=m +no_defs&quot;
-
-shp &lt;- cbind(shp, Pop[[1]])
-colnames(shp)[2] &lt;- names(Pop)[1]
-st_write(shp, &quot;/media/ubuntu/DATA/Data/Smartpop/Risk/PopWorkingDays_WE_DiffRef_Mean.shp&quot;)
-
-ext&lt;-extent(raster_ref)
-ext&lt;-paste(ext[1], ext[3], ext[2], ext[4])
-
-res&lt;-paste(res(raster_ref)[1], res(raster_ref)[2])
-
-path.in &lt;- &quot;/media/ubuntu/DATA/Data/Smartpop/Risk/PopWorkingDays_WE_DiffRef_Mean.shp&quot;
-path.out &lt;- &quot;/media/ubuntu/DATA/Data/Smartpop/Risk/PopWorkingDays_WE_DiffRef_Mean.tif&quot;
-
-attribute&lt;-&quot;PWD_WE_&quot;
-
-command&lt;-&#39;gdal_rasterize&#39;
-command&lt;-paste(command, &quot;--config GDAL_CACHEMAX 2000&quot;) #Speed-up with more cache (avice: max 1/3 of your total RAM)
-command&lt;-paste(command, &quot;-a&quot;, attribute) #Identifies an attribute field on the features to be used for a burn in value. The value will be burned into all output bands.
-command&lt;-paste(command, &quot;-te&quot;, ext) #(GDAL &gt;= 1.8.0) set georeferenced extents. The values must be expressed in georeferenced units. If not specified, the extent of the output file will be the extent of the vector layers.
-command&lt;-paste(command, &quot;-tr&quot;, res) #(GDAL &gt;= 1.8.0) set target resolution. The values must be expressed in georeferenced units. Both must be positive values.
-command&lt;-paste(command, &quot;-ot Int32&quot;)
-command&lt;-paste(command, path.in)
-command&lt;-paste(command, path.out)
-
-system(command)
-
-st_write(commune, &quot;/media/ubuntu/DATA/Data/Smartpop/Risk/commune.shp&quot;)
-
-path.in &lt;- &quot;/media/ubuntu/DATA/Data/Smartpop/Risk/commune.shp&quot;
-path.out &lt;- &quot;/media/ubuntu/DATA/Data/Smartpop/Risk/commune.tif&quot;
-
-attribute&lt;-&quot;ID_4&quot;
-
-command&lt;-&#39;gdal_rasterize&#39;
-command&lt;-paste(command, &quot;--config GDAL_CACHEMAX 2000&quot;) #Speed-up with more cache (avice: max 1/3 of your total RAM)
-command&lt;-paste(command, &quot;-a&quot;, attribute) #Identifies an attribute field on the features to be used for a burn in value. The value will be burned into all output bands.
-command&lt;-paste(command, &quot;-te&quot;, ext) #(GDAL &gt;= 1.8.0) set georeferenced extents. The values must be expressed in georeferenced units. If not specified, the extent of the output file will be the extent of the vector layers.
-command&lt;-paste(command, &quot;-tr&quot;, res) #(GDAL &gt;= 1.8.0) set target resolution. The values must be expressed in georeferenced units. Both must be positive values.
-command&lt;-paste(command, &quot;-ot Int32&quot;)
-command&lt;-paste(command, path.in)
-command&lt;-paste(command, path.out)
-
-system(command)</code></pre>
+<p><img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-17-1.png" width="768" /><img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-17-2.png" width="768" /></p>
+<div id="commune-map" class="section level3">
+<h3>Commune map</h3>
 <pre class="r"><code>library(raster)
 myZonal &lt;- function (x, z, stat, digits = 0, na.rm = TRUE, 
                      ...) { 
@@ -423,36 +385,192 @@ myZonal &lt;- function (x, z, stat, digits = 0, na.rm = TRUE,
 } 
 
 zone &lt;- raster(&quot;/media/ubuntu/DATA/Data/Smartpop/Risk/commune.tif&quot;)
-r &lt;- raster(&quot;/media/ubuntu/DATA/Data/Smartpop/Risk/PopWorkingDays_WE_DiffRef_Mean.tif&quot;)
+filenames &lt;- list.files(&quot;/media/ubuntu/DATA/Data/Smartpop/Population/&quot;, pattern = &quot;PopWorkingDays_WE_.*.tif&quot;, full.names = T)
+filenames2 &lt;- list.files(&quot;/media/ubuntu/DATA/Data/Smartpop/Population/&quot;, pattern = &quot;PopWorkingDays_WE_.*.tif&quot;)
+filenames2 &lt;- gsub(&quot;PopWorkingDays_WE_|.tif&quot;, &quot;&quot;, filenames2)
+filenames &lt;- filenames[order(as.numeric(filenames2))]
+
+r &lt;- stack(filenames[1:8])
 zstat &lt;- myZonal(r, zone, &quot;mean&quot;)
 zstat &lt;- data.frame(zstat)
-colnames(zstat) &lt;- c(&quot;ID_4&quot;, &quot;PopWorkingDays_WE_DiffRef_Mean&quot;)
 
-commune &lt;- st_read(&quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Belgium_Adm/BEL_adm_shp/BEL_adm4.shp&quot;, quiet = T)
+for (i in 1:16) {
+  print(i)
+  r &lt;- stack(filenames[seq(9,168,10)[i]:seq(18,168,10)[i]])
+  zstat2 &lt;- myZonal(r, zone, &quot;mean&quot;)
+  zstat &lt;- cbind(zstat, zstat2[,2:11])
+}
+
+zstat &lt;- data.frame(zstat)
+zstat &lt;- zstat[-1, ]</code></pre>
+<pre class="r"><code>commune &lt;- st_read(&quot;/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Belgium_Adm/BEL_adm_shp/BEL_adm4.shp&quot;, quiet = T)
 commune &lt;- st_transform(commune, st_crs(shp))
-commune$PopWorkingDays_WE_DiffRef_Mean &lt;- zstat$PopWorkingDays_WE_DiffRef_Mean[-1]</code></pre>
+commune &lt;- cbind(commune, as.matrix(zstat[, -1]))
+
+st_write(commune, &quot;/media/ubuntu/DATA/Data/Smartpop/Population/commune_pop.shp&quot;, quiet = T)</code></pre>
 <p><img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-23-1.png" width="768" /></p>
-<pre><code>##             NAME_4 PopWorkingDays_WE_DiffRef_Mean
-## 293 Spiere-Helkijn                     -297.70485
-## 427          Engis                     -132.67484
-## 356     Brugelette                     -129.06147
-## 471          Eupen                     -119.32127
-## 529     Tenneville                     -100.82244
-## 338       La Hulpe                      -73.51151
-## 468         Baelen                      -71.74226
-## 352          Wavre                      -66.54473
-## 482         Raeren                      -65.97945
-## 209      Hoeilaart                      -65.65789</code></pre>
-<pre><code>##         NAME_4 PopWorkingDays_WE_DiffRef_Mean
-## 448     Dalhem                       14.43200
-## 506  Wasseiges                       13.61977
-## 181   Horebeke                       12.88050
-## 190      Zwalm                       12.61103
-## 479       Olne                       12.54462
-## 144 Buggenhout                       12.03437
-## 547     Musson                       12.03094
-## 30        Hove                       11.96039
-## 329    Chastre                       11.94522
-## 204 Galmaarden                       11.87807</code></pre>
+</div>
+</div>
+<div id="coefficient-of-variation" class="section level2">
+<h2>Coefficient of variation</h2>
+<p><img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-24-1.png" width="768" /><img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-24-2.png" width="768" /></p>
+</div>
+<div id="average-hour-with-max-density" class="section level2">
+<h2>Average hour with max density</h2>
+<p><img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-25-1.png" width="768" /><img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-25-2.png" width="768" /></p>
+<pre class="r"><code>library(ggplot2)
+library(Rmisc)
+library(dplyr)
+
+db.new &lt;- fread(&quot;/media/ubuntu/DATA/Data/Smartpop/FinalDB/FinalDB_085km2.csv&quot;)
+Mat_BE &lt;- dcast(ID_Grid ~  DATE_HOUR, 
+                data = db.new, 
+                value.var = &quot;NBR_SIM_BE&quot;)
+Mat_BE &lt;- as.matrix(Mat_BE)[, -1]
+
+colnames(Mat_BE) &lt;- c(73:(24*7), rep(1:(24*7), 51), 1:96)[-7971]
+
+
+Week &lt;- vapply(1:(24*7), function(x) 
+            rowMeans(Mat_BE[, colnames(Mat_BE) == x, drop = FALSE], na.rm = TRUE),
+            numeric(nrow(Mat_BE)))
+
+# compute trend
+library(foreach)
+library(doMC)
+registerDoMC(8)
+
+x &lt;- 1:ncol(Mat_BE)
+trend &lt;- foreach(i = 1:nrow(Mat_BE), .combine = rbind) %dopar% {
+  z &lt;- predict(loess(Mat_BE[i,] ~ x, span = 0.1, degree = 2))
+  z  #return value for the iterations
+}</code></pre>
+<pre class="r"><code># Subset 9 pm data
+column.names &lt;- c(73:(24*7), rep(1:(24*7), 51), 1:96)
+column.names &lt;- column.names[-7971]
+colnames(trend) &lt;- column.names
+trend &lt;- trend[, colnames(trend) %in% seq(22, 168, 24)]
+
+
+# Compute monthly average of trend
+dayMonth &lt;- c(rep(1, 31),
+              rep(2, 28),
+              rep(3, 31),
+              rep(4, 30),
+              rep(5, 31),
+              rep(6, 30),
+              rep(7, 31),
+              rep(8, 31),
+              rep(9, 30),
+              rep(10, 31),
+              rep(11, 30),
+              rep(12, 31))
+colnames(trend) &lt;- dayMonth
+
+res &lt;- as.data.frame( # sapply returns a list here, so we convert it to a data.frame
+    sapply(unique(colnames(trend)), # for each unique column name
+       function(col) rowMeans(trend[,colnames(trend) == col]) # calculate row means
+    )
+  )
+
+res &lt;- res + Week[, 22]
+
+popMonth &lt;- res
+for (i in 1:ncol(res)) {
+  predData &lt;- exp(mean(OutputSpatialCV$intercept) + mean(OutputSpatialCV$slope) * log(popMonth[, i]))
+  popMonth[, i] &lt;- predData * popTotal/sum(predData * area$`area(km2)`)
+}</code></pre>
+<pre class="r"><code>popMonth_which.max_day &lt;- apply(popMonth,1,which.max)
+
+shp &lt;- st_read(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp&quot;, quiet = T)
+st_crs(shp) &lt;- &quot;+proj=lcc +lat_1=51.16666723333333 +lat_2=49.8333339 +lat_0=90 +lon_0=4.367486666666666 +x_0=150000.013
++y_0=5400088.438 +ellps=intl +units=m +no_defs&quot;
+
+shp &lt;- cbind(shp, popMonth_which.max_day)
+
+par(mar = c(0,0,1.5,0))
+layout(matrix(c(1,1,2,1,1,3, 4, 5,6), 3, 3, byrow = TRUE))
+
+# quantization breaks of the rate
+bks &lt;- 1:12
+
+# get a color palette
+cols &lt;- c(&#39;#0000ff&#39;,&#39;#843fe1&#39;,&#39;#b26bc2&#39;,&#39;#d195a1&#39;,&#39;#e7bf7c&#39;,&#39;#f8e947&#39;,&#39;#ffef00&#39;,&#39;#ffcd00&#39;,&#39;#ffaa00&#39;,&#39;#ff8500&#39;,&#39;#ff5a00&#39;,&#39;#ff0000&#39;)
+
+choroLayer(x = shp, var = &quot;popMonth_which.max_day&quot;, breaks = bks, col = cols,
+           border = &quot;khaki&quot;, lwd = 0.001, 
+           legend.title.txt = &quot;Hour&quot;, 
+           legend.pos = &#39;bottomleft&#39;, legend.values.rnd = 0)
+layoutLayer(title = paste0(&quot;Hour with in average the highest populaiton density during &quot;, ifelse(i == 5, &quot;working days&quot;, &quot;holidays&quot;)), 
+            sources = &quot;&quot;, north = TRUE, 
+            scale = 50, tabtitle = TRUE,
+            frame = T,  
+            author = &quot;*model based on mobile phone data&quot;)
+
+for (city in c(&quot;Brussel&quot;, &quot;Antwerpen&quot;, &quot;Leuven&quot;, &quot;Liège&quot; ,&quot;Namur&quot;)) {
+    choroLayer(x = st_crop(shp, region[region$NAME_3 == city,]),
+               var = &quot;popMonth_which.max_day&quot;, breaks = bks, col = cols,
+               lwd = 0.001, 
+               legend.pos = &#39;n&#39;)
+    plot(as(commune, &quot;Spatial&quot;), border = &quot;black&quot;, lwd = 0.5, add = TRUE)
+    layoutLayer(title = paste0(&quot;Zoom over &quot;, city), 
+                sources = &quot;&quot;, scale = 5, tabtitle = TRUE,
+                frame = T,  
+                author = &quot;&quot;)
+}</code></pre>
+<p><img src="/post/2018-10-08-dynamic-population-mapping-smartpop-part-6_files/figure-html/unnamed-chunk-28-1.png" width="672" /></p>
+<pre class="r"><code>shp &lt;- st_read(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp&quot;, quiet = T)
+st_crs(shp) &lt;- &quot;+proj=lcc +lat_1=51.16666723333333 +lat_2=49.8333339 +lat_0=90 +lon_0=4.367486666666666 +x_0=150000.013
++y_0=5400088.438 +ellps=intl +units=m +no_defs&quot;
+
+shp &lt;- cbind(shp, as.matrix(popMonth))
+
+
+library(cartography)
+library(cartogram)
+library(animation)
+library(sp)
+
+ani.options(interval = .10,
+            ani.width = 400, 
+            ani.height = 400)
+
+i = 0
+saveGIF(movie.name = &quot;/media/ubuntu/DATA/Data/Smartpop/Map/pop_month.gif&quot;, { 
+  for (colname in colnames(shp)[2:13]) {
+    i = i + 1
+    bks&lt;- c(0,100,200,300,400,500,600,700,800,900,1000,4500)
+    # figdim &lt;- getFigDim(x = shp, width = 1000, mar = c(0,0,1.2,0), res = 100)
+    
+    par(mar = c(0,0,1.5,0))
+    layout(matrix(c(1,1,2,1,1,3, 4, 5,6), 3, 3, byrow = TRUE))
+    
+    # get a color palette
+    cols &lt;- c(&#39;#000000&#39;,&#39;#4b160a&#39;,&#39;#931b0b&#39;,&#39;#e31004&#39;,&#39;#ff5f00&#39;,&#39;#ffa100&#39;,&#39;#ffdb00&#39;,&#39;#ffff3d&#39;,&#39;#ffff89&#39;,&#39;#ffffc5&#39;,&#39;#ffffff&#39;)
+    
+    choroLayer(x = shp,var = colname, breaks = bks, col = cols,
+               border = &quot;khaki&quot;, lwd = 0.01, 
+               legend.title.txt = &quot;Population\ndensity&quot;, 
+               legend.pos = &#39;bottomleft&#39;, legend.values.rnd = 0)
+    layoutLayer(title = paste0(&quot;Population density in Belgium during working days (&quot;, i, &quot;h)&quot;), 
+                sources = &quot;&quot;, north = TRUE, 
+                scale = 50, tabtitle = TRUE,
+                frame = FALSE,  
+                author = &quot;*model based on mobile phone data&quot;)
+    
+    for (city in c(&quot;Brussel&quot;, &quot;Antwerpen&quot;, &quot;Leuven&quot;, &quot;Liège&quot; ,&quot;Namur&quot;)) {
+      choroLayer(x = st_crop(shp, region[region$NAME_3 == city,]),
+                 var = colname, breaks = bks, col = cols,
+                 lwd = 0.01, 
+                 legend.title.txt = &quot;Population\ndensity&quot;, 
+                 legend.pos = &#39;n&#39;)
+      plot(as(commune, &quot;Spatial&quot;), border = &quot;white&quot;, lwd = 0.8, add = TRUE)
+      layoutLayer(title = paste0(&quot;Zoom over &quot;, city), 
+                  sources = &quot;&quot;, scale = 5, tabtitle = TRUE,
+                  frame = T,  
+                  author = &quot;&quot;)
+    }
+  }
+})</code></pre>
 </div>
 </div>
