@@ -66,7 +66,7 @@ for (i in 1:3) {
                aes(y = Hour, x = Date)) + 
     geom_raster(aes(fill = log10(remainder_mean))) +
     scale_fill_gradientn(colours = temperature,
-                         name = &quot;Number of places\nwith unusually very\nhigh activity&quot;,
+                         name = &quot;Number of places\nwith unusual very\nhigh activity&quot;,
                           breaks=c(0:3), 
                       labels=c(&quot;0&quot;,&quot;1e1&quot;, &quot;1e2&quot;, &quot;1e3&quot;)) +
     theme(
@@ -80,32 +80,7 @@ for (i in 1:3) {
 
 library(Rmisc)
 multiplot(g[[1]], g[[2]], g[[3]])</code></pre>
-<p><img src="/post/2018-10-28-dynamic-population-mapping-smartpop-part-7_files/figure-html/unnamed-chunk-4-1.png" width="1152" /></p>
-<pre class="r"><code>library(sf)
-library(cartography)
-
-shp &lt;- st_read(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp&quot;, quiet = T)
-st_crs(shp) &lt;- &quot;+proj=lcc +lat_1=51.16666723333333 +lat_2=49.8333339 +lat_0=90 +lon_0=4.367486666666666 +x_0=150000.013
-+y_0=5400088.438 +ellps=intl +units=m +no_defs&quot;
-
-extreme &lt;- rowSums(scrime::rowScales(remainder) &gt; 5)
-shp &lt;- cbind(shp, extreme)
-
-bks &lt;- seq(0, 100, 20)
-
-colors &lt;- c(&#39;#edf8fb&#39;,&#39;#b3cde3&#39;,&#39;#8c96c6&#39;,&#39;#810f7c&#39;,&#39;#4d004b&#39;)
-
-par(mar = c(0,0,1.5,0))
-choroLayer(x = shp, var = &quot;extreme&quot;, breaks = bks, col = colors,
-             border = &quot;khaki&quot;, lwd = 0.001, 
-             legend.title.txt = &quot;&quot;, 
-             legend.pos = &#39;bottomleft&#39;, legend.values.rnd = 0)
-layoutLayer(title = &quot;Number of hours with unusually very high activity&quot;, 
-              sources = &quot;&quot;, north = TRUE, 
-              scale = 50, tabtitle = TRUE,
-              frame = T,  
-              author = &quot;*model based on mobile phone data&quot;)</code></pre>
-<p><img src="/post/2018-10-28-dynamic-population-mapping-smartpop-part-7_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<p><img src="/post/2018-10-28-dynamic-population-mapping-smartpop-part-7_files/figure-html/unnamed-chunk-4-1.png" width="1152" /> <img src="/post/2018-10-28-dynamic-population-mapping-smartpop-part-7_files/figure-html/unnamed-chunk-5-1.png" width="768" /></p>
 <pre class="r"><code>library(leaflet)
 library(widgetframe)
 
@@ -133,7 +108,7 @@ l &lt;- leaflet(shp_latlon) %&gt;%
     options = layersControlOptions(collapsed = FALSE)
   ) %&gt;%
   addLegend(&quot;bottomleft&quot;, pal = pal, values = ~extreme,
-    title = &quot;Number of hours&lt;br&gt;with unusually very&lt;br&gt;high activity&quot;,
+    title = &quot;Number of hours&lt;br&gt;with unusual very&lt;br&gt;high activity&quot;,
     opacity = 1)
 
 frameWidget(l)</code></pre>

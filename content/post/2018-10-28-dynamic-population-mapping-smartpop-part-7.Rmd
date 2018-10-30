@@ -161,7 +161,7 @@ for (i in 1:3) {
                aes(y = Hour, x = Date)) + 
     geom_raster(aes(fill = log10(remainder_mean))) +
     scale_fill_gradientn(colours = temperature,
-                         name = "Number of places\nwith unusually very\nhigh activity",
+                         name = "Number of places\nwith unusual very\nhigh activity",
                           breaks=c(0:3), 
                       labels=c("0","1e1", "1e2", "1e3")) +
     theme(
@@ -176,13 +176,20 @@ for (i in 1:3) {
 library(Rmisc)
 multiplot(g[[1]], g[[2]], g[[3]])
 ```
-```{r}
+```{r, echo = F, fig.width = 8, fig.heigth = 8}
 library(sf)
 library(cartography)
+library(sp)
 
 shp <- st_read("/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_dissolve.shp", quiet = T)
 st_crs(shp) <- "+proj=lcc +lat_1=51.16666723333333 +lat_2=49.8333339 +lat_0=90 +lon_0=4.367486666666666 +x_0=150000.013
 +y_0=5400088.438 +ellps=intl +units=m +no_defs"
+
+region <- st_read("/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Belgium_Adm/BEL_adm_shp/BEL_adm3.shp", quiet = T)
+region <- st_transform(region, st_crs(shp))
+
+commune <- st_read("/home/ubuntu/Dropbox/Research/Projects/SMARTPOP/Data/Belgium_Adm/BEL_adm_shp/BEL_adm4.shp", quiet = T)
+commune <- st_transform(commune, st_crs(shp))
 
 extreme <- rowSums(scrime::rowScales(remainder) > 5)
 shp <- cbind(shp, extreme)
@@ -192,15 +199,28 @@ bks <- seq(0, 100, 20)
 colors <- c('#edf8fb','#b3cde3','#8c96c6','#810f7c','#4d004b')
 
 par(mar = c(0,0,1.5,0))
+layout(matrix(c(1,1,2,1,1,3, 4, 5,6), 3, 3, byrow = TRUE))
+
 choroLayer(x = shp, var = "extreme", breaks = bks, col = colors,
              border = "khaki", lwd = 0.001, 
              legend.title.txt = "", 
              legend.pos = 'bottomleft', legend.values.rnd = 0)
-layoutLayer(title = "Number of hours with unusually very high activity", 
+layoutLayer(title = "Number of hours with unusual very high activity", 
               sources = "", north = TRUE, 
               scale = 50, tabtitle = TRUE,
               frame = T,  
               author = "*model based on mobile phone data")
+for (city in c("Brussel", "Antwerpen", "Leuven", "Liège" ,"Namur")) {
+    choroLayer(x = st_crop(shp, region[region$NAME_3 == city,]),
+               var = "extreme", breaks = bks, col = colors,
+               lwd = 0.001, 
+               legend.pos = 'n')
+    plot(as(commune, "Spatial"), border = "black", lwd = 0.5, add = TRUE)
+    layoutLayer(title = paste0("Zoom over ", city), 
+                sources = "", scale = 5, tabtitle = TRUE,
+                frame = T,  
+                author = "")
+}
 
 ```
 ```{r}
@@ -231,7 +251,7 @@ l <- leaflet(shp_latlon) %>%
     options = layersControlOptions(collapsed = FALSE)
   ) %>%
   addLegend("bottomleft", pal = pal, values = ~extreme,
-    title = "Number of hours<br>with unusually very<br>high activity",
+    title = "Number of hours<br>with unusual very<br>high activity",
     opacity = 1)
 
 frameWidget(l)
