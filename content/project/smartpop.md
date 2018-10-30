@@ -35,4 +35,5 @@ The code of the data analysis performed in the frame of the Smartpop project –
 [Part 3](https://damien-c-jacques.rbind.io/post/smartpop-dynamic-population-mapping-part-3/)\\
 [Part 4](https://damien-c-jacques.rbind.io/post/smartpop-dynamic-population-mapping-part-4/)\\
 [Part 5](https://damien-c-jacques.rbind.io/post/dynamic-population-mapping-smartpop-part-5/)\\
-[Part 6](https://damien-c-jacques.rbind.io/post/dynamic-population-mapping-smartpop-part-6/)
+[Part 6](https://damien-c-jacques.rbind.io/post/dynamic-population-mapping-smartpop-part-6/)\\
+[Part 7](https://damien-c-jacques.rbind.io/post/dynamic-population-mapping-smartpop-part-7/)

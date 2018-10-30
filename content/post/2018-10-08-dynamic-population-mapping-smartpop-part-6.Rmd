@@ -685,6 +685,7 @@ commune <- cbind(commune, as.matrix(zstat[, -1]))
 st_write(commune, "/media/ubuntu/DATA/Data/Smartpop/Population/commune_pop.shp", quiet = T)
 ```
 
+
 ```{r, fig.width = 8, fig.heigth = 8, echo = F}
 commune <- st_read("/media/ubuntu/DATA/Data/Smartpop/Population/commune_pop.shp", quiet = T)
 
@@ -709,7 +710,7 @@ commune <- cbind(commune, PopWorkingDays_WE_DiffRef_Mean_commune)
 
 par(mar = c(0,0,1.5,0))
 layout(matrix(c(1,1,2,1,1,3, 4, 5,6), 3, 3, byrow = TRUE))
-
+i = 1
 # quantization breaks of the rate
 bks <- c(min(commune[["PopWorkingDays_WE_DiffRef_Mean_commune"]]), -15,-10, -5, 0, 5,10, 15, max(commune[["PopWorkingDays_WE_DiffRef_Mean_commune"]]))
 
@@ -720,7 +721,7 @@ choroLayer(x = commune, var = "PopWorkingDays_WE_DiffRef_Mean_commune", breaks =
            border = "khaki", lwd = 0.001, 
            legend.title.txt = "", 
            legend.pos = 'bottomleft', legend.values.rnd = 0)
-layoutLayer(title = paste0("Relative difference between residential population density and average population density during ", ifelse(i == 1, "working days", "holidays"), " (%)"), 
+layoutLayer(title = paste0("Relative difference between residential population density and average population density during a a working week (%)"), 
             sources = "", north = TRUE, 
             scale = 50, tabtitle = TRUE,
             frame = T,  
@@ -739,6 +740,11 @@ for (city in c("Brussel", "Antwerpen", "Leuven", "Liège" ,"Namur")) {
                 frame = T,  
                 author = "")
 }
+    
+hist(PopWorkingDays_WE_DiffRef_Mean_commune, nclass = 100,
+     main = "",
+     xlab = "Relative difference between residential population density and\naverage population density during a a working week (%)",
+     cex.lab = 0.8)
 ```
 
 
