@@ -230,7 +230,7 @@ l <- leaflet(shp_latlon) %>%
     overlayGroups = c("show map"),
     options = layersControlOptions(collapsed = FALSE)
   ) %>%
-  addLegend("bottomright", pal = pal, values = ~extreme,
+  addLegend("bottomleft", pal = pal, values = ~extreme,
     title = "Number of hours<br>with unusually very<br>high activity",
     opacity = 1)
 

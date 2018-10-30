@@ -132,7 +132,7 @@ l &lt;- leaflet(shp_latlon) %&gt;%
     overlayGroups = c(&quot;show map&quot;),
     options = layersControlOptions(collapsed = FALSE)
   ) %&gt;%
-  addLegend(&quot;bottomright&quot;, pal = pal, values = ~extreme,
+  addLegend(&quot;bottomleft&quot;, pal = pal, values = ~extreme,
     title = &quot;Number of hours&lt;br&gt;with unusually very&lt;br&gt;high activity&quot;,
     opacity = 1)
 
