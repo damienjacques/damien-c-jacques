@@ -44,7 +44,7 @@ df &lt;- data.frame(date = apply(expand.grid(dates, c(&quot;00&quot;,&quot;01&qu
                                                    &quot;13&quot;,&quot;14&quot;,&quot;15&quot;,&quot;16&quot;,&quot;17&quot;,&quot;18&quot;,
                                                    &quot;19&quot;,&quot;20&quot;,&quot;21&quot;,&quot;22&quot;,&quot;23&quot;)), 
                                                                  1, paste, collapse = &quot;&quot;))][-8760], 
-                 remainder_mean = colSums(scrime::rowScales(remainder) &gt; 10),
+                 remainder_mean = colSums(scrime::rowScales(remainder) &gt; 5),
                  stringsAsFactors = F)
 
 df$Date &lt;- substr(df$date, 1,10)
@@ -88,18 +88,19 @@ shp &lt;- st_read(&quot;/media/ubuntu/DATA/Data/Smartpop/Zone/zone_50m_0.85km2_d
 st_crs(shp) &lt;- &quot;+proj=lcc +lat_1=51.16666723333333 +lat_2=49.8333339 +lat_0=90 +lon_0=4.367486666666666 +x_0=150000.013
 +y_0=5400088.438 +ellps=intl +units=m +no_defs&quot;
 
-extreme &lt;- rowSums(scrime::rowScales(remainder) &gt; 10)
+extreme &lt;- rowSums(scrime::rowScales(remainder) &gt; 5)
 shp &lt;- cbind(shp, extreme)
 
-bks &lt;- seq(0,40,8)
-temperature &lt;- c(&#39;#000000&#39;,&#39;#bb1909&#39;,&#39;#ffa100&#39;,&#39;#ffff67&#39;,&#39;#ffffff&#39;)
+bks &lt;- seq(0, 100, 20)
+
+colors &lt;- c(&#39;#edf8fb&#39;,&#39;#b3cde3&#39;,&#39;#8c96c6&#39;,&#39;#810f7c&#39;,&#39;#4d004b&#39;)
 
 par(mar = c(0,0,1.5,0))
-choroLayer(x = shp, var = &quot;extreme&quot;, breaks = bks, col = temperature,
+choroLayer(x = shp, var = &quot;extreme&quot;, breaks = bks, col = colors,
              border = &quot;khaki&quot;, lwd = 0.001, 
              legend.title.txt = &quot;&quot;, 
              legend.pos = &#39;bottomleft&#39;, legend.values.rnd = 0)
-layoutLayer(title = &quot;Number of hours\nwith unusually very\nhigh activity&quot;, 
+layoutLayer(title = &quot;Number of hours with unusually very high activity&quot;, 
               sources = &quot;&quot;, north = TRUE, 
               scale = 50, tabtitle = TRUE,
               frame = T,  
@@ -110,7 +111,7 @@ library(widgetframe)
 
 shp_latlon &lt;- st_transform(shp, crs = 4326)
 
-pal &lt;- colorNumeric(c(&quot;black&quot;, &quot;red&quot;, &quot;yellow&quot;, &quot;white&quot;), bks)
+pal &lt;- colorNumeric(colors, bks)
 
 l &lt;- leaflet(shp_latlon) %&gt;%
   setView(lng = 5.578661, lat = 50.633766, zoom = 12) %&gt;%
